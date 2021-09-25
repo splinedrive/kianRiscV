@@ -30,13 +30,13 @@ flash with\
 ./flash_firmware.sh \
 ico|ulx3s|ice|fun|breakout <*.ld> <*.c>
 
-spi_nor2bram_fun.ld   # boot from spi nor icefun nor and move to bram\
-spi_nor2bram.ld       # boot from spi nor icebreaker, breakout, icoboard\
-spi_nor2bram_ulx3s.ld # boot from spi nor ulx3s\
-spi_nor2spram.ld      # boot from spi nor icebreaker\
-spi_nor2sram.ld       # boot from spi to sram icoboard\
-spi_nor_fun.ld        # boot and executed from spi nor icefun\
-spi_nor.ld            # executed from spi nor all fpga, not icefun\
+spi_nor2bram_fun.ld # boot from spi-nor icefun and copy code to bram
+spi_nor2bram.ld # boot from spi-nor icebreaker, breakout, icoboard and copy to bram
+spi_nor2bram_ulx3s.ld # boot from spi-nor ulx3s and copy to bram
+spi_nor2spram.ld # boot from spi-nor icebreaker and copy to spram
+spi_nor2sram.ld # boot from spi-nor and copy to sram icoboard
+spi_nor_fun.ld # boot and execute instructions only from spi-nor on icefun
+spi_nor.ld # boot and execute instructions only from spi-nor all boards, excluded icefun\
 
 example rayracing on icefun:\
 ./flash_firmware.sh spi_nor_fun.ld main_raytracer.c #with oled ssd1331\
