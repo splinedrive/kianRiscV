@@ -2,6 +2,7 @@
 // Based on riscv newlib libgloss/riscv/sys_*.c
 // Written by Clifford Wolf.
 
+#include "kianv_stdlib.h"
 #include <sys/stat.h>
 #include <unistd.h>
 #include <errno.h>
@@ -43,7 +44,8 @@ void unimplemented_syscall()
 {
 	const char *p = "Unimplemented system call called!\n";
 	while (*p)
-		*(volatile int*)0x10000000 = *(p++);
+		//*(volatile int*)0x10000000 = *(p++);
+    print_chr(*(char*) (ptr++));
 	asm volatile ("ebreak");
 	__builtin_unreachable();
 }
@@ -58,7 +60,8 @@ ssize_t _write(int file, const void *ptr, size_t len)
 {
 	const void *eptr = ptr + len;
 	while (ptr != eptr)
-		*(volatile int*)0x10000000 = *(char*)(ptr++);
+//		*(volatile int*)0x10000000 = *(char*)(ptr++);
+    print_chr(*(char*) (ptr++));
 	return len;
 }
 
