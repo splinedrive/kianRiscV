@@ -18,9 +18,12 @@
  */
 `default_nettype none
 `timescale 1ns/1ps
+
+`define RV32M
+`define CSR_TIME_COUNTER
 module kianv #(
            parameter integer    rv32e      = 0,
-           parameter integer    rv32m      = 0,
+           parameter integer    rv32m      = 0, /* not used yet, use upper defines */
            parameter integer    reset_addr = 0
        ) (
            input  wire          clk,
@@ -41,9 +44,6 @@ module kianv #(
        );
 
 assign state = cpu_state;
-
-`define RV32M
-`define CSR_TIME_COUNTER
 
 localparam REG_FILE_IDX_WIDTH = $clog2(rv32e ? 16 : 32); // don't use zero reg
 
@@ -469,14 +469,14 @@ always @* begin
     end
 
     if (is_sh) begin
+        rs2_store_rslt[15 :0]  = ~alu_rslt[1] ? rs2_reg_file[15 :0] : 'hx;
+        rs2_store_rslt[31:16]  =  alu_rslt[1] ? rs2_reg_file[31:16] : 'hx;
         mem_wmask_store = 4'b0011 << (alu_rslt[1]<<1'b1);
-        rs2_store_rslt[15 :0]  = alu_rslt[1] == 1'b0 ? rs2_reg_file[15 :0] : 'hx;
-        rs2_store_rslt[31:16]  = alu_rslt[1] == 1'b1 ? rs2_reg_file[31:16] : 'hx;
     end
 
     if (is_sw) begin
-        mem_wmask_store = 4'b1111;
         rs2_store_rslt = rs2_reg_file;
+        mem_wmask_store = 4'b1111;
     end
 end
 
@@ -496,8 +496,8 @@ always @* begin
     end
 
     if (is_lh | is_lhu) begin
-        rs2_load_rslt[15:0] = alu_rslt[1] == 1'b0 ? mem_dout[15  :0]  :
-                     alu_rslt[1] == 1'b1 ? mem_dout[31  :16] : 'hx;
+        rs2_load_rslt[15:0] = ~alu_rslt[1] ? mem_dout[15  :0]  :
+                               alu_rslt[1] ? mem_dout[31  :16] : 'hx;
         rs2_load_rslt = {is_lhu ? 16'b0 : {16{rs2_load_rslt[15]}}, rs2_load_rslt[15:0]};
     end
 
