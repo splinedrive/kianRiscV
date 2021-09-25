@@ -74,5 +74,6 @@ Have fun!
 
 Hirosh
 
+![riscv](kianv_cpu.png)
 ![riscv](riscv_kianv.jpg)
 ![riscv](riscv_kianv2.jpg)
