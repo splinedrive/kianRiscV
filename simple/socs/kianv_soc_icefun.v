@@ -45,13 +45,6 @@ module kianv_soc(
            output spi_mem_flash_mosi,
            output spi_mem_flash_sclk,
 
-           /* spi flash */
-           output debug_spi_mem_flash_cs,
-           output debug_spi_mem_flash_miso,
-           output debug_spi_mem_flash_mosi,
-           output debug_spi_mem_flash_sclk,
-
-
            /* oled */
            output oled_sck,
            output oled_mosi,
@@ -65,12 +58,6 @@ module kianv_soc(
            output uart_tx
        );
 `endif
-
-assign debug_spi_mem_flash_cs    = spi_mem_flash_cs;
-assign debug_spi_mem_flash_miso  = spi_mem_flash_miso;
-assign debug_spi_mem_flash_mosi  = spi_mem_flash_mosi;
-assign debug_spi_mem_flash_sclk  = spi_mem_flash_sclk;
-
 
 `ifdef SIM
 reg clk;
