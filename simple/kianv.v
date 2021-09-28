@@ -686,7 +686,6 @@ always @(posedge clk) begin
             cpu_state[NEXT_PC_BIT]: begin
                 if (!is_s_instr || (is_s_instr&mem_valid)) begin
                     mem_wmask <= 4'b0;
-                    mem_rd    <= 1'b0;
                     rd_wr     <= 1'b0;
                     pc        <= next_pc;
                     mem_addr  <= next_pc;
