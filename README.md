@@ -11,6 +11,8 @@ You can run oled demos and many more! But all is a hack!
 The project starts after I have done a certificate in
 https://www.edx.org/course/building-a-risc-v-cpu-core
 
+[![asciicast](https://asciinema.org/a/47rfAM3mzT6mSxVmNmNjG9JEr.svg)](https://asciinema.org/a/47rfAM3mzT6mSxVmNmNjG9JEr)
+
 I have some example socs implemented:
 icoboard, ulx3s, icebreak, icefun, breakout and not checkedin yet: arty7, gowin, deca, colorlight, blackicemx
 \
