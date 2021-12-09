@@ -5,7 +5,7 @@
  that uses integer arithmetic).
 */
 
-/* adapted for kianv riscv soc 2021, Hirosh Dabui */
+/* taken and adjusted for kianRiscV from https://github.com/BrunoLevy/learn-fpga */
 #include <stdint.h>
 #include "kianv_stdlib.h"
 

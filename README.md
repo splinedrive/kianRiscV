@@ -83,7 +83,10 @@ cpu and the videocontroller shares the sram memmory together. But I have disable
 kianv_soc_icoboard.v the videocontroller but you can enable it. I wanted to write a hyperram controller for icoboard
 but found out that hyperram and sram shares the same databus and then I switch to the oled displays.
 I was complete unmotivated. My dream was to use hyperram with a simple cache to run code for my cpu
-and using the sram as framebuffer. But with same databus it makes no sense for me!
+and using the sram as framebuffer. But with same databus it makes no sense for me!\
+\
+Linker scripts, some example code I copied and adjusted from Bruno Levy repository https://github.com/BrunoLevy/learn-fpga a nice
+project!\
 
 Have fun!
 

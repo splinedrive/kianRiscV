@@ -1,5 +1,5 @@
 #.include "femtorv32.inc"
-
+# taken and adjusted from his project https://github.com/BrunoLevy/learn-fpga
 .text
 .global _start
 .type _start, @function
