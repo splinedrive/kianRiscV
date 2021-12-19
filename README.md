@@ -23,10 +23,15 @@ ico|ulx3s|ice|fun|breakout
 ./build_fpga.sh ico # will build for icoboard fpga image and will flash\
 
 
-Toolchain\
-Check https://github.com/riscv-collab/riscv-gnu-toolchain and build a RV32GC toolchain under /opt \
-riscv32ic  riscv32im  riscv32imc \
+## Toolchain
 
+Build [RISC-V GNU toolchain](https://github.com/riscv/riscv-gnu-toolchain)
+Start the build_toolchain.sh script it will compile a riscv toolchain for rv32im 
+architecture and will build it under /opt/riscv32im
+```bash
+cd simple/firmware/
+./build_toolchain.sh
+```
 
 Or use another toolchain
 and adjust:\

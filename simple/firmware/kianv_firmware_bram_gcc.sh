@@ -12,7 +12,7 @@ FILE=$1
 OPT_LEVEL=-O0
 FILEwoSUFFIX=`echo $FILE | cut -d '.' -f1`
 rm -f firmware.elf
-RVGCC_LIB="/opt/riscv32im/riscv32-unknown-elf/lib/libc.a /opt/riscv32im/riscv32-unknown-elf/lib/libm.a /opt/riscv32im/lib/gcc/riscv32-unknown-elf/8.2.0/libgcc.a"
+RVGCC_LIB="/opt/riscv32im/riscv32-unknown-elf/lib/libc.a /opt/riscv32im/riscv32-unknown-elf/lib/libm.a /opt/riscv32im/lib/gcc/riscv32-unknown-elf/last/libgcc.a"
 RVCPPFLAGS="-fno-exceptions -fno-enforce-eh-specs "
 RVLDFLAGS="-m elf32lriscv -b elf32-littleriscv --no-relax "
 RVCFLAGS="-fno-pic -march=rv32im -mabi=ilp32  -fno-stack-protector -w -Wl,--no-relax -ffreestanding -Wl,--strip-debug,-Map=firmware.map,-nostartfiles"

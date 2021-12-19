@@ -106,6 +106,7 @@ void print_hex(unsigned int val, int digits) {
 
 typedef short Pixel;
 
+
 void setpixel(volatile Pixel *fb, int x, int y, short color) {
 /*
   const int x_offset = x;
@@ -115,3 +116,20 @@ void setpixel(volatile Pixel *fb, int x, int y, short color) {
 */
 *((volatile uint32_t*) VIDEO) = (((uint32_t) color & 0xffff) << 16Ul) | ((x & 0xff) << 8) | (y & 0xff);
 }
+
+void draw_bresenham(volatile Pixel *fb, int x0, int y0, int x1, int y1, short color)
+{
+
+  int dx =  abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+  int dy = -abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+  int err = dx + dy, e2; /* error value e_xy */
+
+  for(;;) {  /* loop */
+    setpixel(fb, x0, y0, color);
+    if (x0 == x1 && y0 == y1) break;
+    e2 = 2*err;
+    if (e2 >= dy) { err += dy; x0 += sx; } /* e_xy+e_x > 0 */
+    if (e2 <= dx) { err += dx; y0 += sy; } /* e_xy+e_y < 0 */
+  }
+}
+
