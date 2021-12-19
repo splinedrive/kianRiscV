@@ -21,7 +21,7 @@
 `timescale 1ns/1ps
 module oled_ssd1331 #(
            parameter SYSTEM_CLK           = 50_000_000,
-           parameter MIN_CLOCK_CYCLE_TIME = 25_000_000
+           parameter SPI_TRANSFER_RATE    = 25_000_000
        ) (
            input     wire clk,
            input     wire resetn,
@@ -46,13 +46,13 @@ module oled_ssd1331 #(
        );
 
 localparam SYSTEM_CYCLES        = SYSTEM_CLK;
-localparam CYCLES_PER_SYMBOL    = SYSTEM_CYCLES/MIN_CLOCK_CYCLE_TIME/2;
+localparam CYCLES_PER_SYMBOL    = SYSTEM_CYCLES/SPI_TRANSFER_RATE/2;
 localparam CLK_DIV_WIDTH        = $clog2(CYCLES_PER_SYMBOL);
 
 initial begin
     $display("SYSTEM_CLK:\t\t", SYSTEM_CLK);
     $display("SYSTEM_CYCLES:\t\t", SYSTEM_CYCLES);
-    $display("MIN_CLOCK_CYCLE_TIME:\t\t", MIN_CLOCK_CYCLE_TIME);
+    $display("SPI_TRANSFER_RATE:\t\t", SPI_TRANSFER_RATE);
     $display("CYCLES_PER_SYMBOL:\t", CYCLES_PER_SYMBOL);
     $display("CLK_DIV_WIDTH:\t", CLK_DIV_WIDTH);
 end
