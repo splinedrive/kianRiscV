@@ -9,7 +9,7 @@ LDS_FILE=firmware.ld
 START_FILE=firmware.S
 INCLUDE_DIR=.
 FILE=$1
-OPT_LEVEL=-O0
+OPT_LEVEL=-Os
 FILEwoSUFFIX=`echo $FILE | cut -d '.' -f1`
 rm -f firmware.elf
 RVGCC_LIB="/opt/riscv32im/riscv32-unknown-elf/lib/libc.a /opt/riscv32im/riscv32-unknown-elf/lib/libm.a /opt/riscv32im/lib/gcc/riscv32-unknown-elf/last/libgcc.a"
