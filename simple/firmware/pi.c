@@ -19,8 +19,7 @@
 //    #include <stdlib.h>
 #include <math.h>
 #include <fenv.h>
-#include "kianv_stdlib.h"
-#include "stdlib.h"
+#include "stdlib.c"
 
 int __errno;
 
