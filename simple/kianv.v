@@ -297,8 +297,8 @@ wire rs2_signed_mul = is_mulh;
 
 // multiplication
 reg [63:0] mul_rslt;
-reg [31:0] rs1_mul_rslt;
-reg [31:0] rs2_mul_rslt;
+reg [31:0] rs1_mul_abs;
+reg [31:0] rs2_mul_abs;
 reg [4:0]  mul_bit;
 reg mul_start;
 reg mul_ready;
@@ -335,8 +335,8 @@ always @(posedge clk) begin
                 mul_ready <= 1'b1;
                 if (mul_start) begin
                     mul_ready <= 1'b0;
-                    rs1_mul_rslt <= (rs1_signed_mul & rs1_reg_file[31]) ? ~rs1_reg_file + 1 : rs1_reg_file;
-                    rs2_mul_rslt <= (rs2_signed_mul & rs2_reg_file[31]) ? ~rs2_reg_file + 1 : rs2_reg_file;
+                    rs1_mul_abs <= (rs1_signed_mul & rs1_reg_file[31]) ? ~rs1_reg_file + 1 : rs1_reg_file;
+                    rs2_mul_abs <= (rs2_signed_mul & rs2_reg_file[31]) ? ~rs2_reg_file + 1 : rs2_reg_file;
                     mul_bit <= 0;
                     mul_rslt <= 0;
                     mul_state <= MUL_CALC;
@@ -344,7 +344,7 @@ always @(posedge clk) begin
             end
 
             mul_state[MUL_CALC_BIT]: begin
-                mul_rslt <= mul_rslt + ((rs1_mul_rslt&{32{rs2_mul_rslt[mul_bit]}})<<mul_bit);
+                mul_rslt <= mul_rslt + ((rs1_mul_abs&{32{rs2_mul_abs[mul_bit]}})<<mul_bit);
                 mul_bit <= mul_bit + 1'b1;
                 if (&mul_bit) begin
                     mul_state <= MUL_VALID;
@@ -388,14 +388,14 @@ reg [4:0] div_bit;
 wire rs1_signed_div = is_div | is_rem;
 wire rs2_signed_div = is_div | is_rem;
 
-wire [31:0] rs1_div_rslt = (rs1_signed_div & rs1_reg_file[31]) ? ~rs1_reg_file + 1 : rs1_reg_file;  // divident
-wire [31:0] rs2_div_rslt = (rs2_signed_div & rs2_reg_file[31]) ? ~rs2_reg_file + 1 : rs2_reg_file;  // divisor
-wire div_by_zero_err = !rs2_div_rslt;
+wire [31:0] rs1_div_abs = (rs1_signed_div & rs1_reg_file[31]) ? ~rs1_reg_file + 1 : rs1_reg_file;  // divident
+wire [31:0] rs2_div_abs = (rs2_signed_div & rs2_reg_file[31]) ? ~rs2_reg_file + 1 : rs2_reg_file;  // divisor
+wire div_by_zero_err = !rs2_div_abs;
 
 reg [31:0] div_rslt;
 wire [31:0] div_rslt_next = div_rslt << 1;
 wire [31:0] rem_rslt_next = (rem_rslt << 1) | div_rslt[31];
-wire [31:0] rem_rslt_sub_divident = rem_rslt_next - rs2_div_rslt;
+wire [31:0] rem_rslt_sub_divident = rem_rslt_next - rs2_div_abs;
 
 always @(posedge clk) begin
     if (!resetn) begin
@@ -415,7 +415,7 @@ always @(posedge clk) begin
                 div_ready <= 1'b1;
                 if (div_start) begin
                     div_ready <= 1'b0;
-                    div_rslt <= rs1_div_rslt;
+                    div_rslt <= rs1_div_abs;
                     rem_rslt <= 0;
 
                     div_bit <= 0;
