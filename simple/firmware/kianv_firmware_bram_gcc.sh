@@ -9,15 +9,18 @@ LDS_FILE=firmware.ld
 START_FILE=firmware.S
 INCLUDE_DIR=.
 FILE=$1
-OPT_LEVEL=-Os
+if [[ -z $OPT_LEVEL ]]
+then
+  OPT_LEVEL=-Os
+fi
 FILEwoSUFFIX=`echo $FILE | cut -d '.' -f1`
 rm -f firmware.elf
 RVGCC_LIB="/opt/riscv32im/riscv32-unknown-elf/lib/libc.a /opt/riscv32im/riscv32-unknown-elf/lib/libm.a /opt/riscv32im/lib/gcc/riscv32-unknown-elf/last/libgcc.a"
 RVCPPFLAGS="-fno-exceptions -fno-enforce-eh-specs "
 RVLDFLAGS="-m elf32lriscv -b elf32-littleriscv --no-relax "
 RVCFLAGS="-fno-pic -march=rv32im -mabi=ilp32  -fno-stack-protector -w -Wl,--no-relax -ffreestanding -Wl,--strip-debug,-Map=firmware.map,-nostartfiles"
-/opt/riscv32im/bin/riscv32-unknown-elf-gcc $OPT_LEVEL -march=rv32im -mabi=ilp32 -nostartfiles -Wl,-Bstatic,-T,$LDS_FILE,--strip-debug,-Map=firmware.map,--cref -lsupc++ -fno-zero-initialized-in-bss -ffreestanding -o firmware.elf -I$INCLUDE_DIR  $START_FILE $FILE -lm 
-#/opt/riscv32im/bin/riscv32-unknown-elf-gcc $OPT_LEVEL -march=rv32im -mabi=ilp32 -nostartfiles -Wl,-Bstatic,-T,$LDS_FILE,--strip-debug,-Map=firmware.map,--cref -lsupc++ -fno-zero-initialized-in-bss -ffreestanding -o firmware.elf -I$INCLUDE_DIR  $START_FILE $FILE -lm 
+/opt/riscv32im/bin/riscv32-unknown-elf-gcc $OPT_LEVEL -march=rv32im -mabi=ilp32 -nostartfiles -Wl,-Bstatic,-T,$LDS_FILE,--strip-debug,-Map=firmware.map,--cref -lsupc++ -fno-zero-initialized-in-bss -ffreestanding -o firmware.elf -I$INCLUDE_DIR  $START_FILE $FILE -lm
+#/opt/riscv32im/bin/riscv32-unknown-elf-gcc $OPT_LEVEL -march=rv32im -mabi=ilp32 -nostartfiles -Wl,-Bstatic,-T,$LDS_FILE,--strip-debug,-Map=firmware.map,--cref -lsupc++ -fno-zero-initialized-in-bss -ffreestanding -o firmware.elf -I$INCLUDE_DIR  $START_FILE $FILE -lm
 #/opt/riscv32i/bin/riscv32-unknown-elf-as crt0_spiflash.S -o crt0_spiflash.o
 #/opt/riscv32im/bin/riscv32-unknown-elf-gcc $OPT_LEVEL $RVCFLAGS -I$INCLUDE_DIR $FILE $RVGCC_LIB $START_FILE -c
 #/opt/riscv32im/bin/riscv32-unknown-elf-g++ $OPT_LEVEL $RVCFLAGS -I$INCLUDE_DIR $FILE $RVGCC_LIB $START_FILE -c
