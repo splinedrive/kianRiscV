@@ -7,6 +7,14 @@
 #define HRES 96
 #define VRES 64
 
+void fill_oled(int rgb) {
+  for (int y = 0; y < 64; y++) {
+    for (int x = 0; x < 96; x++) {
+      *((volatile uint32_t*) VIDEO) = (((uint32_t) rgb & 0xffff) << 16Ul) | ((x & 0xff) << 8) | (y & 0xff);
+    }
+  }
+}
+
 void main() {
   int i = 0;
   fill_oled(0);
@@ -26,8 +34,6 @@ void main() {
 
     if (div > 15.0) delta = -1, div = 15.0;
     if (div < 1.0)  delta =  1, div = 1.0;
-
-    //fill_oled(0);
   }
 
 
