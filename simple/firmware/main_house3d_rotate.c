@@ -86,12 +86,13 @@ void render_lines(point points [], size_t s, float angle_x, float angle_y, float
     p0 = rotateZ_pivot(&p0, &pivot, angle_z);
     p1 = rotateZ_pivot(&p1, &pivot, angle_z);
 
-    fb_draw_bresenham(framebuffer, p0.x, p0.y, p1.x, p1.y, 0x5555);
+    fb_draw_bresenham(framebuffer, p0.x, p0.y, p1.x, p1.y, RGB256(0x07, 0x03, 0x3));
 
   }
 }
 
 void main() {
+  init_oled8bit_colors();
   fill_oled(framebuffer, 0x0000);
 
   int angle = 0;
@@ -109,7 +110,7 @@ void main() {
     render_lines(right_top, SIZEOF(left_top), angle,angle, angle,  s);
     render_lines(roof, SIZEOF(roof), angle,angle, angle,  s);
 
-    oled_show_fb(framebuffer);
+    oled_show_fb_8or16(framebuffer, 1);
     angle += delta_angle;
 
     if (angle >= 359) angle = 0;

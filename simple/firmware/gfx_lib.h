@@ -7,6 +7,10 @@
 
 #define SIZEOF(arr) sizeof(arr) / sizeof(*arr)
 
+
+#define RGB256(R, G, B)  ((R & 0x07)<<5) | ((G  & 0x7) << 2) | (B & 0x03) // rrrgggbb
+#define RGB65k(R, G, B) ((R & 0x1f)<<11) | ((G & 0x3f)<<5) | (B & 0x1f)  // rrrrrggggggbbbbb
+
 typedef int SCALAR;
 typedef struct {
   SCALAR x;
@@ -14,7 +18,7 @@ typedef struct {
   SCALAR z;
 } point;
 
-uint16_t framebuffer[96*64];
+uint16_t framebuffer[HRES*VRES];
 
 /* fast sin/cosine by https://www.atwillys.de/content/cc/sine-lookup-for-embedded-in-c/ */
 #define Q15 (1.0/(float)((1<<15)-1))
@@ -107,7 +111,7 @@ int16_t cos1(int16_t angle)
 
 /* 1: data, 0: cmd */
 void oled_spi_tx (uint8_t tx, uint8_t data_cmd) {
-  *((volatile uint32_t *) VIDEO_RAW) = (data_cmd << 8) | tx;
+  *((volatile uint32_t *) VIDEO_RAW) = ((data_cmd & 0x01) << 8) | tx;
 }
 
 void oled_max_window() {
@@ -115,7 +119,7 @@ void oled_max_window() {
   oled_spi_tx(0x75, 0); oled_spi_tx(0, 0); oled_spi_tx(0x3f, 0);
 }
 
-void oled_show_fb(uint16_t *framebuffer) {
+void oled_show_fb_8or16(uint16_t *framebuffer, int _8bit) {
   oled_spi_tx(0x15, 0); oled_spi_tx(0, 0); oled_spi_tx(0x0, 0);
   oled_spi_tx(0x75, 0); oled_spi_tx(0, 0); oled_spi_tx(0x00, 0);
 
@@ -125,13 +129,57 @@ void oled_show_fb(uint16_t *framebuffer) {
   for (int i = 0; i < (VRES*HRES); i++) {
     unsigned char buf[2];
 
-    buf[0] = (framebuffer[i] >> 8) & 0xff;
-    buf[1] = (framebuffer[i]) & 0xff;
-    oled_spi_tx(buf[0], 1);
-    oled_spi_tx(buf[1], 1);
-  }
+    if (!_8bit) {
+      buf[0] = (framebuffer[i] >> 8) & 0xff;
+      buf[1] = (framebuffer[i]) & 0xff;
+      oled_spi_tx(buf[0], 1);
+      oled_spi_tx(buf[1], 1);
+    } else {
+      uint16_t buf = framebuffer[i];
+      oled_spi_tx(buf & 0xff, 1);
+    }
 
+  }
   oled_max_window();
+}
+
+/* default 16 bit */
+void oled_show_fb(uint16_t *framebuffer) {
+  oled_show_fb_8or16(framebuffer, 0);
+}
+
+/* 
+ * copied from 
+ * https://github.com/peterhinch/micropython-nano-gui/blob/master/drivers/ssd1331/ssd1331.py 
+ * */
+char oled_8bit_init_seq[] = {
+  0xae,       //   display off (sleep mode)
+  0xa0, 0x32, // 256 color RGB, horizontal RAM increment
+  0xa1, 0x00, // Startline row 0
+  0xa2, 0x00, // Vertical offset 0
+  0xa4,       // Normal display
+  0xa8, 0x3f, // Set multiplex ratio
+  0xad, 0x8e, // External supply
+  0xb0, 0x0b, // Disable power save mode
+  0xb1, 0x31, // Phase period
+  0xb3, 0xf0, // Oscillator frequency
+  0x8a, 0x64, 0x8b, 0x78, 0x8c, 0x64, // Precharge
+  0xbb, 0x3a, // Precharge voltge
+  0xbe, 0x3e, // COM deselect level
+  0x87, 0x06, // master current attenuation factor
+  0x81, 0x91, // contrast for all color "A" segment
+  0x82, 0x50, // contrast for all color "B" segment
+  0x83, 0x7d, // contrast for all color "C" segment
+  0xaf       // Display on
+};
+
+void init_oled8bit_colors() {
+  for (int i = 0; i < sizeof(oled_8bit_init_seq)/
+      sizeof(oled_8bit_init_seq[0]); i++) {
+
+    char p = oled_8bit_init_seq[i];
+    oled_spi_tx(p, 0);
+  }
 }
 
 
