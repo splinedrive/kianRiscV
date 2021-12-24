@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# if you want to create firmware rom stored in bram
+# copy firmware.hex into socs folder and
+# disable FLASH_EXECUTION defines in bram and soc file
 #LDS_FILE=spi_nor.ld
 #LDS_FILE=spi_nor2sram.ld
 #LDS_FILE=spi_nor2bram.ld
