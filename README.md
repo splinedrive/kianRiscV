@@ -16,7 +16,7 @@ https://www.edx.org/course/building-a-risc-v-cpu-core
 
 ## Supported FPGAs
 I have some example socs implemented:
-icoboard, ulx3s, icebreak, icefun, breakout and not checkedin yet: arty7, gowin, deca, colorlight, blackicemx
+icoboard, ulx3s, icebreak, icefun, breakout and not checkedin yet: arty7, gowin, deca, colorlight, blackicemx, colorlight i5
 ```bash
 cd simple/socs\
 ./build_fpga.sh\
@@ -61,6 +61,7 @@ ico|ulx3s|ice|fun|breakout <*.ld> <*.c>
 spi_nor2bram_fun.ld # boot from spi-nor icefun and copy code to bram\
 spi_nor2bram.ld # boot from spi-nor icebreaker, breakout, icoboard and copy to bram\
 spi_nor2bram_ulx3s.ld # boot from spi-nor ulx3s and copy to bram\
+spi_nor2bram_colori5.ld # boot from spi-nor colorlighti5 and copy to bram\
 spi_nor2spram.ld # boot from spi-nor icebreaker and copy to spram\
 spi_nor2sram.ld # boot from spi-nor and copy to sram icoboard\
 spi_nor_fun.ld # boot and execute instructions only from spi-nor on icefun\
@@ -74,6 +75,8 @@ spi_nor.ld # boot and execute instructions only from spi-nor all boards, exclude
 ./flash_firmware.sh spi_nor2sram.ld  main_raytracer.c #with oled ssd1331\
 #example rayracing on ulx3s:\
 ./flash_firmware.sh spi_nor2bram_ulx3s.ld  main_raytracer.c #with oled ssd1331\
+#example rayracing on colorlighti5:\
+./flash_firmware.sh spi_nor2bram_colori5.ld  main_raytracer.c #with oled ssd1331\
 #example rayracing on breakout:\
 ./flash_firmware.sh spi_nor.ld  main_raytracer.c #with oled ssd1331\
 #example rayracing on breakout:\
