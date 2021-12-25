@@ -315,6 +315,11 @@ always @(*) begin
         /* <--- */
         mem_ready         = oled_ready;
         mem_valid         = oled_valid;
+    end else if (mem_addr == 32'h 30_00_0010) begin
+        /* get system frequency */
+        mem_dout         = SYSTEM_CLK;
+        mem_ready        = 1'b1;
+        mem_valid        = 1'b1;
     end else begin
         /* default */
         if (~mem_wmask & ~mem_rd) begin

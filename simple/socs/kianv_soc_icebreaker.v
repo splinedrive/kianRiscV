@@ -300,15 +300,20 @@ always @(*) begin
         /* <--- */
         mem_ready         = oled_ready;
         mem_valid         = oled_valid;
-    end else begin
+      end else if (mem_addr == 32'h 30_00_0010) begin
+        /* get system frequency */
+        mem_dout         = SYSTEM_CLK;
+        mem_ready        = 1'b1;
+        mem_valid        = 1'b1;
+      end else begin
         /* default */
         if (!mem_wmask & ~mem_rd) begin
-            mem_ready = 1'b1;
-            mem_valid = 1'b1;
+          mem_ready = 1'b1;
+          mem_valid = 1'b1;
         end
-    end
+      end
 
-end
+    end
 
 `ifdef SIM
 my_tx_uart #(.SYSTEM_CLK(50_000_000), .BAUDRATE(2_000_000))

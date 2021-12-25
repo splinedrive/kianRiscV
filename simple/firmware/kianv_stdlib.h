@@ -1,9 +1,13 @@
 #include <stdint.h>
-#define UART_TX 0x30000000
-#define UART_READY 0x30000000
-#define VIDEOENABLE (volatile uint32_t*) 0x30000008
-#define VIDEO      (volatile uint32_t *) 0x30000008
-#define VIDEO_RAW  (volatile uint32_t *) 0x3000000C
+
+/* kian hardware register */
+#define IO_BASE 0x30000000
+#define UART_TX     (volatile uint32_t *) (IO_BASE + 0x0000)
+#define UART_READY  (volatile uint32_t *) (IO_BASE + 0x0000)
+#define VIDEOENABLE (volatile uint32_t *) (IO_BASE + 0x0008)
+#define VIDEO       (volatile uint32_t *) (IO_BASE + 0x0008)
+#define VIDEO_RAW   (volatile uint32_t *) (IO_BASE + 0x000C)
+#define CPU_FREQ    (volatile uint32_t *) (IO_BASE + 0x0010)
 
 //#define RV32_FASTCODE __attribute((section(".fastcode")))
 #define RV32_FASTCODE
@@ -33,13 +37,40 @@ uint64_t get_cycle() {
 
   return ((uint64_t)(tmph0)<<32) + tmpl0;
   //  uint64_t rdinstret = ((uint64_t)(tmph1)<<32) + tmpl1;
+}
 
+inline uint32_t get_cpu_freq() {
+  return *((volatile uint32_t*) CPU_FREQ);
 }
 
 void wait_cycles(uint64_t wait) {
   uint64_t lim = get_cycle() + wait;
   while (get_cycle() < lim)
     ;
+}
+
+void usleep(uint32_t us) {
+  if (us) wait_cycles(us * (get_cpu_freq() / 1000000));
+}
+
+void msleep(uint32_t ms) {
+  if (ms) wait_cycles(ms * get_cpu_freq() / 1000);
+}
+
+void sleep(uint32_t sec) {
+  if (sec) wait_cycles(sec * get_cpu_freq());
+}
+
+uint64_t nanoseconds() {
+  return get_cycle() / (uint64_t) (get_cpu_freq() / 1000000);
+}
+
+uint64_t milliseconds() {
+  return get_cycle() / (uint64_t) (get_cpu_freq() / 1000);
+}
+
+uint64_t seconds() {
+  return get_cycle() / (uint64_t) (get_cpu_freq());
 }
 
 void putchar(char c) {
@@ -132,4 +163,3 @@ void draw_bresenham(volatile Pixel *fb, int x0, int y0, int x1, int y1, short co
     if (e2 <= dx) { err += dx; y0 += sy; } /* e_xy+e_y < 0 */
   }
 }
-

@@ -69,7 +69,7 @@
    assign rxd = uart_tx;
 
    //localparam SYSTEM_CLK = 110_000_000;
-   localparam SYSTEM_CLK = 90_000_000;
+   localparam SYSTEM_CLK = 120_000_000;
 
 
    //wire clk = clk_25mhz;
@@ -284,6 +284,11 @@
    /* <--- */
    mem_ready         = oled_ready;
    mem_valid         = oled_valid;
+ end else if (mem_addr == 32'h 30_00_0010) begin
+   /* get system frequency */
+   mem_dout         = SYSTEM_CLK;
+   mem_ready        = 1'b1;
+   mem_valid        = 1'b1;
  end else begin
    /* default */
    if (~mem_wmask & ~mem_rd) begin
@@ -333,7 +338,8 @@ spi_flash_mem spi_flash_mem_i(
   .spi_sclk(spi_mem_flash_sclk)
 );
 
-oled_ssd1331 #(.SYSTEM_CLK(SYSTEM_CLK))
+oled_ssd1331 #(.SYSTEM_CLK(SYSTEM_CLK),
+               .SPI_TRANSFER_RATE(30_000_000))
 oled_ssd1331_i(
   .clk(clk),
   .resetn(resetn),

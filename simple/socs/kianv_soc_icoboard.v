@@ -19,6 +19,7 @@
 `default_nettype none
 `timescale 1ns/1ps
 `define FAST_CPU
+ localparam SYSTEM_CLK = 35_000_000;
 `ifndef SIM
 `define FLASH_EXECUTION  // start from NOR-Flash
 `endif
@@ -454,6 +455,11 @@ always @(*) begin
         mem_ready         = oled_ready;
         mem_valid         = oled_valid;
 `endif
+    end else if (mem_addr == 32'h 30_00_0010) begin
+      /* get system frequency */
+      mem_dout         = SYSTEM_CLK;
+      mem_ready        = 1'b1;
+      mem_valid        = 1'b1;
     end else begin
         /* default */
         if (!mem_wmask & ~mem_rd) begin
@@ -468,9 +474,9 @@ end
 my_tx_uart #(.SYSTEM_CLK(50_000_000), .BAUDRATE(2_000_000))
 `else // SIM
 `ifdef FAST_CPU
-my_tx_uart #(.SYSTEM_CLK(35_000_000), .BAUDRATE(9600 /*300*/))
+my_tx_uart #(.SYSTEM_CLK(SYSTEM_CLK), .BAUDRATE(115200))
 `else  // FAST_CPU
-           my_tx_uart #(.SYSTEM_CLK(25_000_000), .BAUDRATE(9600))
+           my_tx_uart #(.SYSTEM_CLK(25_000_000), .BAUDRATE(115200))
 `endif // FAST_CPU
 `endif // SIM
            my_tx_uart_i(
@@ -699,7 +705,7 @@ sram sram_i(
      );
 
 `ifdef FAST_CPU
-oled_ssd1331 #(.SYSTEM_CLK(35_000_000))
+oled_ssd1331 #(.SYSTEM_CLK(SYSTEM_CLK))
 `else
 oled_ssd1331 #(.SYSTEM_CLK(25_000_000))
 `endif
