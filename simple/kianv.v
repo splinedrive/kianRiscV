@@ -262,15 +262,13 @@ wire [31:0] alu_rslt =
      is_andi                        ? rs1_reg_file & imm :
      is_ori                         ? rs1_reg_file | imm :
      is_xori                        ? rs1_reg_file ^ imm :
-     is_slli                        ? rs1_reg_file << imm[4:0] :
-     is_srli                        ? rs1_reg_file >> imm[4:0] :
+     is_slli | is_sll               ? rs1_reg_file << ((is_slli) ? imm[4:0] : rs2_reg_file[4:0]):
+     is_srli | is_srl               ? rs1_reg_file >> ((is_srli) ? imm[4:0] : rs2_reg_file[4:0]):
      is_and                         ? rs1_reg_file & rs2_reg_file :
      is_or                          ? rs1_reg_file | rs2_reg_file :
      is_xor                         ? rs1_reg_file ^ rs2_reg_file :
      is_add                         ? rs1_reg_file + rs2_reg_file :
      is_sub                         ? rs1_reg_file - rs2_reg_file :
-     is_sll                         ? rs1_reg_file << rs2_reg_file[4:0] :
-     is_srl                         ? rs1_reg_file >> rs2_reg_file[4:0] :
      is_sltu                        ? sltu_rslt :
      is_sltiu                       ? sltiu_rslt :
      is_lui                         ? {imm[31:12], 12'b0} :
@@ -278,9 +276,9 @@ wire [31:0] alu_rslt =
      is_jal                         ? pc + 32'd4 :
      is_jalr                        ? pc + 32'd4 :
      is_slt                         ? ((rs1_reg_file[31] == rs2_reg_file[31]) ?
-                                       sltu_rslt : {31'b0, rs1_reg_file[31]} ) :
+                                       sltu_rslt : {31'b0, rs1_reg_file[31]}) :
      is_slti                        ? ((rs1_reg_file[31] == imm[31]) ?
-                                       sltiu_rslt : {31'b0, rs1_reg_file[31]} ) :
+                                       sltiu_rslt : {31'b0, rs1_reg_file[31]}) :
      is_sra                         ? sra_rslt[31:0]  :
      is_srai                        ? srai_rslt[31:0] :
 `ifdef RV32M
