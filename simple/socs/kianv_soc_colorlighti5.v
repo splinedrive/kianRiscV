@@ -68,8 +68,8 @@
    wire uart_tx;
    assign rxd = uart_tx;
 
-   //localparam SYSTEM_CLK = 110_000_000;
-   localparam SYSTEM_CLK = 120_000_000;
+   //localparam SYSTEM_CLK = 120_000_000;  // u can try
+   localparam SYSTEM_CLK = 80_000_000;
 
 
    //wire clk = clk_25mhz;
@@ -338,8 +338,9 @@ spi_flash_mem spi_flash_mem_i(
   .spi_sclk(spi_mem_flash_sclk)
 );
 
-oled_ssd1331 #(.SYSTEM_CLK(SYSTEM_CLK),
-               .SPI_TRANSFER_RATE(30_000_000))
+oled_ssd1331 #(.SYSTEM_CLK(SYSTEM_CLK))
+//oled_ssd1331 #(.SYSTEM_CLK(SYSTEM_CLK),
+//               .SPI_TRANSFER_RATE(30_000_000))
 oled_ssd1331_i(
   .clk(clk),
   .resetn(resetn),
