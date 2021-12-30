@@ -252,9 +252,8 @@ wire is_load  = is_lb | is_lbu | is_lh | is_lhu | is_lw;
 wire [31:0] sltu_rslt  = {31'b0, rs1_reg_file < rs2_reg_file};
 wire [31:0] sltiu_rslt = {31'b0, rs1_reg_file < imm};
 
-wire [63:0] sext_rs1   = {{32{rs1_reg_file[31]}}, rs1_reg_file};
-wire [63:0] sra_rslt   = sext_rs1 >> rs2_reg_file[4:0];
-wire [63:0] srai_rslt  = sext_rs1 >> imm[4:0];
+wire [63:0] sext_rs1        = {{32{rs1_reg_file[31]}}, rs1_reg_file};
+wire [63:0] sra_srai_rslt   = sext_rs1 >> ((is_srai) ? imm[4:0] : rs2_reg_file[4:0]);
 
 // alu, straight :)
 wire [31:0] alu_rslt =
@@ -279,8 +278,7 @@ wire [31:0] alu_rslt =
                                        sltu_rslt : {31'b0, rs1_reg_file[31]}) :
      is_slti                        ? ((rs1_reg_file[31] == imm[31]) ?
                                        sltiu_rslt : {31'b0, rs1_reg_file[31]}) :
-     is_sra                         ? sra_rslt[31:0]  :
-     is_srai                        ? srai_rslt[31:0] :
+     is_sra | is_srai               ? sra_srai_rslt[31:0] :
 `ifdef RV32M
      is_mul   | is_mulh |
      is_mulsu | is_mulu             ? mul_rslt[31:0]  :
