@@ -80,6 +80,20 @@ static void printf_d(int val)
 		printf_c(*(--p));
 }
 
+static void printf_u(int val)
+{
+	char buffer[32];
+	char *p = buffer;
+
+  val = val >= 0 ? val : -val;
+	while (val || p == buffer) {
+		*(p++) = '0' + val % 10;
+		val = val / 10;
+	}
+	while (p != buffer)
+		printf_c(*(--p));
+}
+
 int printf(const char *format, ...)
 {
 	int i;
@@ -102,18 +116,23 @@ int printf(const char *format, ...)
 					printf_d(va_arg(ap,int));
 					break;
 				}
+				if (format[i] == 'u') {
+					printf_u(va_arg(ap,int));
+					break;
+				}
 			}
 		} else
 			printf_c(format[i]);
 
 	va_end(ap);
+  return 0;
 }
 
 void *memcpy(void *aa, const void *bb, long n)
 {
 	// printf("**MEMCPY**\n");
-	char *a = aa;
-	const char *b = bb;
+	char *a = (char *) aa;
+	const char *b = (const char *) bb;
 	while (n--) *(a++) = *(b++);
 	return aa;
 }

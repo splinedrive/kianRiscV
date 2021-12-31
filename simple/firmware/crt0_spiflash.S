@@ -27,10 +27,10 @@ addi sp, sp, %lo(__stacktop);
 #lui sp,      %hi(0x10000000 + 1024*1024);
 #addi sp, sp, %lo(0x10000000 + 1024*1024);
 
-//#ifdef ULX3S
+#ifdef ULX3S
 #lui sp,      %hi(0x00000000 + 393216/4)
 #addi sp, sp, %lo(0x00000000 + 393216/4)
-//#endif
+#endif
 
 # zero-init bss section:
 # clears from _sbss to _ebss

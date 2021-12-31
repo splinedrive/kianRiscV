@@ -5,7 +5,7 @@
 #define UART_READY (volatile uint32_t *) 0x30000000
 #define VIDEO      (volatile uint32_t *) 0x30000008
 
- uint64_t get_cycle() {
+ uint64_t get_cycles() {
   volatile uint32_t tmph0;
   volatile uint32_t tmpl0;
 
@@ -18,8 +18,8 @@
 }
 
  void wait_cycles(uint64_t wait) {
-  uint64_t lim = get_cycle() + wait;
-  while (get_cycle() < lim)
+  uint64_t lim = get_cycles() + wait;
+  while (get_cycles() < lim)
     ;
 }
 

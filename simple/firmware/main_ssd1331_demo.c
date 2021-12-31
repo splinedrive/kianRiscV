@@ -67,7 +67,7 @@ void print_dec64(uint64_t val) {
   }
 }
 
-inline uint64_t get_cycle() {
+inline uint64_t get_cycles() {
   volatile uint32_t tmph0;
   volatile uint32_t tmpl0;
 
@@ -80,8 +80,8 @@ inline uint64_t get_cycle() {
 }
 
 inline void wait_cycles(uint64_t wait) {
-  uint64_t lim = get_cycle() + wait;
-  while (get_cycle() < lim)
+  uint64_t lim = get_cycles() + wait;
+  while (get_cycles() < lim)
     ;
 }
 

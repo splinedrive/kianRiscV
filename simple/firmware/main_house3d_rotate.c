@@ -102,6 +102,7 @@ void main() {
   float delta_scale = 0.1;//0.8; /* speedup scale */
 
   for (;;) {
+    //uint32_t start = milliseconds();
     render_lines(front, SIZEOF(front), angle, angle, angle, s);
     render_lines(back, SIZEOF(back), angle,angle, angle,  s);
     render_lines(left_bottom, SIZEOF(left_bottom), angle,angle, angle,  s);
@@ -119,6 +120,10 @@ void main() {
     s += delta_scale;
 
     fill_oled(framebuffer, 0);
+    //uint32_t stop = milliseconds();
+    //printf("%d\n", stop - start);
+      IO_OUT(GPIO_OUTPUT, 0);
+      gpio_set_value(angle % 8, 1);
 
   }
 
