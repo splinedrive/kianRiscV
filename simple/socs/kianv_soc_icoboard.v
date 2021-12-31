@@ -18,6 +18,7 @@
  */
 `default_nettype none
 `timescale 1ns/1ps
+ `include "kianv_soc_hw_reg.v"
 `define FAST_CPU
  localparam SYSTEM_CLK = 35_000_000;
 `ifndef SIM
@@ -96,6 +97,8 @@ module kianv_soc(
            output video_b2,
            output video_b3,
 
+
+           /*
            output video_g0,
            output video_g1,
            output video_g2,
@@ -104,6 +107,8 @@ module kianv_soc(
            output video_r1,
            output video_r2,
            output video_r3,
+           */
+           inout wire [GPIO_NR -1: 0] gpio,
 
            output wire pmod2_1,
            output wire pmod2_2,
@@ -137,6 +142,7 @@ assign video_b1 = oled_rst;
 assign video_de = oled_vccen;
 assign video_vs = oled_pmoden;
 
+/*
 assign video_r3 = oled_cs;
 assign video_r1 = oled_mosi;
 assign video_g1 = oled_sck;
@@ -144,6 +150,7 @@ assign video_r2 = oled_dc;
 assign video_r0 = oled_rst;
 assign video_g2 = oled_vccen;
 assign video_g0 = oled_pmoden;
+*/
 
 `endif
 
@@ -207,6 +214,9 @@ always @(posedge clk) begin
         reset_cnt <= reset_cnt + {14'b0, !resetn};
 end
 `endif
+
+localparam GPIO_NR = 8;
+`include "gpio.v"
 
 localparam BRAM_SIZE = 8192;
 localparam FLASH_PC_START = 32'h 20_000_000 + (1024*64*16);
@@ -380,6 +390,10 @@ always @(*) begin
     oled_rgb                 = 0;
     oled_setpixel_raw8tx     = 0;
     oled_strobe              = 0;
+    // gpio
+    gpio_output_wr               = 1'b0;
+    gpio_output_en_wr            = 1'b0;
+    gpio_output_val_wr           = 1'b0;
 `endif
 
     /* ram */
@@ -454,19 +468,48 @@ always @(*) begin
         /* <--- */
         mem_ready         = oled_ready;
         mem_valid         = oled_valid;
+ end else if (mem_addr == GPIO_DIR) begin
+   if (|mem_wmask) begin
+     gpio_output_en_wr   = 1'b1;
+   end
+   if (mem_rd) begin
+     mem_dout = {24'hz, gpio_output_en};
+   end
+   mem_ready            = 1'b1;
+   mem_valid            = 1'b1;
+   /*
+ end else if (mem_addr == GPIO_PULLUP) begin
+   mem_ready        = 1'b1;
+   mem_valid        = 1'b1;
+   */
+ end else if (mem_addr == GPIO_OUTPUT) begin
+   if (|mem_wmask) begin
+     gpio_output_val_wr   = 1'b1;
+   end
+   if (mem_rd) begin
+     mem_dout = {24'hz, gpio_output_val};
+   end
+   mem_ready            = 1'b1;
+   mem_valid            = 1'b1;
+ end else if (mem_addr == GPIO_INPUT) begin
+   if (mem_rd) begin
+     mem_dout = {24'hz, gpio_in};
+   end
+   mem_ready            = 1'b1;
+   mem_valid            = 1'b1;
 `endif
-    end else if (mem_addr == 32'h 30_00_0010) begin
-      /* get system frequency */
-      mem_dout         = SYSTEM_CLK;
-      mem_ready        = 1'b1;
-      mem_valid        = 1'b1;
-    end else begin
-        /* default */
-        if (!mem_wmask & ~mem_rd) begin
-            mem_ready = 1'b1;
-            mem_valid = 1'b1;
-        end
-    end
+ end else if (mem_addr == CPU_FREQ_REG) begin
+   /* get system frequency */
+   mem_dout         = SYSTEM_CLK;
+   mem_ready        = 1'b1;
+   mem_valid        = 1'b1;
+ end else begin
+   /* default */
+   if (!mem_wmask & ~mem_rd) begin
+     mem_ready = 1'b1;
+     mem_valid = 1'b1;
+   end
+ end
 
 end
 

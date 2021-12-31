@@ -103,13 +103,31 @@ set_io video_b1 P9
 set_io video_ck G5
 set_io video_b2 N9
 set_io video_b3 L9
+#set_io gpio[0] N7
+#set_io gpio[1] N6
+#set_io gpio[2] M8
+#set_io gpio[3] L7
+#set_io gpio[4] P9
+#set_io gpio[5] G5
+#set_io gpio[6] N9
+#set_io gpio[7] L9
+
 
 # pmod4
-set_io video_g0 T9
-set_io video_g1 R10
-set_io video_g2 T10
-set_io video_g3 T11
-set_io video_r0 T13
-set_io video_r1 T14
-set_io video_r2 R14
-set_io video_r3 T15
+#set_io video_g0 T9
+#set_io video_g1 R10
+#set_io video_g2 T10
+#set_io video_g3 T11
+#set_io video_r0 T13
+#set_io video_r1 T14
+#set_io video_r2 R14
+#set_io video_r3 T15
+
+set_io -pullup yes gpio[0] T15
+set_io -pullup yes gpio[1] T14
+set_io -pullup yes gpio[2] T11
+set_io -pullup yes gpio[3] R10
+set_io -pullup yes gpio[4] R14
+set_io -pullup yes gpio[5] T13
+set_io -pullup yes gpio[6] T10
+set_io -pullup yes gpio[7] T9

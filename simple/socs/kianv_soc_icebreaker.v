@@ -66,14 +66,7 @@ module kianv_soc(
            output wire FLASH_IO2,
            output wire FLASH_IO3,
 
-           output wire   P1A1,
-           output wire   P1A2,
-           output wire   P1A3,
-           output wire   P1A4,
-           output wire   P1A7,
-           output wire   P1A8,
-           output wire   P1A9,
-           output wire   P1A10,
+           inout  wire   [GPIO_NR -1: 0] gpio,
 
            output wire   P1B1,
            output wire   P1B2,
@@ -86,13 +79,14 @@ module kianv_soc(
 
        );
 
+`include "kianv_soc_hw_reg.v"
 
 localparam SYSTEM_CLK = 30_000_000;
 
 assign FLASH_IO2 = 1'b1;
 assign FLASH_IO3 = 1'b1;
 
-assign {P1A1, P1A2, P1A3, P1A4, P1A7, P1A8, P1A9, P1A10} = {8{led_pwm}} & pc[17:10];
+//assign {P1A1, P1A2, P1A3, P1A4, P1A7, P1A8, P1A9, P1A10} = {8{led_pwm}} & pc[17:10];
 assign {P1B1, P1B2, P1B3, P1B4, P1B7, P1B8, P1B9, P1B10} = {8{led_pwm}} & pc[9:2];
 
 wire clk;// = clk_12mhz;
@@ -154,6 +148,9 @@ always @(posedge clk) begin
     reset_cnt <= reset_cnt + {14'b0, !resetn};
 end
 `endif
+
+localparam GPIO_NR = 8;
+`include "gpio.v"
 
 localparam BRAM_SIZE = 8192;
 localparam FLASH_PC_START = 32'h 20_000_000 + (1024*64*16);  // 1M
@@ -240,6 +237,11 @@ always @(*) begin
     oled_setpixel_raw8tx     = 0;
     oled_strobe              = 0;
 
+    // gpio
+    gpio_output_wr               = 1'b0;
+    gpio_output_en_wr            = 1'b0;
+    gpio_output_val_wr           = 1'b0;
+
     /* ram */
     if ((mem_addr >= 0 && mem_addr < BRAM_SIZE)) begin
         /* ---> */
@@ -300,11 +302,41 @@ always @(*) begin
         /* <--- */
         mem_ready         = oled_ready;
         mem_valid         = oled_valid;
-      end else if (mem_addr == 32'h 30_00_0010) begin
+      end else if (mem_addr == CPU_FREQ_REG) begin
         /* get system frequency */
         mem_dout         = SYSTEM_CLK;
         mem_ready        = 1'b1;
         mem_valid        = 1'b1;
+      end else if (mem_addr == GPIO_DIR) begin
+        if (|mem_wmask) begin
+          gpio_output_en_wr   = 1'b1;
+        end
+        if (mem_rd) begin
+          mem_dout = {24'hz, gpio_output_en};
+        end
+        mem_ready            = 1'b1;
+        mem_valid            = 1'b1;
+        /*
+      end else if (mem_addr == GPIO_PULLUP) begin
+        mem_ready        = 1'b1;
+        mem_valid        = 1'b1;
+        */
+     end else if (mem_addr == GPIO_OUTPUT) begin
+       if (|mem_wmask) begin
+         gpio_output_val_wr   = 1'b1;
+       end
+       if (mem_rd) begin
+         mem_dout = {24'hz, gpio_output_val};
+       end
+       mem_ready            = 1'b1;
+       mem_valid            = 1'b1;
+     end else if (mem_addr == GPIO_INPUT) begin
+       if (mem_rd) begin
+         mem_dout = {24'hz, gpio_in};
+       end
+       mem_ready            = 1'b1;
+       mem_valid            = 1'b1;
+
       end else begin
         /* default */
         if (!mem_wmask & ~mem_rd) begin

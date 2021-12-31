@@ -18,37 +18,19 @@
  */
 `default_nettype none
 `timescale 1ns/1ps
-`ifndef SIM
+ `include "kianv_soc_hw_reg.v"
 `define FLASH_EXECUTION  // start from NOR-Flash
-`endif
 `define RV32M
 `define CSR_TIME_COUNTER
-`ifdef SIM
-module kianv_soc;
-wire   uart_tx;
-
-wire   oled_cs;
-wire   oled_mosi;
-wire   oled_sck;
-wire   oled_dc;
-wire   oled_rst;
-wire   oled_vccen;
-wire   oled_pmoden;
-
-wire         spi_mem_flash_cs;
-wire         spi_mem_flash_miso = cycle_cnt[4];
-wire         spi_mem_flash_mosi;
-wire         spi_mem_flash_sclk;
-
-`else
 module kianv_soc_ulx3s(
            input wire clk_25mhz,
            output wire ftdi_rxd,
            output wire [7:0] led,
 
            output wire wifi_en,
-           output wire [27:0] gp,
-           output wire [27:0] gn,
+           inout wire [GPIO_NR -1:0] gpio,
+           output wire [24:21] gn,
+           output wire [24:21] gp,
 
            output wire flash_csn,
            input  wire flash_miso,
@@ -82,7 +64,9 @@ wire uart_tx;
 assign ftdi_rxd = uart_tx;
 
 //localparam SYSTEM_CLK = 110_000_000;
-localparam SYSTEM_CLK = 90_000_000;
+localparam SYSTEM_CLK = 80_000_000;
+localparam GPIO_NR = 8;
+`include "gpio.v"
 
 
 //wire clk = clk_25mhz;
@@ -106,7 +90,6 @@ assign gp[23] = oled_rst;
 assign gp[22] = oled_vccen;
 assign gp[21] = oled_pmoden;
 
-
 wire spi_mem_flash_sclk;
 wire spi_mem_flash_cs;
 wire spi_mem_flash_miso;
@@ -122,44 +105,13 @@ assign flash_clk = spi_mem_flash_sclk;
 assign flash_miso = spi_mem_flash_miso;
 assign flash_mosi = spi_mem_flash_mosi;
 
-assign {gp[0], gn[0], gp[1], gn[1], gp[2], gn[2], gp[3], gn[3]} = {8{led_pwm}} & pc[17:10];
-assign {gp[7], gn[7], gp[8], gn[8], gp[9], gn[9], gp[10], gn[10]} = {8{led_pwm}} & pc[9:2];
+assign led = pc[9:2];
 
-assign led = {8{led_pwm}} & pc[9:2];
+//assign {gp[0], gn[0], gp[1], gn[1], gp[2], gn[2], gp[3], gn[3]} = {8{led_pwm}} & pc[17:10];
+//assign {gp[7], gn[7], gp[8], gn[8], gp[9], gn[9], gp[10], gn[10]} = {8{led_pwm}} & pc[9:2];
+
 
 localparam PWM_MSB = 13;
-
-reg [PWM_MSB:0] pwm = 0;
-always @(posedge clk) pwm <= pwm[PWM_MSB-1:0] + 100;  // intensity;
-
-wire led_pwm = pwm[PWM_MSB];
-`endif
-
-`ifdef SIM
-reg clk;
-reg resetn = 0;
-
-reg [31:0] cycle_cnt = 0;
-
-always @(posedge clk) begin
-    cycle_cnt <= cycle_cnt + 1;
-end
-
-`ifndef VERILATOR
-always  #(10) clk = (clk === 1'b0);
-initial begin
-    $dumpfile("dump.vcd");
-    $dumpvars(0, kianv_soc);
-    //$dumpon;
-    $dumpoff;
-    resetn = 1'b0;
-    repeat(2) @(posedge clk);
-    resetn = 1'b1;
-    //    repeat(1000000000) @(posedge clk);
-    //   $finish;
-end
-`endif
-`else
 
 // reset
 reg [15:0] reset_cnt = 0;
@@ -167,7 +119,6 @@ wire resetn = &reset_cnt;
 always @(posedge clk) begin
     reset_cnt <= reset_cnt + {14'b0, !resetn};
 end
-`endif
 
 localparam BRAM_SIZE = 393216/4;  // 98304 word
 localparam FLASH_PC_START = 32'h 20_000_000 + (1024*64*16);  // 1M
@@ -222,119 +173,150 @@ wire         oled_valid;
 
 
 always @(*) begin
-    // bram
-    mem_bram_wmask    = 0;
-    mem_bram_rd       = 1'b0;
-    mem_bram_addr     = 0;
-    mem_bram_data_in  = 0;
+  // bram
+  mem_bram_wmask    = 0;
+  mem_bram_rd       = 1'b0;
+  mem_bram_addr     = 0;
+  mem_bram_data_in  = 0;
 
-    // spi flash memory
-    mem_spi_addr      = 0;
-    mem_spi_wmask     = 0;
-    mem_spi_rd        = 1'b0;
-    mem_spi_cs        = 1'b0;
+  // spi flash memory
+  mem_spi_addr      = 0;
+  mem_spi_wmask     = 0;
+  mem_spi_rd        = 1'b0;
+  mem_spi_cs        = 1'b0;
 
-    // uart
-    uart_strobe       = 1'b0;
-    uart_tx_data      = 0;
+  // uart
+  uart_strobe       = 1'b0;
+  uart_tx_data      = 0;
 
-    // spram
-    mem_spram_addr     = 0;
-    mem_spram_wmask    = 0;
-    mem_spram_data_in  = 0;
+  // spram
+  mem_spram_addr     = 0;
+  mem_spram_wmask    = 0;
+  mem_spram_data_in  = 0;
 
-    // ctrl signals
-    mem_dout      = 0;
-    mem_valid         = 1'b0;
-    mem_ready         = 1'b0;
+  // ctrl signals
+  mem_dout      = 0;
+  mem_valid         = 1'b0;
+  mem_ready         = 1'b0;
 
-    oled_x_dc                = 0;
-    oled_y_data              = 0;
-    oled_rgb                 = 0;
-    oled_setpixel_raw8tx     = 0;
-    oled_strobe              = 0;
+  oled_x_dc                = 0;
+  oled_y_data              = 0;
+  oled_rgb                 = 0;
+  oled_setpixel_raw8tx     = 0;
+  oled_strobe              = 0;
 
-    /* ram */
-    if ((mem_addr >= 0 && mem_addr < BRAM_SIZE)) begin
-        /* ---> */
-        mem_bram_addr     = {mem_addr[$clog2(BRAM_SIZE) -1:2], 2'b00} >> 2;
-        mem_bram_wmask    = mem_wmask;
-        mem_bram_data_in  = mem_din;
-        mem_bram_rd       = mem_rd;
-        /* <--- */
-        mem_ready         = 1'b1;
-        mem_dout      = mem_bram_data_out;
-        mem_valid         = 1'b1;
-        /* spram */
-    end else if (mem_addr >= 32'h 10_00_0000 && mem_addr < (32'h 10_00_0000 + (32*1024*4))) begin
-        /* 32kx32 */
-        /* ---> */
-        mem_spram_addr          = {mem_addr[$clog2(32*1024*4) -1:2], 2'b00} >> 2;
-        mem_spram_wmask         = mem_wmask;
-        mem_spram_data_in       = mem_din;
+  // gpio
+  gpio_output_wr               = 1'b0;
+  gpio_output_en_wr            = 1'b0;
+  gpio_output_val_wr           = 1'b0;
 
-        /* <--- */
-        mem_ready              = 1'b1;
-        mem_dout           = mem_spram_data_out;
-        mem_valid              = 1'b1;
-        /* spi flash rom */
-    end else if (mem_addr >= 32'h 20_00_0000 && mem_addr < (32'h 20_00_0000 + (1024*1024*16))) begin
-        /* ---> */
-        mem_spi_cs        = 1'b1;
-        mem_spi_addr      = {mem_addr[$clog2(1024*1024*16) -1:2], 2 'b00} >> 2;
-        mem_spi_wmask     = mem_wmask;
-        mem_spi_rd        = mem_rd;
-        /* <--- */
-        mem_ready         = mem_spi_ready;
-        mem_dout          = mem_spi_data_out;
-        mem_valid         = mem_spi_valid;
-    end else if (mem_addr == 32'h 30_00_0000) begin
-        /* uart write */
-        /* ---> */
-        if (|mem_wmask) begin
-            uart_strobe       = 1'b1;
-            uart_tx_data      = mem_din[7:0];
-        end
-        /* uart ready */
-        /* <--- */
-        if (mem_rd) mem_dout      = {{31{1'b0}}, uart_ready};
-        mem_ready         = 1'b1;
-        //mem_valid         = mem_rd ? 1'b1 : uart_ready;
-        mem_valid         = uart_ready;
-    end else if (mem_addr == 32'h 30_00_0008 || mem_addr == 32'h 30_00_000C) begin
-        /* oled write */
-        /* ---> */
-        if (|mem_wmask) begin
-            oled_strobe          = 1'b1;
-            oled_setpixel_raw8tx = mem_addr[3:0] == 4'h8 ? 1'b1 : 1'b0;
-            oled_x_dc            = mem_din[15:8];
-            oled_y_data          = mem_din[7:0];
-            oled_rgb             = mem_din[31:16];
-        end
+  /* ram */
+  if ((mem_addr >= 0 && mem_addr < BRAM_SIZE)) begin
+    /* ---> */
+    mem_bram_addr     = {mem_addr[$clog2(BRAM_SIZE) -1:2], 2'b00} >> 2;
+    mem_bram_wmask    = mem_wmask;
+    mem_bram_data_in  = mem_din;
+    mem_bram_rd       = mem_rd;
+    /* <--- */
+    mem_ready         = 1'b1;
+    mem_dout      = mem_bram_data_out;
+    mem_valid         = 1'b1;
+    /* spram */
+  end else if (mem_addr >= 32'h 10_00_0000 && mem_addr < (32'h 10_00_0000 + (32*1024*4))) begin
+    /* 32kx32 */
+    /* ---> */
+    mem_spram_addr          = {mem_addr[$clog2(32*1024*4) -1:2], 2'b00} >> 2;
+    mem_spram_wmask         = mem_wmask;
+    mem_spram_data_in       = mem_din;
 
-        /* <--- */
-        mem_ready         = oled_ready;
-        mem_valid         = oled_valid;
-    end else if (mem_addr == 32'h 30_00_0010) begin
-        /* get system frequency */
-        mem_dout         = SYSTEM_CLK;
-        mem_ready        = 1'b1;
-        mem_valid        = 1'b1;
-    end else begin
-        /* default */
-        if (~mem_wmask & ~mem_rd) begin
-            mem_ready = 1'b1;
-            mem_valid = 1'b1;
-        end
+    /* <--- */
+    mem_ready              = 1'b1;
+    mem_dout           = mem_spram_data_out;
+    mem_valid              = 1'b1;
+    /* spi flash rom */
+  end else if (mem_addr >= 32'h 20_00_0000 && mem_addr < (32'h 20_00_0000 + (1024*1024*16))) begin
+    /* ---> */
+    mem_spi_cs        = 1'b1;
+    mem_spi_addr      = {mem_addr[$clog2(1024*1024*16) -1:2], 2 'b00} >> 2;
+    mem_spi_wmask     = mem_wmask;
+    mem_spi_rd        = mem_rd;
+    /* <--- */
+    mem_ready         = mem_spi_ready;
+    mem_dout          = mem_spi_data_out;
+    mem_valid         = mem_spi_valid;
+  end else if (mem_addr == 32'h 30_00_0000) begin
+    /* uart write */
+    /* ---> */
+    if (|mem_wmask) begin
+      uart_strobe       = 1'b1;
+      uart_tx_data      = mem_din[7:0];
     end
+    /* uart ready */
+    /* <--- */
+    if (mem_rd) mem_dout      = {{31{1'b0}}, uart_ready};
+    mem_ready         = 1'b1;
+  //mem_valid         = mem_rd ? 1'b1 : uart_ready;
+    mem_valid         = uart_ready;
+end else if (mem_addr == 32'h 30_00_0008 || mem_addr == 32'h 30_00_000C) begin
+  /* oled write */
+  /* ---> */
+  if (|mem_wmask) begin
+    oled_strobe          = 1'b1;
+    oled_setpixel_raw8tx = mem_addr[3:0] == 4'h8 ? 1'b1 : 1'b0;
+    oled_x_dc            = mem_din[15:8];
+    oled_y_data          = mem_din[7:0];
+    oled_rgb             = mem_din[31:16];
+  end
 
-end
+  /* <--- */
+  mem_ready         = oled_ready;
+  mem_valid         = oled_valid;
+end else if (mem_addr == CPU_FREQ_REG) begin
+  /* get system frequency */
+  mem_dout         = SYSTEM_CLK;
+  mem_ready        = 1'b1;
+  mem_valid        = 1'b1;
+end else if (mem_addr == GPIO_DIR) begin
+  if (|mem_wmask) begin
+    gpio_output_en_wr   = 1'b1;
+  end
+  if (mem_rd) begin
+    mem_dout = {24'hz, gpio_output_en};
+  end
+  mem_ready            = 1'b1;
+  mem_valid            = 1'b1;
+  /*
+end else if (mem_addr == GPIO_PULLUP) begin
+  mem_ready        = 1'b1;
+  mem_valid        = 1'b1;
+  */
+     end else if (mem_addr == GPIO_OUTPUT) begin
+       if (|mem_wmask) begin
+         gpio_output_val_wr   = 1'b1;
+       end
+       if (mem_rd) begin
+         mem_dout = {24'hz, gpio_output_val};
+       end
+       mem_ready            = 1'b1;
+       mem_valid            = 1'b1;
+     end else if (mem_addr == GPIO_INPUT) begin
+       if (mem_rd) begin
+         mem_dout = {24'hz, gpio_in};
+       end
+       mem_ready            = 1'b1;
+       mem_valid            = 1'b1;
 
-`ifdef SIM
-my_tx_uart #(.SYSTEM_CLK(50_000_000), .BAUDRATE(2_000_000))
-`else // SIM
+     end else begin
+       /* default */
+       if (~mem_wmask & ~mem_rd) begin
+         mem_ready = 1'b1;
+         mem_valid = 1'b1;
+       end
+     end
+
+   end
+
 my_tx_uart #(.SYSTEM_CLK(SYSTEM_CLK), .BAUDRATE(115200))
-`endif // SIM
            my_tx_uart_i(
                .clk(clk),
                .resetn(resetn),
@@ -343,11 +325,6 @@ my_tx_uart #(.SYSTEM_CLK(SYSTEM_CLK), .BAUDRATE(115200))
                .tx_out(uart_tx),
                .ready(uart_ready)
            );
-`ifdef SIM
-always @* begin
-    if (uart_ready) $write("%c", uart_tx_data);
-end
-`endif
 
 spi_flash_mem spi_flash_mem_i(
                   .clk(clk),
@@ -441,7 +418,7 @@ endmodule
 
     /*
      * Do not edit this file, it was generated by gen_pll.sh
-     * 
+     *
      *   FPGA kind      : ECP5
      *   Input frequency: 25 MHz
      */
