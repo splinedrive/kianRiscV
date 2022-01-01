@@ -5,14 +5,17 @@
 // binary, for any purpose, commercial or non-commercial, and by any
 // means.
 
+#ifndef KV_STDLIB_H
+#define KV_STDLIB_H
+
 #include <stdarg.h>
 #include <stdint.h>
 #include "kianv_stdlib.h"
 extern long time();
 extern long insn();
 
-#define USE_MYSTDLIB
-#ifdef USE_MYSTDLIB
+#if defined(NOT_USE_MYSTDLIB)
+#else
 extern char *malloc();
 extern int printf(const char *format, ...);
 
@@ -38,17 +41,6 @@ long insn()
 	asm volatile ("rdinstret %0" : "=r"(insns));
 	// printf("[insn() -> %d]", insns);
 	return insns;
-}
-
-#ifdef USE_MYSTDLIB
-char *malloc(int size)
-{
-	char *p = heap_memory + heap_memory_used;
-	// printf("[malloc(%d) -> %d (%d..%d)]", size, (int)p, heap_memory_used, heap_memory_used + size);
-	heap_memory_used += size;
-	if (heap_memory_used > 1024)
-		asm volatile ("ebreak");
-	return p;
 }
 
 static void printf_c(int c)
@@ -127,6 +119,18 @@ int printf(const char *format, ...)
 	va_end(ap);
   return 0;
 }
+
+#if !defined(NOT_USE_MYSTDLIB)
+char *malloc(int size)
+{
+	char *p = heap_memory + heap_memory_used;
+	// printf("[malloc(%d) -> %d (%d..%d)]", size, (int)p, heap_memory_used, heap_memory_used + size);
+	heap_memory_used += size;
+	if (heap_memory_used > 1024)
+		asm volatile ("ebreak");
+	return p;
+}
+
 
 void *memcpy(void *aa, const void *bb, long n)
 {
@@ -229,4 +233,4 @@ int strcmp(const char *s1, const char *s2)
 	}
 }
 #endif
-
+#endif
