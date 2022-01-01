@@ -42,7 +42,7 @@
      gpio_output_en  <=  0;  // default all is input pin
      gpio_output_val <=  0;  // digilent led 0: off 1:0
    end else begin
-     gpio_output_val <= gpio_output_val_wr ? mem_din[7:0] : gpio_output_val;
-     gpio_output_en  <= gpio_output_en_wr  ? mem_din[7:0] : gpio_output_en;
+     gpio_output_val <= gpio_output_val_wr ? mem_din[GPIO_NR -1:0] : gpio_output_val;
+     gpio_output_en  <= gpio_output_en_wr  ? mem_din[GPIO_NR -1:0] : gpio_output_en;
    end
  end

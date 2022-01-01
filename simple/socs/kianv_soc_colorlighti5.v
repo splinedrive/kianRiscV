@@ -271,13 +271,13 @@
      gpio_output_val_wr   = 1'b1;
    end
    if (mem_rd) begin
-     mem_dout = {24'hz, gpio_output_val};
+     mem_dout = gpio_output_val;
    end
    mem_ready            = 1'b1;
    mem_valid            = 1'b1;
  end else if (mem_addr == GPIO_INPUT) begin
    if (mem_rd) begin
-     mem_dout = {24'hz, gpio_in};
+     mem_dout = gpio_in;
    end
    mem_ready            = 1'b1;
    mem_valid            = 1'b1;

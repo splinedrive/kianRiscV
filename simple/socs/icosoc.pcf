@@ -123,11 +123,13 @@ set_io video_b3 L9
 #set_io video_r2 R14
 #set_io video_r3 T15
 
-set_io -pullup yes gpio[0] T15
-set_io -pullup yes gpio[1] T14
-set_io -pullup yes gpio[2] T11
-set_io -pullup yes gpio[3] R10
-set_io -pullup yes gpio[4] R14
-set_io -pullup yes gpio[5] T13
-set_io -pullup yes gpio[6] T10
-set_io -pullup yes gpio[7] T9
+# if you use ice no
+# if you use spi yes
+set_io -pullup no gpio[0] T15
+set_io -pullup no gpio[1] T14
+set_io -pullup no gpio[2] T11
+set_io -pullup no gpio[3] R10
+set_io -pullup no gpio[4] R14
+set_io -pullup no gpio[5] T13
+set_io -pullup no gpio[6] T10
+set_io -pullup no gpio[7] T9

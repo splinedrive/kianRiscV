@@ -24,14 +24,14 @@ set_io -nowarn FLASH_IO2  12
 set_io -nowarn FLASH_IO3  13
 
 # PMOD 1A
-set_io -pullup yes gpio[0]        4
-set_io -pullup yes gpio[1]        2
-set_io -pullup yes gpio[2]       47
-set_io -pullup yes gpio[3]       45
-set_io -pullup yes gpio[4]        3
-set_io -pullup yes gpio[5]       48
-set_io -pullup yes gpio[6]       46
-set_io -pullup yes gpio[7]       44
+set_io -pullup no gpio[0]        4
+set_io -pullup no gpio[1]        2
+set_io -pullup no gpio[2]       47
+set_io -pullup no gpio[3]       45
+set_io -pullup no gpio[4]        3
+set_io -pullup no gpio[5]       48
+set_io -pullup no gpio[6]       46
+set_io -pullup no gpio[7]       44
 
 # PMOD 1B
 set_io -nowarn P1B1       43
