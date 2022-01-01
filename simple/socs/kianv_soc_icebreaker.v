@@ -81,7 +81,7 @@ module kianv_soc(
 
 `include "kianv_soc_hw_reg.v"
 
-localparam SYSTEM_CLK = 30_000_000;
+localparam SYSTEM_CLK = 25_000_000;
 
 assign FLASH_IO2 = 1'b1;
 assign FLASH_IO3 = 1'b1;
