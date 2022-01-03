@@ -44,10 +44,10 @@
    output wire flash_wpn,
 
    // gpio
-   inout [7:0] gpio
+   inout [GPIO_NR -1:0] gpio
  );
 
- localparam GPIO_NR = 8;
+ localparam GPIO_NR = 16;
  `include "gpio.v"
 
  /* uart */
