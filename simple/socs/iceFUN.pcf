@@ -30,4 +30,13 @@ set_io --warn-no-port oled_cs     D3
 
 set_io --warn-no-port uart_tx B14
 
+set_io -pullup no gpio[0]       C12 
+set_io -pullup no gpio[1]       C14 
+set_io -pullup no gpio[2]       D12 
+set_io -pullup no gpio[3]       D14 
+set_io -pullup no gpio[4]       E12 
+set_io -pullup no gpio[5]       E14 
+set_io -pullup no gpio[6]       F12
+set_io -pullup no gpio[7]       F14
+
 set_io --warn-no-port clk12	  P7
