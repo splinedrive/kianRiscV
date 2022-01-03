@@ -24,7 +24,9 @@ RVCFLAGS="-fno-pic -march=rv32im -mabi=ilp32  -fno-stack-protector -w -Wl,--no-r
 #/opt/riscv32im/bin/riscv32-unknown-elf-gcc $OPT_LEVEL -march=rv32im -mabi=ilp32 -nostartfiles -Wl,-Bstatic,-T,$LDS_FILE,--strip-debug,-Map=firmware.map,--cref -lsupc++ -fno-zero-initialized-in-bss -ffreestanding -o firmware.elf -I$INCLUDE_DIR  $START_FILE $FILE -lm
 #/opt/riscv32im/bin/riscv32-unknown-elf-gcc $OPT_LEVEL -march=rv32im -mabi=ilp32 -nostartfiles -Wl,-Bstatic,-T,$LDS_FILE,--strip-debug,-Map=firmware.map,--cref -lsupc++ -fno-zero-initialized-in-bss -ffreestanding -o firmware.elf -I$INCLUDE_DIR  $START_FILE $FILE -lm
 /opt/riscv32im/bin/riscv32-unknown-elf-as crt0_spiflash.S -o crt0_spiflash.o
-/opt/riscv32im/bin/riscv32-unknown-elf-gcc $OPT_LEVEL $RVCFLAGS -I$INCLUDE_DIR $FILE $RVGCC_LIB $START_FILE -c
+/opt/riscv32im/bin/riscv32-unknown-elf-gcc -S -fverbose-asm  $OPT_LEVEL $RVCFLAGS -I$INCLUDE_DIR $FILE $RVGCC_LIB $START_FILE -c
+/opt/riscv32im/bin/riscv32-unknown-elf-as -alhnd "$FILEwoSUFFIX.s"  > "$FILEwoSUFFIX.lst"
+/opt/riscv32im/bin/riscv32-unknown-elf-gcc  $OPT_LEVEL $RVCFLAGS -I$INCLUDE_DIR $FILE $RVGCC_LIB $START_FILE -c
 #/opt/riscv32im/bin/riscv32-unknown-elf-g++ $OPT_LEVEL $RVCFLAGS -I$INCLUDE_DIR $FILE $RVGCC_LIB $START_FILE -c
 /opt/riscv32im/bin/riscv32-unknown-elf-ld $RVLDFLAGS -T$LDS_FILE -o firmware.elf $FILEwoSUFFIX.o $RVGCC_LIB
 /opt/riscv32im/bin/riscv32-unknown-elf-objcopy -O binary firmware.elf firmware.bin

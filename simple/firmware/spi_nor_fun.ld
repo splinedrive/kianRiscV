@@ -67,6 +67,7 @@ SECTIONS {
         *(.srodata)             /* .rodata sections (constants, strings, etc.) */
         *(.srodata*)            /* .rodata* sections (constants, strings, etc.) */
         _etext = .;             /* define a global symbol at end of code */
+        . = ALIGN(4);
         _sidata = _etext;       /* This is used by the startup in order to initialize the .data section */
     } >FLASH
 
