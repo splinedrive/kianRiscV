@@ -106,6 +106,14 @@ but found out that hyperram and sram shares the same databus and then I switch t
 I was complete unmotivated. My dream was to use hyperram with a simple cache to run code for my cpu
 and using the sram as framebuffer. But with same databus it makes no sense for me!\
 
+## GPIO interface
+Added a generic purpose io interface for each soc. You can drive the IOs from firmwarespace. The firmware folder
+provides an i2c and spi lib. 
+There are some bitbang examples like to drive via i2c a liquidchrystal or an oled sdd1306 display. 
+The highlight is the spi bitbanging example to read, write files from fat16/32 sd card...The driver
+is from ultraembedded I stripped down to an one file implementation.
+Check the .pcf or .lcf files to remap or to expand the ios to 32 with current implementation.
+
 ## Linker scripts
 Linker scripts, some example code I copied and adjusted from Bruno Levy repository https://github.com/BrunoLevy/learn-fpga a nice
 project!\
