@@ -12,8 +12,8 @@
 //#include <SPI.h>
 #include <stdint.h>
 #include <math.h>
-#include <stdlib.h>
-#include "kianv_stdlib.h"
+//#include <stdlib.h>
+#include "stdlib.c"
 
 int const cs = 6; // TFT display SPI chip select pin
 int const dc = 7; // TFT display data/command select pin

@@ -60,8 +60,8 @@
 /* adapted for kianv riscv soc (c) 2021 by Hirosh Dabui */
 #include <stdint.h>
 #include <math.h>
-#include <stdlib.h>
-#include "kianv_stdlib.h"
+//#include <stdlib.h>
+#include "stdlib.c"
 #include "SSD1331.h"
 
 
