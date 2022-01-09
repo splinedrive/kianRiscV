@@ -20,7 +20,7 @@ icoboard, ulx3s, icebreak, icefun, breakout and not checkedin yet: arty7, gowin,
 ```bash
 cd simple/socs\
 ./build_fpga.sh\
-ico|ulx3s|ice|fun|breakout
+ico|ulx3s|ice|fun|breakout|colori5
 ```
 
 ./build_fpga.sh ico # will build for icoboard fpga image and will flash\
@@ -56,7 +56,7 @@ Firmware:\
 cd simple/firmware\
 flash with\ 
 ./flash_firmware.sh \
-ico|ulx3s|ice|fun|breakout <*.ld> <*.c>
+ico|ulx3s|ice|fun|breakout|colori5 <*.ld> <*.c>
 
 spi_nor2bram_fun.ld # boot from spi-nor icefun and copy code to bram\
 spi_nor2bram.ld # boot from spi-nor icebreaker, breakout, icoboard and copy to bram\
