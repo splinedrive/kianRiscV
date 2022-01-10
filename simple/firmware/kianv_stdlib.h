@@ -10,12 +10,12 @@
 #define VIDEO_RAW           (volatile uint32_t *) (IO_BASE + 0x000C)
 #define CPU_FREQ            (volatile uint32_t *) (IO_BASE + 0x0010)
 // gpio hack stuff
-#define GPIO_DIR            (volatile uint32_t *) (IO_BASE + 0x0014)
-#define GPIO_PULLUP         (volatile uint32_t *) (IO_BASE + 0x0018) // not implemented
-#define GPIO_OUTPUT         (volatile uint32_t *) (IO_BASE + 0x001C)
-#define GPIO_INPUT          (volatile uint32_t *) (IO_BASE + 0x0020)
-#define IO_OUT(reg, value) *((volatile uint32_t*) (reg)) = (value)
-#define IO_IN(reg)         *((volatile uint32_t *) reg)
+#define GPIO_DIR            ( volatile uint32_t  *) (IO_BASE + 0x0014)
+#define GPIO_PULLUP         ( volatile uint32_t  *) (IO_BASE + 0x0018) // not implemented
+#define GPIO_OUTPUT         ( volatile uint32_t  *) (IO_BASE + 0x001C)
+#define GPIO_INPUT          ( volatile uint32_t  *) (IO_BASE + 0x0020)
+#define IO_OUT(reg, value) *((volatile uint32_t  *) (reg)) = (value)
+#define IO_IN(reg)         *((volatile uint32_t  *) reg)
 
 #define GPIO_INPUT_PIN  0
 #define GPIO_OUTPUT_PIN 1
@@ -53,7 +53,8 @@ void gpio_set_value(int gpio, int bit) {
 uint32_t gpio_get_input_value(int gpio) {
   uint32_t read = IO_IN(GPIO_INPUT);
 
-  return ((read & (1<<gpio)) >> gpio);
+  //  return ((read & (1<<gpio)) >> gpio);
+  return ((read >> gpio) & 0x01);
 }
 
 void gpio_set_direction(int gpio, int bit) {
