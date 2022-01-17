@@ -12,7 +12,7 @@ VERILOG_FILES := ../kianv.v \
 all: ${PROJ}.bit
 
 %.json: %.v
-	yosys -q -p "synth_ecp5 -json $@" ${VERILOG_FILES} $<
+	yosys -q -p "synth_ecp5 -json $@ -top ${PROJ}" ${VERILOG_FILES} $<
 
 %_out.config: %.json
 	nextpnr-ecp5  --timing-allow-fail --json $< --textcfg $@ --85k --package CABGA381 --lpf ulx3s_v20.lpf

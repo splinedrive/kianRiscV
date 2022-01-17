@@ -12,7 +12,7 @@ VERILOG_FILES := ../kianv.v \
 all: ${PROJ}.bit
 
 %.json: %.v
-	yosys -DCOLORLIGHTI5 -p "synth_ecp5 -json $@" ${VERILOG_FILES} $<
+	yosys -DCOLORLIGHTI5 -p "synth_ecp5 -json $@ -top ${PROJ}" ${VERILOG_FILES} $<
 
 %_out.config: %.json
 	nextpnr-ecp5 --timing-allow-fail --json $< --textcfg $@ --25k --package CABGA381 --speed 6 --lpf colorlighti5.lpf
