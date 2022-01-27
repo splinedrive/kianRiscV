@@ -1,0 +1,3 @@
+[submodule "TangNano-9K-example"]
+	path = TangNano-9K-example
+	url = https://github.com/splinedrive/TangNano-9K-example
