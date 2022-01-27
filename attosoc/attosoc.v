@@ -133,7 +133,8 @@ module attosoc (
 kianv
     #(
         .RV32E(1'b0),
-        .RESET_ADDR(PROGADDR_RESET)
+        .RESET_ADDR(PROGADDR_RESET),
+		    .STACKADDR(STACKADDR)
     )
     kianv_I
     (
