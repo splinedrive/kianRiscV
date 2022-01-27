@@ -1,3 +1,7 @@
+# TangNano-9K-example
+I have added a github submodule that uses kianRiscV with TangNano9K example soc code!
+Checkout the submodule TangNano-9K-example
+
 # kianRiscV
 ![riscv](kianv_cpu.png)
 A very simple riscv cpu/soc one single file implementation created in my spare time!
