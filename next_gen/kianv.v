@@ -1,7 +1,7 @@
 /*
  *  kianv.v - a simple RISC-V rv32im
  *
- *  copyright (c) 2022 hirosh dabui <hirosh@dabui.de>
+ *  copyright (c) 2021 hirosh dabui <hirosh@dabui.de>
  *
  *  permission to use, copy, modify, and/or distribute this software for any
  *  purpose with or without fee is hereby granted, provided that the above
@@ -298,9 +298,8 @@ reg [63:0] mul_rslt;
 reg [31:0] rs1_mul_abs;
 reg [31:0] rs2_mul_abs;
 reg [4:0]  mul_bit;
-reg mul_start;
-reg mul_ready;
 reg mul_valid;
+reg mul_ready;
 
 
 localparam MUL_IDLE_BIT              = 0;
@@ -320,7 +319,6 @@ wire [31:0] mul_rslt_upper_low = (is_mulh | is_mulu | is_mulsu) ? mul_rslt[63:32
 always @(posedge clk) begin
     if (!resetn) begin
         mul_state <= MUL_IDLE;
-        mul_valid <= 1'b0;
         mul_ready <= 1'b0;
         mul_bit   <= 0;
     end else begin
@@ -329,10 +327,8 @@ always @(posedge clk) begin
         case (1'b1)
 
             mul_state[MUL_IDLE_BIT]: begin
-                mul_valid <= 1'b0;
-                mul_ready <= 1'b1;
-                if (mul_start) begin
-                    mul_ready <= 1'b0;
+                mul_ready <= 1'b0;
+                if (mul_valid) begin
                     rs1_mul_abs <= (rs1_signed_mul & rs1_reg_file[31]) ? ~rs1_reg_file + 1 : rs1_reg_file;
                     rs2_mul_abs <= (rs2_signed_mul & rs2_reg_file[31]) ? ~rs2_reg_file + 1 : rs2_reg_file;
                     mul_bit <= 0;
@@ -356,7 +352,7 @@ always @(posedge clk) begin
                 mul_rslt <= ((rs1_signed_mul | rs2_signed_mul) & (rs1_reg_file[31] ^ rs2_reg_file[31])) ?
                 ~mul_rslt_upper_low + 1 : mul_rslt_upper_low;
                 /* verilator lint_on WIDTH */
-                mul_valid <= 1'b1;
+                mul_ready <= 1'b1;
                 mul_state <= MUL_IDLE;
             end
 
@@ -382,9 +378,8 @@ reg [NR_DIV_STATES-1:0] div_state;
 
 reg [31:0] rem_rslt;
 reg [31:0] tmp;
-reg div_start;
-reg div_ready;
 reg div_valid;
+reg div_ready;
 reg [4:0] div_bit;
 
 wire rs1_signed_div = is_div | is_rem;
@@ -408,7 +403,6 @@ always @(posedge clk) begin
         div_rslt <= 0;
         rem_rslt <= 0;
         div_state <= DIV_IDLE;
-        div_valid <= 1'b0;
         div_ready <= 1'b0;
         div_bit <= 0;
     end else begin
@@ -417,10 +411,8 @@ always @(posedge clk) begin
         case (1'b1)
 
             div_state[DIV_IDLE_BIT]: begin
-                div_valid <= 1'b0;
-                div_ready <= 1'b1;
-                if (div_start) begin
-                    div_ready <= 1'b0;
+                div_ready <= 1'b0;
+                if (div_valid) begin
                     div_rslt <= rs1_div_abs;
                     rem_rslt <= 0;
 
@@ -451,7 +443,7 @@ always @(posedge clk) begin
             div_state[DIV_VALID_BIT]: begin
                 div_rslt <= ((rs1_signed_div | rs2_signed_div) & (rs1_reg_file[31] ^ rs2_reg_file[31])) ? ~div_rslt + 1 : div_rslt;
                 rem_rslt <= (rs1_signed_div & rs1_reg_file[31]) ? ~rem_rslt + 1 : rem_rslt;
-                div_valid <= 1'b1;
+                div_ready <= 1'b1;
                 div_state <= DIV_IDLE;
             end
 
@@ -654,17 +646,13 @@ always @(posedge clk) begin
                 (* parallel_case, full_case *)
                 case (1'b1)
                     is_mul_instr: begin
-                        if (mul_ready) begin
-                            mul_start <= 1'b1;
-                            cpu_state <= RV32M;
-                        end
+                        mul_valid <= 1'b1;
+                        cpu_state <= RV32M;
                     end
 
                     is_div_instr: begin
-                        if (div_ready) begin
-                            div_start <= 1'b1;
-                            cpu_state <= RV32M;
-                        end
+                        div_valid <= 1'b1;
+                        cpu_state <= RV32M;
                     end
 
                     default:
@@ -715,9 +703,9 @@ always @(posedge clk) begin
 
 `ifdef RV32M
             cpu_state[RV32M_BIT]: begin
-                mul_start <= 1'b0;
-                div_start <= 1'b0;
-                if (mul_valid | div_valid) cpu_state <= WRITE_BACK;
+                mul_valid <= 1'b0;
+                div_valid <= 1'b0;
+                if (mul_ready | div_ready) cpu_state <= WRITE_BACK;
             end
 `endif
             default:

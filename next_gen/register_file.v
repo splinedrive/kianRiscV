@@ -2,7 +2,7 @@
  *  kianv.v - a simple RISC-V rv32im
  *
  *
- *  copyright (c) 2022 hirosh dabui <hirosh@dabui.de>
+ *  copyright (c) 2021 hirosh dabui <hirosh@dabui.de>
  *
  *  permission to use, copy, modify, and/or distribute this software for any
  *  purpose with or without fee is hereby granted, provided that the above
