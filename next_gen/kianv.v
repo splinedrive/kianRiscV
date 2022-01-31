@@ -462,22 +462,22 @@ always @* begin
     rs2_store_rslt  = 'hx;
 
     if (is_sb) begin
-        rs2_store_rslt[7 :0]  = alu_rslt[1:0] == 2'b00 ? rs2_reg_file[7:0] : 8'hx;
-        rs2_store_rslt[15:8]  = alu_rslt[1:0] == 2'b01 ? rs2_reg_file[7:0] : 8'hx;
-        rs2_store_rslt[23:16] = alu_rslt[1:0] == 2'b10 ? rs2_reg_file[7:0] : 8'hx;
-        rs2_store_rslt[31:24] = alu_rslt[1:0] == 2'b11 ? rs2_reg_file[7:0] : 8'hx;
-        mem_wmask_store = 4'b0001 << alu_rslt[1:0];
+        rs2_store_rslt[7 :0]   = alu_rslt[1:0] == 2'b00 ? rs2_reg_file[7:0] : 8'hx;
+        rs2_store_rslt[15:8]   = alu_rslt[1:0] == 2'b01 ? rs2_reg_file[7:0] : 8'hx;
+        rs2_store_rslt[23:16]  = alu_rslt[1:0] == 2'b10 ? rs2_reg_file[7:0] : 8'hx;
+        rs2_store_rslt[31:24]  = alu_rslt[1:0] == 2'b11 ? rs2_reg_file[7:0] : 8'hx;
+        mem_wmask_store        = 4'b0001 << alu_rslt[1:0];
     end
 
     if (is_sh) begin
-        rs2_store_rslt[15 :0]  = ~alu_rslt[1] ? rs2_reg_file[15 :0] : 16'hx;
-        rs2_store_rslt[31:16]  =  alu_rslt[1] ? rs2_reg_file[31:16] : 16'hx;
-        mem_wmask_store = 4'b0011 << (alu_rslt[1]<<1'b1);
+        rs2_store_rslt[15: 0]  = ~alu_rslt[1] ? rs2_reg_file[15: 0] : 16'hx;
+        rs2_store_rslt[31:16]  =  alu_rslt[1] ? rs2_reg_file[15: 0] : 16'hx;
+        mem_wmask_store        =  alu_rslt[1] ? 4'b 1100 : 4'b 0011;
     end
 
     if (is_sw) begin
-        rs2_store_rslt = rs2_reg_file;
-        mem_wmask_store = 4'b1111;
+        rs2_store_rslt         = rs2_reg_file;
+        mem_wmask_store        = 4'b1111;
     end
 end
 

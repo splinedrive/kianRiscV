@@ -38,13 +38,15 @@ module register_file
 reg [31:0] register_file0[0:REGISTER_ROWS -1];
 reg [31:0] register_file1[0:REGISTER_ROWS -1];
 integer i;
+wire [REGISTER_ROWS -1:0] x2_sp_idx = ~2;
+
 initial begin
     for (i = 0; i < REGISTER_ROWS; i = i +1) begin
         register_file0[i] = 32'b0;
         register_file1[i] = 32'b0;
     end
-    register_file0[~2] = STACKADDR;  // x2_sp
-    register_file1[~2] = STACKADDR;  // x2_sp
+    register_file0[x2_sp_idx] = STACKADDR;
+    register_file1[x2_sp_idx] = STACKADDR;
 end
 
 always @(posedge clk) begin

@@ -465,9 +465,9 @@ always @* begin
     end
 
     if (is_sh) begin
-        rs2_store_rslt[15 :0]  = ~alu_rslt[1] ? rs2_reg_file[15 :0] : 'hx;
-        rs2_store_rslt[31:16]  =  alu_rslt[1] ? rs2_reg_file[31:16] : 'hx;
-        mem_wmask_store = 4'b0011 << (alu_rslt[1]<<1'b1);
+        rs2_store_rslt[15 :0]  = ~alu_rslt[1] ? rs2_reg_file[15: 0] : 'hx;
+        rs2_store_rslt[31:16]  =  alu_rslt[1] ? rs2_reg_file[15: 0] : 'hx;
+        mem_wmask_store        =  alu_rslt[1] ? 4'b 1100 : 4'b 0011;
     end
 
     if (is_sw) begin
