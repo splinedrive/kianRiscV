@@ -270,10 +270,10 @@ wire [31:0] alu_rslt =
      is_xor                         ? rs1_reg_file ^ rs2_reg_file :
      is_add                         ? rs1_reg_file + rs2_reg_file :
      is_sub                         ? rs1_reg_file - rs2_reg_file :
-     is_sltu                        ? sltu_rslt :
+     is_sltu                        ? sltu_rslt  :
      is_sltiu                       ? sltiu_rslt :
-     is_lui                         ? {imm[31:12], 12'b0} :
-     is_auipc                       ? pc + imm :
+     is_lui                         ? imm        :
+     is_auipc                       ? pc + imm   :
      is_jal                         ? pc + 32'd4 :
      is_jalr                        ? pc + 32'd4 :
      is_slt                         ? ((rs1_reg_file[31] == rs2_reg_file[31]) ?
