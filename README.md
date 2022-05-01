@@ -195,5 +195,7 @@ The highlight is the spi bitbanging example to read, write files from fat16/32 s
 is from ultraembedded I stripped down to an one file implementation.
 Check the .pcf or .lcf files to remap or to expand the ios to 32 with current implementation.
 
+## PMODs
+* PSRAM 32MByte: https://machdyne.com/product/qqspi-psram32/
 
 Hirosh
