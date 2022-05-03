@@ -107,21 +107,15 @@ uint64_t seconds() {
 }
 
 void putchar(char c) {
-  while (!*((volatile uint32_t*) UART_READY))
-    ;
   *((volatile uint32_t*) UART_TX) = c;
 }
 
 void print_chr(char ch) {
-  while (!*((volatile uint32_t*) UART_READY))
-    ;
   *((volatile uint32_t*) UART_TX) = ch;
 }
 
 void print_str(char *p) {
   while (*p != 0) {
-    while (!*((volatile uint32_t*) UART_READY))
-      ;
     *((volatile uint32_t*) UART_TX) = *(p++);
   }
 }
@@ -139,8 +133,6 @@ void print_dec(unsigned int val) {
   }
 
   while (p != buffer) {
-    while (!*((volatile uint32_t*) UART_READY))
-      ;
     *((volatile uint32_t*) UART_TX) = '0' + *(--p);
   }
 }
@@ -154,36 +146,29 @@ void print_dec64(uint64_t val) {
   }
 
   while (p != buffer) {
-    while (!*((volatile uint32_t*) UART_READY))
-      ;
     *((volatile uint32_t*) UART_TX) = '0' + *(--p);
   }
 }
 
 void print_hex(unsigned int val, int digits) {
   for (int i = (4*digits)-4; i >= 0; i -= 4) {
-    while (!*((volatile uint32_t*) UART_READY))
-      ;
     *((volatile uint32_t*) UART_TX) = "0123456789ABCDEF"[(val >> i) % 16];
   }
 }
 
 
 
-typedef short Pixel;
+typedef uint32_t Pixel;
 
 
-void setpixel(volatile Pixel *fb, int x, int y, short color) {
-/*
+void setpixel(volatile Pixel *fb, int x, int y, uint32_t color) {
   const int x_offset = x;
-  const int y_offset = y*HRES;
+  const int y_offset = y*80;
 
   fb[x_offset + y_offset] = color;
-*/
-*((volatile uint32_t*) VIDEO) = (((uint32_t) color & 0xffff) << 16Ul) | ((x & 0xff) << 8) | (y & 0xff);
 }
 
-void draw_bresenham(volatile Pixel *fb, int x0, int y0, int x1, int y1, short color)
+void draw_bresenham(volatile Pixel *fb, int x0, int y0, int x1, int y1, uint32_t color)
 {
 
   int dx =  abs(x1 - x0);

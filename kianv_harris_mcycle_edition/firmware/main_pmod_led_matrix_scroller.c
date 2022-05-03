@@ -143,7 +143,7 @@ void main() {
       uint64_t t0 = milliseconds();
       uint64_t t1 = 0;
       uint64_t delta = 0;
-      while (delta < 200) {
+      while (delta < 150) {
         //      set_dot(x, y, 1);
         update_matrix();
         //      set_dot(x, y, 0);

@@ -7,9 +7,9 @@
 #include <stdint.h>
 #include <math.h>
 #include <fenv.h>
-#include "kianv_stdlib.h"
+#include "kianv_stdlib_hdmi.h"
 
-typedef uint32_t Pixel;
+//typedef uint32_t Pixel;
 
 
 //const int HRES = 640;
@@ -18,8 +18,8 @@ typedef uint32_t Pixel;
 //const int HRENDER = 640;
 //const int VRENDER = 480;
 
-const int HRES = 80;
-const int VRES = 60;
+//const int HRES = 80;
+//const int VRES = 60;
 
 const int HRENDER = 80;
 const int VRENDER = 60;

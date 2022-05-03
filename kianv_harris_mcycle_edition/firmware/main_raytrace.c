@@ -9,8 +9,6 @@
 #include <fenv.h>
 #include "kianv_stdlib.h"
 
-typedef short Pixel;
-
 
 //const int HRES = 640;
 //const int VRES = 480;
@@ -137,7 +135,6 @@ vec3 refract(vec3 I, vec3 N, float eta_t, float eta_i /* =1.f */) { // Snell's l
   // k<0 = total reflection, no ray to refract. I refract it anyways, this has no physical meaning
 }
 
-BOOL scene_intersect(vec3 orig, vec3 dir, Sphere* spheres, int nb_spheres, vec3* hit, vec3* N, Material* material) RV32_FASTCODE;
 BOOL scene_intersect(vec3 orig, vec3 dir, Sphere* spheres, int nb_spheres, vec3* hit, vec3* N, Material* material) {
   float spheres_dist = 1e30;
   for(int i=0; i<nb_spheres; ++i) {
@@ -164,7 +161,6 @@ BOOL scene_intersect(vec3 orig, vec3 dir, Sphere* spheres, int nb_spheres, vec3*
 }
 
 /* It crashes when I call powf(), because it probably underflows, and I do not know how to disable floating point exceptions. */
-float my_pow(float x, float y) RV32_FASTCODE;
 float my_pow(float x, float y) {
   float alu_rslt = x;
   int Y = (int)y;
@@ -183,7 +179,6 @@ float my_pow(float x, float y) {
   return alu_rslt;
 }
 
-vec3 cast_ray(vec3 orig, vec3 dir, Sphere* spheres, int nb_spheres, Light* lights, int nb_lights, int depth /* =0 */) RV32_FASTCODE;
 vec3 cast_ray(vec3 orig, vec3 dir, Sphere* spheres, int nb_spheres, Light* lights, int nb_lights, int depth /* =0 */) {
   vec3 point,N;
   Material material = make_Material_default();
@@ -235,7 +230,6 @@ const uint8_t dither[4][4] = {
   {15, 7,13, 5}
 };
 
-void set_pixel(volatile Pixel *fb, int x, int y, float r, float g, float b) RV32_FASTCODE;
 void set_pixel(volatile Pixel *fb, int x, int y, float r, float g, float b) {
    r = max(0.0f, min(1.0f, r));
    g = max(0.0f, min(1.0f, g));
@@ -311,7 +305,6 @@ void show_csr_timer_cnt() {
   putchar(10);
 }
 
-void render(volatile Pixel *fb, Sphere* spheres, int nb_spheres, Light* lights, int nb_lights) RV32_FASTCODE;
 void render(volatile Pixel *fb, Sphere* spheres, int nb_spheres, Light* lights, int nb_lights) {
  // static uint32_t toggle = 0x01;
   const float fov  = M_PI/3.;
