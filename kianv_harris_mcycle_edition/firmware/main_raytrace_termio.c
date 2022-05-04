@@ -18,7 +18,7 @@ void msleep(uint32_t ms);
 
 void sleep(uint32_t sec);
 
-typedef uint32_t Pixel;
+//typedef uint32_t Pixel;
 
 
 //const int HRES = 640;
