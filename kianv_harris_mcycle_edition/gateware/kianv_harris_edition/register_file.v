@@ -17,6 +17,8 @@
  *
  */
 `timescale 1 ns / 100 ps
+`default_nettype none
+
 module register_file
     #(
          parameter REGISTER_DEPTH = 32, // rv32e = 16; rv32i = 32

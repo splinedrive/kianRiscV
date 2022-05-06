@@ -22,8 +22,8 @@
 `include "riscv_defines.vh"
 module multiplier
     (
-        input clk,
-        input resetn,
+        input wire clk,
+        input wire resetn,
         input  wire  [31               : 0]  factor1,
         input  wire  [31               : 0]  factor2,
         input  wire  [`MUL_OP_WIDTH -1 : 0]  MULop,

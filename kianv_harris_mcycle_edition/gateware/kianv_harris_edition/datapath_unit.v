@@ -61,8 +61,11 @@ module datapath_unit
          input  wire         mul_valid,
          output wire         mul_ready,
          input  wire         div_valid,
-         output wire         div_ready
+         output wire         div_ready,
+         output wire [31: 0] ProgCounter
      );
+
+    assign ProgCounter = OldPC;
 
     wire [31: 0] Rd1;
     wire [31: 0] Rd2;

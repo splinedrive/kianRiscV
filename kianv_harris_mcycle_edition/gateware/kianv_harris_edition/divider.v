@@ -22,8 +22,8 @@
 `include "riscv_defines.vh"
 module divider
     (
-        input clk,
-        input resetn,
+        input wire clk,
+        input wire resetn,
 
         input  wire [              31 : 0] divident,
         input  wire [              31 : 0] divisor,
@@ -99,7 +99,7 @@ module divider
                         div_rslt <= div_rslt_next | 1'b0;
                         /* verilator lint_on WIDTH */
                     end else begin
-                        rem_rslt <= rem_rslt_sub_divident;
+                        rem_rslt <= rem_rslt_sub_divident[31:0];
                         /* verilator lint_off WIDTH */
                         div_rslt <= div_rslt_next | 1'b1;
                         /* verilator lint_on WIDTH */

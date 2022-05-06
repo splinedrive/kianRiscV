@@ -133,7 +133,7 @@ module top_tb;
             if (mem_wstrb[2]) test_mem[23:16] <= mem_wdata[23:16];
             if (mem_wstrb[3]) test_mem[31:24] <= mem_wdata[31:24];
 
-            test_result <= test_result<<8 | mem_wdata[ 7: 0];
+            test_result <= test_result<<8 | {24'b 0, mem_wdata[ 7: 0]};
         end
         test_ready <= !resetn ? 0 : test_valid;
     end
@@ -163,6 +163,7 @@ module top_tb;
                                 .mem_wstrb       ( mem_wstrb ),
                                 .mem_addr        ( mem_addr  ),
                                 .mem_wdata       ( mem_wdata ),
-                                .mem_rdata       ( mem_rdata )
+                                .mem_rdata       ( mem_rdata ),
+                                .PC              (           )
                             );
 endmodule

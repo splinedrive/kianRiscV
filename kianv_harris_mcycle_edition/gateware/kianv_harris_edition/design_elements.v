@@ -113,7 +113,7 @@ module counter
      (
          input wire resetn,
          input wire clk,
-         input inc,
+         input wire inc,
          output reg [WIDTH -1: 0] q
      );
     always @(posedge clk)

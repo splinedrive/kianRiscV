@@ -22,6 +22,7 @@
 `include "riscv_defines.vh"
 module kianv_harris_mc_edition
     #(
+         parameter STACKADDR = 32'h ffff_ffff,
          parameter RESET_ADDR = 0
      )
      (
@@ -32,7 +33,8 @@ module kianv_harris_mc_edition
          output wire [ 3: 0] mem_wstrb,
          output wire [31: 0] mem_addr,
          output wire [31: 0] mem_wdata,
-         input  wire [31: 0] mem_rdata
+         input  wire [31: 0] mem_rdata,
+         output wire [31: 0] PC
      );
 
     wire [31: 0] Instr;
@@ -107,6 +109,7 @@ module kianv_harris_mc_edition
                  );
 
     datapath_unit #(
+                      .STACKADDR ( STACKADDR  ),
                       .RESET_ADDR( RESET_ADDR )
                   )
                   datapath_unit_I
@@ -143,6 +146,7 @@ module kianv_harris_mc_edition
                       .mul_ready       (  mul_ready      ),
                       .DIVop           (  DIVop          ),
                       .div_valid       (  div_valid      ),
-                      .div_ready       (  div_ready      )
+                      .div_ready       (  div_ready      ),
+                      .ProgCounter     (  PC             )
                   );
 endmodule
