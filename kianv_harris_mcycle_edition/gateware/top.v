@@ -46,7 +46,8 @@ module top
         input  wire         flash_miso,
         output wire         flash_mosi,
         output wire         flash_sclk,
-        output wire         resetn
+        output wire         resetn,
+        output wire [31:0]  PC
     );
 
     localparam BYTE_ADDRESS_LEN  = 32;
@@ -356,6 +357,11 @@ module top
             .mem_wstrb ( mem_wstrb                           ),
             .mem_addr  ( mem_addr                            ),
             .mem_wdata ( mem_wdata                           ),
-            .mem_rdata ( mem_rdata                           )
+            .mem_rdata ( mem_rdata                           ),
+`ifdef PC_OUT
+            .PC        ( PC                                  )
+`else
+            .PC        (                                     )
+`endif
         );
 endmodule

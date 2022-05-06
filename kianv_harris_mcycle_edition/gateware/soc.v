@@ -1,5 +1,5 @@
 /*
- *  kianv.v - a simple RISC-V rv32im
+ *  kianv.v - RISC-V rv32im
  *
  *  copyright (c) 2021 hirosh dabui <hirosh@dabui.de>
  *
@@ -23,7 +23,21 @@ module soc
     (
         input  wire        clk_osc,
         output wire        uart_tx,
-
+`ifdef ICEFUN
+        /* led  */
+        output wire led1,
+        output wire led2,
+        output wire led3,
+        output wire led4,
+        output wire led5,
+        output wire led6,
+        output wire led7,
+        output wire led8,
+        output wire lcol1,
+        output wire lcol2,
+        output wire lcol3,
+        output wire lcol4,
+`endif
 `ifdef IOMEM_INTERFACING_EXTERNAL
 `ifdef IOMEM_INTERFACING
         output wire        iomem_valid,
@@ -46,7 +60,7 @@ module soc
 
 `ifdef HDMI_VIDEO_FB
 `ifdef ECP5
-        output [3:0] gpdi_dp,
+        output wire [3:0] gpdi_dp,
 `endif
 `endif
 
@@ -145,6 +159,67 @@ module soc
             clk_osc,
             clk
         );
+`endif
+
+`ifdef ICEFUN
+    ice40hx8pll
+        #(
+            .freq(`SYSTEM_CLK_MHZ)
+        ) pll_I0 (
+            clk_osc,
+            clk
+        );
+
+    wire [7:0] leds1;
+    wire [7:0] leds2;
+    wire [7:0] leds3;
+    wire [7:0] leds4;
+
+    wire [7:0] leds;
+    wire [3:0] lcol;
+
+    assign { led8, led7, led6, led5, led4, led3, led2, led1 } = leds[7:0];
+    assign { lcol4, lcol3, lcol2, lcol1 } = lcol[3:0];
+
+`ifdef PC_OUT
+    wire [31: 0] PC;
+    assign leds1 = ~PC[31:24];
+    assign leds2 = ~PC[23:16];
+    assign leds3 = ~PC[15: 8];
+    assign leds4 = ~PC[7 : 0];
+`endif
+
+`ifdef LED_MATRIX8X4_FB
+    wire [31: 0] PC;
+    assign leds1 = ~led_matrix8x4_fb[31:24];
+    assign leds2 = ~led_matrix8x4_fb[23:16];
+    assign leds3 = ~led_matrix8x4_fb[15: 8];
+    assign leds4 = ~led_matrix8x4_fb[7 : 0];
+
+    reg led_matrix_ready;
+    reg  [31: 0] led_matrix8x4_fb;
+
+    wire led_matrix_valid =  !led_matrix_ready && iomem_valid && (iomem_addr == `LED8X4_FB_ADDR);
+
+    always @(posedge clk) begin
+        if (led_matrix_valid && |iomem_wstrb) begin
+            led_matrix8x4_fb <= iomem_wdata;
+        end
+        led_matrix_ready <= !resetn ? 0 : led_matrix_valid;
+    end
+`endif
+
+    led_matrix8x4 #( .SYSTEM_FREQ( `SYSTEM_CLK) )
+                  led_matrix_I
+                  (
+                      .clk     ( clk   ),
+                      .leds1   ( leds1 ),
+                      .leds2   ( leds2 ),
+                      .leds3   ( leds3 ),
+                      .leds4   ( leds4 ),
+                      .leds    ( leds  ),
+                      .lcol    ( lcol  )
+                  );
 `endif
 `ifdef ICEBREAKER
     ice40up5k_pll #(
@@ -303,7 +378,12 @@ module soc
             .flash_miso    ( flash_miso                ),
             .flash_mosi    ( flash_mosi                ),
             .flash_sclk    ( flash_sclk                ),
-            .resetn        ( resetn                    )
+            .resetn        ( resetn                    ),
+`ifdef PC_OUT
+            .PC            ( PC                        )
+`else
+            .PC            (                           )
+`endif
         );
 
     assign iomem_ready =
@@ -319,17 +399,26 @@ module soc
 `ifdef GPIO
            gpio_ready             |
 `endif
+`ifdef LED_MATRIX8X4_FB
+           led_matrix_ready       |
+`endif
            1'b 0;
 
     assign iomem_rdata =
 `ifdef SPRAM
-           spram_ready ? spram_rdata :
+           spram_ready            ? spram_rdata :
 `endif
 `ifdef HDMI_VIDEO_FB
            hdmi_video_iomem_ready ? hdmi_video_iomem_rdata :
 `endif
 `ifdef GPIO
-           gpio_ready ? gpio_rdata :
+           gpio_ready             ? gpio_rdata :
+`endif
+`ifdef GPIO
+           gpio_ready             ? gpio_rdata :
+`endif
+`ifdef LED_MATRIX8X4_FB
+           led_matrix_ready       ? led_matrix8x4_fb :
 `endif
            32'b 0;
 
