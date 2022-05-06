@@ -104,9 +104,10 @@ The soc has some controllers implemented:
 
 Supported **fpgas**:
 
-* ulx3s
-* icebreaker
-* colorlighi5, colorlighti9
+* ulx3s ecp5
+* icebreaker ice40
+* colorlighi5, colorlighti9 ecp5
+* icefun ice40
 
 ## Synthesis of SOC
 You should study `defines.vh` file you can choose the sytemfrequency,
@@ -121,6 +122,7 @@ cd gateware
 ./build_ice.sh      # build icebreaker and flash design
 ./build_colori9.sh  # build colorlighti9 and flash design
 ./build_colori5.sh  # build build_colori5 and flash design
+./build_fun.sh      # build icefun and flash design
 ```
 
 ## Simulation of whole SOC
@@ -174,7 +176,8 @@ spi_nor2spram.ld # boot from spi-nor icebreaker and copy to spram\
 spi_nor2sram.ld # boot from spi-nor and copy to sram icoboard\
 spi_nor_fun.ld # boot and execute instructions only from spi-nor on icefun\
 spi_nor.ld # boot and execute instructions only from spi-nor all boards, excluded icefun
-spi_nor2spram.d # boot from spi and copy to psram
+spi_nor2spram.d # boot from spi and copy to spram (only icebreaker, ice40up)
+spi_nor2psram.d # boot from spi and copy to psram
 ```
 ## Preparing Uart
 some programs are using external uart hw, check pcfs but icebreaker, breakout and ulx3s don't need
