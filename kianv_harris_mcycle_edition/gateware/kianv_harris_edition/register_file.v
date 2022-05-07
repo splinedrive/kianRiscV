@@ -46,10 +46,8 @@ module register_file
             bank0[i] = 32'b0;
             bank1[i] = 32'b0;
         end
-        /*
-            bank0[X2] = STACKADDR;
-            bank1[X2] = STACKADDR;
-        */
+        bank0[X2] = STACKADDR;
+        bank1[X2] = STACKADDR;
     end
 
 

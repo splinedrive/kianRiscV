@@ -145,10 +145,14 @@ module datapath_unit
 
     alu alu_I(SrcA, SrcB, ALUControl, ALUResult, Zero);
 
+`ifdef RV32M
     mux2 #(32) mul_ext_I  (MULResult, DIVResult, !mul_valid, MULExtResult);
     multiplier mul_I      (clk, resetn, SrcA, SrcB, MULop, MULResult, mul_valid, mul_ready);
     divider    div_I      (clk, resetn, SrcA, SrcB, DIVop, DIVResult, div_valid, div_ready, div_by_zero_err /* todo: */);
+`endif
 
+`ifdef CSR
     csr_unit csr_unit_I(clk, resetn, IRWrite, ImmExt[11:0], CSRop, CSRData);
+`endif
 
 endmodule

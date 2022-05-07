@@ -22,8 +22,8 @@
 `include "riscv_defines.vh"
 module kianv_harris_mc_edition
     #(
-         parameter STACKADDR = 32'h ffff_ffff,
-         parameter RESET_ADDR = 0
+         parameter RESET_ADDR = 0,
+         parameter STACKADDR  = 0
      )
      (
          input  wire clk,
@@ -109,8 +109,8 @@ module kianv_harris_mc_edition
                  );
 
     datapath_unit #(
-                      .STACKADDR ( STACKADDR  ),
-                      .RESET_ADDR( RESET_ADDR )
+                      .RESET_ADDR ( RESET_ADDR ),
+                      .STACKADDR  ( STACKADDR  )
                   )
                   datapath_unit_I
                   (
