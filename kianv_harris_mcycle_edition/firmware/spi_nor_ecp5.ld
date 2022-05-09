@@ -1,7 +1,7 @@
 MEMORY
 {
   FLASH      (rx)  : ORIGIN = 0x020100000,  LENGTH = 0x10000000
-  BRAM       (rwx) : ORIGIN = 0x00000000,   LENGTH = 0x00010000
+  BRAM       (rwx) : ORIGIN = 0x00000000,   LENGTH = 0x00002000
 }
 
 __stacktop = ORIGIN(BRAM) + LENGTH(BRAM);
