@@ -30,7 +30,7 @@ void render_lines(point points [], size_t s, float angle_x, float angle_y, float
     p0 = rotateZ_pivot(&p0, &pivot, angle_z);
 
     //fb_setpixel(framebuffer, p0.x, p0.y, RGB256(0x07, 0x03, 0x03));  // i);
-    fb_setpixel(framebuffer, p0.x, p0.y, i);
+    fb_setpixel(framebuffer, p0.x, p0.y, ~0);
 
   }
 }
@@ -39,8 +39,11 @@ void render_lines(point points [], size_t s, float angle_x, float angle_y, float
 // f = GmM/r^2
 // f = m*a => a = f/m
 // V = a*t; s = V*t
+#define SIZEOF(arr) sizeof(arr) / sizeof(*arr)
+
+#define FRAMEBUFFER (volatile short *) 0x10000000
+#define FB_CTRL     (volatile short *) 0x30000024
 void main() {
-  init_oled8bit_colors();
   fill_oled(framebuffer, 0x0000);
 
   int angle = 0;
@@ -79,9 +82,15 @@ void main() {
   }
   */
 
+  uint32_t *fb_ctrl = FB_CTRL;
+  *fb_ctrl = 0;
+
+  IO_OUT(GPIO_DIR, ~0);
+  uint8_t led = 0x01;
   for (;;) {
     render_lines(stars, SIZEOF(stars), angle, angle, angle, s);
-    oled_show_fb_8or16(framebuffer, 1);
+    oled_show_fb_8or16(framebuffer, 0x10000000 + ((*fb_ctrl & 1) ? 0 : (8192*4)), 1);
+    *fb_ctrl ^= 1;
     angle += delta_angle;
 
     if (s >= 2) delta_scale = -delta_scale;
@@ -91,6 +100,10 @@ void main() {
     s += delta_scale;
 
     fill_oled(framebuffer, 0);
+    IO_OUT(GPIO_OUTPUT, 0);
+    led &= 7;
+    //gpio_set_value((1 << led) | ((led >> 7) & 1)  , 1);
+    gpio_set_value(led++, 1);
 
   }
 
