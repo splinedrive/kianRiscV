@@ -7,7 +7,7 @@ void main()
   for (;;) { 
     uint32_t *prim;
 
-    prime = malloc(sizeof(uint32_t)*N);
+    prim = malloc(sizeof(uint32_t)*N);
 
     for (int i = 1; i < N; i++) prim[i] = 1;
 
