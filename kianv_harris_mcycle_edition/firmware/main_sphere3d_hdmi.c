@@ -6,7 +6,7 @@
 #include "stdlib.c"
 #include "gfx_lib_hdmi.h"
 
-#define N 360/2 
+#define N 360
 #define STEP 20 
 point stars [N];
 #define FRAMEBUFFER (volatile short *) 0x10000000
@@ -15,6 +15,7 @@ point stars [N];
 uint32_t *fb_ctrl = FB_CTRL;
 
 void render_lines(point points [], size_t s, float angle_x, float angle_y, float angle_z, float scalef) {
+  static uint16_t col = 0;
   for (int i = 0; i < s - 1; i = i + 1) {
     point p0 = points[i];
 
@@ -32,8 +33,9 @@ void render_lines(point points [], size_t s, float angle_x, float angle_y, float
 
     p0 = rotateZ_pivot(&p0, &pivot, angle_z);
 
-    fb_setpixel(framebuffer, p0.x, p0.y, 0xffffff);
+    fb_setpixel(framebuffer, p0.x, p0.y, 0xfffff);
 
+  col++;
   }
 }
 
@@ -70,6 +72,8 @@ void main() {
 
   *fb_ctrl = 0;
 
+  IO_OUT(GPIO_DIR, ~0);
+  uint8_t led;
   for (;;) {
     render_lines(stars, SIZEOF(stars), angle, angle, angle, s);
 
@@ -87,6 +91,9 @@ void main() {
 
 
     fill_oled(framebuffer, 0x000000);
+    IO_OUT(GPIO_OUTPUT, 0);
+    led &= 7;
+    gpio_set_value(led++, 1);
   }
 
 }
