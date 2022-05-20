@@ -34,31 +34,67 @@
 `define GPIO_OUTPUT_ADDR  32'h 30_000_01C
 `define GPIO_INPUT_ADDR   32'h 30_000_020
 `define FRAME_BUFFER_CTRL 32'h 30_000_024
+`define LED8X4_FB_ADDR    32'h 30_000_028
 /////////////////////////////////
+
 
 `ifdef ULX3S
 `define LED_ULX3S
 `define ECP5
+`define GPIO
 `endif
 
 `ifdef COLORLIGHT_I5_I9
 `define ECP5
+`define GPIO
 `endif
 
+`ifdef NEXYSA7
+`define FAKE_MULTIPLIER
+`define CPU_HALT 1'b 1
+`define PC_OUT
+`define DDR_HDMI_TRANSFER 1'b 0
+`define DIGILENT
+`elsif ARTY7
+`define FAKE_MULTIPLIER
+`define DDR_HDMI_TRANSFER 1'b 1
+`define DIGILENT
+`elsif NEXYS_VIDEO
+`define FAKE_MULTIPLIER
+`define DDR_HDMI_TRANSFER 1'b 1
+`define DIGILENT
+`elsif ECP5
+`define DDR_HDMI_TRANSFER 1'b 1
+`else
+`define DDR_HDMI_TRANSFER 1'b 1
+`endif
+
+`ifdef DIGILENT
+`define SPI_NOR_PRESCALER_ENABLE
+`define SPI_NOR_PRESCALER_DIVIDER 7
+//`define OLED_SD1331
+`define HDMI_VIDEO_FB
 `define GPIO
-//`undef GPIO
+`endif
 
 `ifdef GPIO
-`define GPIO_NR 8  // 0->32 
+`define GPIO_NR 8  // 0->32
 `endif
 
 `ifdef ICEBREAKER
-`define ICE40
 `define OLED_SD1331
 `define SPRAM
 `endif
 
+`ifdef ICEFUN
+//`define PC_OUT
+`define OLED_SD1331
+`define LED_MATRIX8X4_FB
+`endif
+
+
 `define BAUDRATE          115200
+//`define BAUDRATE          3_000_000
 
 `ifdef KROETE
 `define SYSTEM_CLK        30_000_000
@@ -66,10 +102,23 @@
 `elsif ICEBREAKER
 `define SYSTEM_CLK        19_000_000
 
+`elsif ICEFUN
+`define SYSTEM_CLK        30_000_000
+
 `elsif ECP5
 //`define SYSTEM_CLK        80_000_000
 `define SYSTEM_CLK        70_000_000
-
+`elsif ARTIX7
+`ifdef ARTY7
+`define SYSTEM_CLK        180_000_000
+`elsif NEXYSA7
+`define SYSTEM_CLK        150_000_000
+`elsif NEXYS_VIDEO
+`define SYSTEM_CLK        180_000_000
+`elsif WUKONG
+`define SYSTEM_CLK        175_000_000
+//`define SYSTEM_CLK        25_000_000
+`endif
 `else
 `define SYSTEM_CLK        25_000_000
 `endif
@@ -97,10 +146,10 @@
 
 // hdmi video buffer
 `ifdef ECP5
+`define FAKE_MULTIPLIER
 `define HDMI_VIDEO_FB
 //`define OLED_SD1331
-`define PSRAM_MEMORY_32MB
-`undef PSRAM_MEMORY_32MB
+//`define PSRAM_MEMORY_32MB
 `endif
 //`undef HDMI_VIDEO_FB
 
@@ -109,6 +158,22 @@
 `ifdef KROETE
 `define SPI_MEMORY_OFFSET         (135*1024)
 `define SPI_NOR_MEM_ADDR_END      ((`SPI_NOR_MEM_ADDR_START) + (1024*256))
+`elsif ICEFUN
+`define SPI_MEMORY_OFFSET         (256*1024)
+`define SPI_NOR_MEM_ADDR_END      ((`SPI_NOR_MEM_ADDR_START) + (32'h C0000))
+`elsif ARTIX7
+
+`ifdef ARTY7
+`define SPI_MEMORY_OFFSET         (1024*1024*4)
+`define SPI_NOR_MEM_ADDR_END      ((`SPI_NOR_MEM_ADDR_START) + (16*1024*1024))
+`elsif NEXYSA7
+`define SPI_MEMORY_OFFSET         (1024*1024*4)
+`define SPI_NOR_MEM_ADDR_END      ((`SPI_NOR_MEM_ADDR_START) + (16*1024*1024))
+`elsif NEXYS_VIDEO
+`define SPI_MEMORY_OFFSET         (1024*1024*10)
+`define SPI_NOR_MEM_ADDR_END      ((`SPI_NOR_MEM_ADDR_START) + (32*1024*1024))
+`endif
+
 `else
 `define SPI_MEMORY_OFFSET         (1024*1024)
 `define SPI_NOR_MEM_ADDR_END      ((`SPI_NOR_MEM_ADDR_START) + (16*1024*1024))
@@ -116,9 +181,8 @@
 
 // PSRAM
 `ifdef ECP5
-`define PSRAM_CACHE
+//`define PSRAM_CACHE
 `define CACHE_LINES (64)
-`undef PSRAM_CACHE
 `define PSRAM_MEM_ADDR_START      32'h 40_000_000
 `define PSRAM_MEM_ADDR_END        ((`PSRAM_MEM_ADDR_START) + (32*1024*1024))
 `define PSRAM_QUAD_MODE           1'b1
@@ -135,15 +199,15 @@
 
 `ifdef SIM
 `define BRAM_FIRMWARE
-//`undef BRAM_FIRMWARE
 `endif
 
+//`define BRAM_FIRMWARE
 `ifdef BRAM_FIRMWARE
 
 `define RESET_ADDR        0
 `define FIRMWARE_BRAM     "./firmware/firmware.hex"
 `define FIRMWARE_SPI      ""
-//`define BRAM_WORDS        (2048*4*8)
+//`define BRAM_WORDS        (1024*2)
 `define BRAM_WORDS        ('h10_000)
 `else
 
@@ -151,6 +215,8 @@
 `define FIRMWARE_BRAM     ""
 `define FIRMWARE_SPI      "./firmware/firmware.hex"
 `ifdef ECP5
+`define BRAM_WORDS        (1024*16)
+`elsif ARTIX7
 `define BRAM_WORDS        (1024*16)
 `else
 `define BRAM_WORDS        (1024*2)

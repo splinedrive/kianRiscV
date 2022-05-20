@@ -51,7 +51,7 @@ module multiplier
 
     localparam IDLE                  = 1<<IDLE_BIT;
     localparam CALC                  = 1<<CALC_BIT;
-    localparam VALID                 = 1<<READY_BIT;
+    localparam READY                 = 1<<READY_BIT;
 
     localparam NR_STATES             = 3;
 
@@ -81,13 +81,18 @@ module multiplier
                 end
 
                 state[CALC_BIT]: begin
+`ifndef FAKE_MULTIPLIER
                     /* verilator lint_off WIDTH */
                     rslt <= rslt + ((factor1_abs&{32{factor2_abs[bit_idx]}})<<bit_idx);
                     /* verilator lint_on WIDTH */
                     bit_idx <= bit_idx + 1'b1;
                     if (&bit_idx) begin
-                        state <= VALID;
+                        state <= READY;
                     end
+`else
+                    rslt <= factor1_abs * factor2_abs;
+                    state <= READY;
+`endif
                 end
 
                 state[READY_BIT]: begin

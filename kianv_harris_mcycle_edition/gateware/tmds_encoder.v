@@ -1,7 +1,7 @@
 /*
-my_hdmi_device 
+my_hdmi_device
 
-Copyright (C) 2021  Hirosh Dabui <hirosh@dabui.de>
+Copyright (C) 2021/2022  Hirosh Dabui <hirosh@dabui.de>
 
 Permission to use, copy, modify, and/or distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
@@ -16,17 +16,17 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 /*
- * tmds_encode implementation (c) 2020 Hirosh Dabui <hirosh@dabui.de>
+ * tmds_encode implementation (c) 2020/2021 Hirosh Dabui <hirosh@dabui.de>
  * based on Digital Visual Interface Revision 1.0, Page 29
  */
 `timescale 1 ns / 100 ps
 `default_nettype none
 module tmds_encoder(
-        input clk,
-        input DE,
-        input [7:0]D,
-        input C1,
-        input C0,
+        input wire clk,
+        input wire DE,
+        input wire [7:0]D,
+        input wire C1,
+        input wire C0,
         output reg[9:0] q_out = 0
     );
     /* verilator lint_off WIDTH */
@@ -98,24 +98,24 @@ module tmds_encoder(
                 q_out[7:0] <= q_m[8] ? q_m[7:0] : ~q_m[7:0];
 
                 if (q_m[8] == 0) begin
-                    cnt = cnt_prev + (N0(q_m[7:0]) - N1(q_m[7:0]));
+                    cnt <= cnt_prev + (N0(q_m[7:0]) - N1(q_m[7:0]));
                 end else begin
-                    cnt = cnt_prev + (N1(q_m[7:0]) - N0(q_m[7:0]));
+                    cnt <= cnt_prev + (N1(q_m[7:0]) - N0(q_m[7:0]));
                 end /*q_m[8] == 0*/
 
             end else begin
 
                 if ( (cnt_prev > 0 & (N1(q_m[7:0]) > N0(q_m[7:0]))) |
                         (cnt_prev < 0 & (N0(q_m[7:0]) > N1(q_m[7:0]))) ) begin
-                    q_out[9] <= 1;
-                    q_out[8] <= q_m[8];
+                    q_out[9]   <= 1;
+                    q_out[8]   <= q_m[8];
                     q_out[7:0] <= ~q_m[7:0];
-                    cnt = cnt_prev + 2*q_m[8] + (N0(q_m[7:0]) - N1(q_m[7:0]));
+                    cnt <= cnt_prev + 2*q_m[8] + (N0(q_m[7:0]) - N1(q_m[7:0]));
                 end else begin
-                    q_out[9] <= 0;
-                    q_out[8] <= q_m[8];
+                    q_out[9]   <= 0;
+                    q_out[8]   <= q_m[8];
                     q_out[7:0] <= q_m[7:0];
-                    cnt = cnt_prev - {~q_m[8], 1'b0} + (N1(q_m[7:0]) - N0(q_m[7:0]));
+                    cnt <= cnt_prev - {~q_m[8], 1'b0} + (N1(q_m[7:0]) - N0(q_m[7:0]));
                 end /*
                     (cnt_prev > 0 & N1(q_m[7:0]) > N0(q_m[7:0]))) |
                     (cnt_prev < 0 & N0(q_m[7:0]) > N1(q_m[7:0])))
@@ -125,7 +125,7 @@ module tmds_encoder(
 
         end else begin
             /* !DE */
-            cnt = 0;
+            cnt <= 0;
             /* hsync -> c0 | vsync -> c1 */
             case ({C1, C0})
 `ifdef LEGACY_DVI_CONTROL_LUT

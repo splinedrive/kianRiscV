@@ -47,7 +47,8 @@ module top
         output wire         flash_mosi,
         output wire         flash_sclk,
         output wire         resetn,
-        output wire [31:0]  PC
+        output wire [31:0]  PC,
+        input  wire         halt
     );
 
     localparam BYTE_ADDRESS_LEN  = 32;
@@ -94,6 +95,7 @@ module top
     wire  uart_tx_valid;
     wire  uart_tx_ready;
     wire  uart_ctrl_ready;
+    reg   uart_rdy_ready;
 
     // spi flash memory
     wire [31:0] spi_nor_mem_data;
@@ -181,7 +183,6 @@ module top
     wire   [DATA_LEN          -1: 0] mwdata;
     wire                             mvalid;
     wire                             mready;
-
     cache #(
               .BYTE_ADDRESS_LEN ( BYTE_ADDRESS_LEN ),
               .BYTES_PER_BLOCK  ( BYTES_PER_BLOCK  ),
@@ -272,7 +273,7 @@ module top
 `endif
 
     // SPI nor flash
-    assign spi_nor_mem_valid = mem_valid &&
+    assign spi_nor_mem_valid = !spi_nor_mem_ready && mem_valid &&
            (mem_addr >= `SPI_NOR_MEM_ADDR_START && mem_addr < `SPI_NOR_MEM_ADDR_END) && !wr;
 
 `ifdef SIM
@@ -305,7 +306,6 @@ module top
     assign uart_tx_valid     = !uart_rdy_ready && mem_valid && (mem_addr == `UART_TX_ADDR) && wr;
 
     /* uart ready dummy */
-    reg uart_rdy_ready;
     always @(posedge clk) uart_rdy_ready <= !resetn ? 1'b 0 : (mem_valid && (mem_addr == `UART_TX_ADDR) && !wr);
 
     tx_uart
@@ -350,7 +350,11 @@ module top
         )
         kianv_I
         (
+`ifdef CPU_HALT
+            .clk       ( clk & halt                          ),  // hack not for productive use
+`else
             .clk       ( clk                                 ),
+`endif
             .resetn    ( resetn                              ),
             .mem_ready ( mem_ready                           ),
             .mem_valid ( mem_valid                           ),
@@ -358,10 +362,7 @@ module top
             .mem_addr  ( mem_addr                            ),
             .mem_wdata ( mem_wdata                           ),
             .mem_rdata ( mem_rdata                           ),
-`ifdef PC_OUT
+
             .PC        ( PC                                  )
-`else
-            .PC        (                                     )
-`endif
         );
 endmodule

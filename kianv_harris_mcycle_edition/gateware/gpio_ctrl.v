@@ -37,6 +37,10 @@ module gpio_ctrl
          inout  wire [GPIO_NR -1:0] gpio
      );
 
+    reg  [GPIO_NR -1:0] gpio_out_en;
+    wire [GPIO_NR -1:0] gpio_in;
+    reg  [GPIO_NR -1:0] gpio_out_val;
+
     /* input */
     assign gpio_in = gpio;
 
@@ -52,9 +56,6 @@ module gpio_ctrl
 
     always @(posedge clk) ready <= !resetn ? 0 : valid;
 
-    reg  [GPIO_NR -1:0] gpio_out_en;
-    wire [GPIO_NR -1:0] gpio_in;
-    reg  [GPIO_NR -1:0] gpio_out_val;
 
     always @(posedge clk) begin
         if (!resetn) begin

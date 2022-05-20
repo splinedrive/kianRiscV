@@ -1,7 +1,7 @@
 MEMORY
 {
-  ram      (rwx) : ORIGIN = 0x00000000, LENGTH = 0x00010000 
-/*   ram      (rwx) : ORIGIN = 0x00000000, LENGTH = 8192 */
+  ram      (rwx) : ORIGIN = 0x00000000, LENGTH = 0x00020000  
+/*   ram      (rwx) : ORIGIN = 0x00000000, LENGTH = 8192  */
  
 }
 __stacktop = ORIGIN(ram) + LENGTH(ram);

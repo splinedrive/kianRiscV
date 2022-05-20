@@ -40,12 +40,14 @@ module register_file
 
     localparam X2 = 2;
     initial begin
-        bank0[0] = 32'b0;
-        bank1[0] = 32'b0;
-        for (i = 0; i < REGISTER_DEPTH -1; i = i + 1) begin
-            bank0[i] = 32'b0;
-            bank1[i] = 32'b0;
-        end
+        /*
+              bank0[0] = 32'b0;
+              bank1[0] = 32'b0;
+              for (i = 0; i < REGISTER_DEPTH -1; i = i + 1) begin
+                  bank0[i] = 32'b0;
+                  bank1[i] = 32'b0;
+              end
+        */
         bank0[X2] = STACKADDR;
         bank1[X2] = STACKADDR;
     end

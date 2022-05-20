@@ -53,6 +53,32 @@ module soc
         output wire [7:0]  led,
 `endif
 
+`ifdef ARTIX7
+`ifdef HDMI_VIDEO_FB
+        output wire [ 3: 0] hdmi_p,
+        output wire [ 3: 0] hdmi_n,
+`endif
+`ifdef ARTY7
+        output wire [ 3: 0] led,
+`elsif NEXYSA7
+        output wire [ 15: 0] led,
+        output wire CA,
+        output wire CB,
+        output wire CC,
+        output wire CD,
+        output wire CE,
+        output wire CF,
+        output wire CG,
+        output wire DP,
+        output wire [ 7: 0] AN,
+        input  wire [ 0: 0] SW,
+`elsif NEXYS_VIDEO
+        output wire [ 7: 0] led,
+`elsif WUKONG
+        output wire [ 1: 0] led,
+`endif
+`endif
+
 `ifdef LED_KROETE
         //  output wire [3:0]  led,
         output wire [2:0]  led,
@@ -83,6 +109,13 @@ module soc
         inout    wire [`GPIO_NR -1:0] gpio,
 `endif
 
+`ifdef ECP5
+`define USR_SCLK
+`endif
+`ifdef ARTIX7
+`define USR_SCLK
+`endif
+
 `ifdef PSRAM_MEMORY_32MB
         output   wire       psram_ss,
         output   wire       psram_sclk,
@@ -95,7 +128,7 @@ module soc
         output wire        flash_csn,
         input  wire        flash_miso,
         output wire        flash_mosi
-`ifndef ECP5
+`ifndef USR_SCLK
         ,output wire       flash_sclk
 `endif
     );
@@ -137,11 +170,47 @@ module soc
     wire [31:0] iomem_rdata;
 `endif
 
+`ifdef PC_OUT
+    wire [31: 0] PC;
+`endif
+
+`ifdef CPU_HALT
+    wire halt;
+`endif
+
 `ifndef SIM
 `ifdef ECP5
     wire   flash_sclk;
     wire   flash_clk;
     USRMCLK u1 (.USRMCLKI(flash_clk), .USRMCLKTS(1'b0));
+    assign flash_clk          = flash_sclk;
+`endif
+
+`ifdef ARTIX7
+    wire   flash_sclk;
+    wire   flash_clk;
+    STARTUPE2 STARTUPE2
+              (.CLK(1'b0),
+               .GSR(1'b0),
+               .GTS(1'b0),
+               .KEYCLEARB(1'b1),
+               .PACK(1'b0),
+               .PREQ(),
+
+               // Drive clock.
+               .USRCCLKO(flash_clk),
+               .USRCCLKTS(1'b0),
+
+               // These control the DONE pin.  UG470 says USRDONETS should
+               // usually be low to enable DONE output.  But by default
+               // (i.e. when the STARTUPE2 is not instaintiated), the DONE pin
+               // goes to hi-z after initialization.  This is how to do that.
+               .USRDONEO(1'b0),
+               .USRDONETS(1'b1),
+
+               .CFGCLK(),
+               .CFGMCLK(),
+               .EOS());
     assign flash_clk          = flash_sclk;
 `endif
 `endif
@@ -152,6 +221,48 @@ module soc
 
     wire resetn;
     wire clk;
+
+`ifdef ARTIX7
+    localparam cnt_msb = $clog2(`SYSTEM_CLK);
+    wire [cnt_msb -1: 0] cnt;
+    counter #(cnt_msb) led_cnt_I (resetn, clk, 1'b 1, cnt);
+    wire   led_msb = cnt[cnt_msb -1];
+`ifdef ARTY7
+    assign led = {~led_msb, led_msb, led_msb, ~led_msb};  // 0 is on
+`elsif NEXYS_VIDEO
+    assign led =
+           {
+               ~led_msb, ~led_msb, led_msb, led_msb,
+               ~led_msb, ~led_msb, led_msb, led_msb
+           };
+`elsif NEXYSA7
+    assign halt = !SW[0];
+    reg [ 1: 0] halt_sync;
+    always @(posedge clk) halt_sync <= {halt_sync[0], halt};
+    assign led =
+           {
+               ~led_msb, ~led_msb, led_msb, led_msb,
+               ~led_msb, ~led_msb, led_msb, led_msb,
+               ~led_msb, ~led_msb, led_msb, led_msb,
+               ~led_msb, ~led_msb, led_msb, led_msb
+           };  // 0 is on
+    eight_seg_display pc_disp_I( clk, PC, CA, CB, CC, CD, CE, CF, CG, DP, AN );
+`elsif WUKONG
+    //    IBUF ibuf_I (.I(clk_osc), .O(clk_oscn));
+    assign led = {~cnt[cnt_msb], cnt[cnt_msb]};
+`endif
+    wire clk_x5;
+    wire pclk;
+
+    sys_clks sys_clks_I
+             (
+                 .pclk        ( pclk     ),
+                 .pclk_x5     ( clk_x5   ),
+                 .sys_clk     ( clk      ),
+                 .clk_osc     ( clk_osc  )
+             );
+
+`endif
 
 `ifdef KROETE
     ice40_hx8_pll
@@ -182,7 +293,6 @@ module soc
     assign { lcol4, lcol3, lcol2, lcol1 } = lcol[3:0];
 
 `ifdef PC_OUT
-    wire [31: 0] PC;
     assign leds1 = ~PC[31:24];
     assign leds2 = ~PC[23:16];
     assign leds3 = ~PC[15: 8];
@@ -250,15 +360,16 @@ module soc
 `endif
 `endif
 
+
 `ifdef GPIO
     wire [31: 0] gpio_rdata;
+    wire         gpio_ready;
+
     wire gpio_valid =  !gpio_ready && iomem_valid && (
              iomem_addr == `GPIO_DIR_ADDR      ||
              iomem_addr == `GPIO_INPUT_ADDR    ||
              iomem_addr == `GPIO_OUTPUT_ADDR
          );
-    wire gpio_ready;
-
     gpio_ctrl
         #(
             .GPIO_NR(`GPIO_NR)
@@ -284,7 +395,7 @@ module soc
 `endif
 
 `ifdef OLED_SD1331
-    wire oled_valid =  iomem_valid &&
+    wire oled_valid =  !oled_ready && iomem_valid &&
          (iomem_addr == `VIDEOENABLE_ADDR || iomem_addr == `VIDEO_RAW_ADDR) && |iomem_wstrb;
     wire oled_ready;
 
@@ -336,11 +447,20 @@ module soc
                  .FB_ADDR1(`FB_ADDR1),
                  .FRAME_BUFFER_CTRL(`FRAME_BUFFER_CTRL)
              ) video_fb_I (
+`ifdef ECP5
                  .clk_pclk     ( clk_osc                              ),
+`elsif ARTIX7
+                 .clk_pclk     ( pclk                                 ),
+`endif
                  .clk_x5       ( clk_x5                               ),
                  .clk_sys      ( clk                                  ),
                  .resetn       ( resetn                               ),
+`ifdef ECP5
                  .gpdi_dp      ( gpdi_dp                              ),
+`elsif ARTIX7
+                 .hdmi_p       ( hdmi_p                               ),
+                 .hdmi_n       ( hdmi_n                               ),
+`endif
 
                  .video_sel    (                                      ),
                  .iomem_valid  ( iomem_valid                          ),
@@ -380,9 +500,14 @@ module soc
             .flash_sclk    ( flash_sclk                ),
             .resetn        ( resetn                    ),
 `ifdef PC_OUT
-            .PC            ( PC                        )
+            .PC            ( PC                        ),
 `else
-            .PC            (                           )
+            .PC            (                           ),
+`endif
+`ifdef CPU_HALT
+            .halt          ( halt_sync[1]              )
+`else
+            .halt          (                           )
 `endif
         );
 
@@ -423,3 +548,346 @@ module soc
            32'b 0;
 
 endmodule
+`ifdef ARTIX7
+module sys_clks
+
+    (// Clock in ports
+        // Clock out ports
+        output        wire pclk,
+        output        wire pclk_x5,
+        output        wire sys_clk,
+        input         wire clk_osc
+    );
+    // Input buffering
+    //------------------------------------
+    wire clk_osc_sys_clks;
+    wire clk_in2_sys_clks;
+    IBUF clkin1_ibufg
+         (.O (clk_osc_sys_clks),
+          .I (clk_osc));
+
+
+
+
+    // Clocking PRIMITIVE
+    //------------------------------------
+
+    // Instantiation of the MMCM PRIMITIVE
+    //    * Unused inputs are tied off
+    //    * Unused outputs are labeled unused
+
+    wire        pclk_sys_clks;
+    wire        pclk_x5_sys_clks;
+    wire        sys_clk_sys_clks;
+    wire        clk_out4_sys_clks;
+    wire        clk_out5_sys_clks;
+    wire        clk_out6_sys_clks;
+    wire        clk_out7_sys_clks;
+
+    wire [15:0] do_unused;
+    wire        drdy_unused;
+    wire        psdone_unused;
+    wire        locked_int;
+    wire        clkfbout_sys_clks;
+    wire        clkfbout_buf_sys_clks;
+    wire        clkfboutb_unused;
+    wire clkout0b_unused;
+    wire clkout1b_unused;
+    wire clkout2b_unused;
+    wire clkout3_unused;
+    wire clkout3b_unused;
+    wire clkout4_unused;
+    wire        clkout5_unused;
+    wire        clkout6_unused;
+    wire        clkfbstopped_unused;
+    wire        clkinstopped_unused;
+
+`ifdef ARTY7
+    MMCME2_ADV
+        #(.BANDWIDTH            ("OPTIMIZED"),
+          .CLKOUT4_CASCADE      ("FALSE"),
+          .COMPENSATION         ("ZHOLD"),
+          .STARTUP_WAIT         ("FALSE"),
+          .DIVCLK_DIVIDE        (1),
+          .CLKFBOUT_MULT_F      (8.750),
+          .CLKFBOUT_PHASE       (0.000),
+          .CLKFBOUT_USE_FINE_PS ("FALSE"),
+          .CLKOUT0_DIVIDE_F     (35.000),
+          .CLKOUT0_PHASE        (0.000),
+          .CLKOUT0_DUTY_CYCLE   (0.500),
+          .CLKOUT0_USE_FINE_PS  ("FALSE"),
+          .CLKOUT1_DIVIDE       (7),
+          .CLKOUT1_PHASE        (0.000),
+          .CLKOUT1_DUTY_CYCLE   (0.500),
+          .CLKOUT1_USE_FINE_PS  ("FALSE"),
+          .CLKOUT2_DIVIDE       (5),
+          .CLKOUT2_PHASE        (0.000),
+          .CLKOUT2_DUTY_CYCLE   (0.500),
+          .CLKOUT2_USE_FINE_PS  ("FALSE"),
+          .CLKIN1_PERIOD        (10.000))
+        mmcm_adv_inst
+        // Output clocks
+        (
+            .CLKFBOUT            (clkfbout_sys_clks),
+            .CLKFBOUTB           (clkfboutb_unused),
+            .CLKOUT0             (pclk_sys_clks),
+            .CLKOUT0B            (clkout0b_unused),
+            .CLKOUT1             (pclk_x5_sys_clks),
+            .CLKOUT1B            (clkout1b_unused),
+            .CLKOUT2             (sys_clk_sys_clks),
+            .CLKOUT2B            (clkout2b_unused),
+            .CLKOUT3             (clkout3_unused),
+            .CLKOUT3B            (clkout3b_unused),
+            .CLKOUT4             (clkout4_unused),
+            .CLKOUT5             (clkout5_unused),
+            .CLKOUT6             (clkout6_unused),
+            // Input clock control
+            .CLKFBIN             (clkfbout_buf_sys_clks),
+            .CLKIN1              (clk_osc_sys_clks),
+            .CLKIN2              (1'b0),
+            // Tied to always select the primary input clock
+            .CLKINSEL            (1'b1),
+            // Ports for dynamic reconfiguration
+            .DADDR               (7'h0),
+            .DCLK                (1'b0),
+            .DEN                 (1'b0),
+            .DI                  (16'h0),
+            .DO                  (do_unused),
+            .DRDY                (drdy_unused),
+            .DWE                 (1'b0),
+            // Ports for dynamic phase shift
+            .PSCLK               (1'b0),
+            .PSEN                (1'b0),
+            .PSINCDEC            (1'b0),
+            .PSDONE              (psdone_unused),
+            // Other control and status signals
+            .LOCKED              (locked_int),
+            .CLKINSTOPPED        (clkinstopped_unused),
+            .CLKFBSTOPPED        (clkfbstopped_unused),
+            .PWRDWN              (1'b0),
+            .RST                 (1'b0));
+
+`elsif NEXYSA7
+
+    MMCME2_ADV
+        #(.BANDWIDTH            ("OPTIMIZED"),
+          .CLKOUT4_CASCADE      ("FALSE"),
+          .COMPENSATION         ("ZHOLD"),
+          .STARTUP_WAIT         ("FALSE"),
+          .DIVCLK_DIVIDE        (1),
+          .CLKFBOUT_MULT_F      (7.500),
+          .CLKFBOUT_PHASE       (0.000),
+          .CLKFBOUT_USE_FINE_PS ("FALSE"),
+          .CLKOUT0_DIVIDE_F     (30.000),
+          .CLKOUT0_PHASE        (0.000),
+          .CLKOUT0_DUTY_CYCLE   (0.500),
+          .CLKOUT0_USE_FINE_PS  ("FALSE"),
+          .CLKOUT1_DIVIDE       (3),
+          .CLKOUT1_PHASE        (0.000),
+          .CLKOUT1_DUTY_CYCLE   (0.500),
+          .CLKOUT1_USE_FINE_PS  ("FALSE"),
+          .CLKOUT2_DIVIDE       (5),
+          .CLKOUT2_PHASE        (0.000),
+          .CLKOUT2_DUTY_CYCLE   (0.500),
+          .CLKOUT2_USE_FINE_PS  ("FALSE"),
+          .CLKIN1_PERIOD        (10.000))
+        mmcm_adv_inst
+        // Output clocks
+        (
+            .CLKFBOUT            (clkfbout_sys_clks),
+            .CLKFBOUTB           (clkfboutb_unused),
+            .CLKOUT0             (pclk_sys_clks),
+            .CLKOUT0B            (clkout0b_unused),
+            .CLKOUT1             (pclk_x5_sys_clks),
+            .CLKOUT1B            (clkout1b_unused),
+            .CLKOUT2             (sys_clk_sys_clks),
+            .CLKOUT2B            (clkout2b_unused),
+            .CLKOUT3             (clkout3_unused),
+            .CLKOUT3B            (clkout3b_unused),
+            .CLKOUT4             (clkout4_unused),
+            .CLKOUT5             (clkout5_unused),
+            .CLKOUT6             (clkout6_unused),
+            // Input clock control
+            .CLKFBIN             (clkfbout_buf_sys_clks),
+            .CLKIN1              (clk_osc_sys_clks),
+            .CLKIN2              (1'b0),
+            // Tied to always select the primary input clock
+            .CLKINSEL            (1'b1),
+            // Ports for dynamic reconfiguration
+            .DADDR               (7'h0),
+            .DCLK                (1'b0),
+            .DEN                 (1'b0),
+            .DI                  (16'h0),
+            .DO                  (do_unused),
+            .DRDY                (drdy_unused),
+            .DWE                 (1'b0),
+            // Ports for dynamic phase shift
+            .PSCLK               (1'b0),
+            .PSEN                (1'b0),
+            .PSINCDEC            (1'b0),
+            .PSDONE              (psdone_unused),
+            // Other control and status signals
+            .LOCKED              (locked_int),
+            .CLKINSTOPPED        (clkinstopped_unused),
+            .CLKFBSTOPPED        (clkfbstopped_unused),
+            .PWRDWN              (1'b0),
+            .RST                 (1'b0));
+
+`elsif NEXYS_VIDEO
+
+    MMCME2_ADV
+        #(.BANDWIDTH            ("OPTIMIZED"),
+          .CLKOUT4_CASCADE      ("FALSE"),
+          .COMPENSATION         ("ZHOLD"),
+          .STARTUP_WAIT         ("FALSE"),
+          .DIVCLK_DIVIDE        (1),
+          .CLKFBOUT_MULT_F      (7.500),
+          .CLKFBOUT_PHASE       (0.000),
+          .CLKFBOUT_USE_FINE_PS ("FALSE"),
+          .CLKOUT0_DIVIDE_F     (30.000),
+          .CLKOUT0_PHASE        (0.000),
+          .CLKOUT0_DUTY_CYCLE   (0.500),
+          .CLKOUT0_USE_FINE_PS  ("FALSE"),
+          .CLKOUT1_DIVIDE       (3),
+          .CLKOUT1_PHASE        (0.000),
+          .CLKOUT1_DUTY_CYCLE   (0.500),
+          .CLKOUT1_USE_FINE_PS  ("FALSE"),
+          .CLKOUT2_DIVIDE       (5),
+          .CLKOUT2_PHASE        (0.000),
+          .CLKOUT2_DUTY_CYCLE   (0.500),
+          .CLKOUT2_USE_FINE_PS  ("FALSE"),
+          .CLKIN1_PERIOD        (10.000))
+        mmcm_adv_inst
+        // Output clocks
+        (
+            .CLKFBOUT            (clkfbout_sys_clks),
+            .CLKFBOUTB           (clkfboutb_unused),
+            .CLKOUT0             (pclk_sys_clks),
+            .CLKOUT0B            (clkout0b_unused),
+            .CLKOUT1             (pclk_x5_sys_clks),
+            .CLKOUT1B            (clkout1b_unused),
+            .CLKOUT2             (sys_clk_sys_clks),
+            .CLKOUT2B            (clkout2b_unused),
+            .CLKOUT3             (clkout3_unused),
+            .CLKOUT3B            (clkout3b_unused),
+            .CLKOUT4             (clkout4_unused),
+            .CLKOUT5             (clkout5_unused),
+            .CLKOUT6             (clkout6_unused),
+            // Input clock control
+            .CLKFBIN             (clkfbout_buf_sys_clks),
+            .CLKIN1              (clk_osc_sys_clks),
+            .CLKIN2              (1'b0),
+            // Tied to always select the primary input clock
+            .CLKINSEL            (1'b1),
+            // Ports for dynamic reconfiguration
+            .DADDR               (7'h0),
+            .DCLK                (1'b0),
+            .DEN                 (1'b0),
+            .DI                  (16'h0),
+            .DO                  (do_unused),
+            .DRDY                (drdy_unused),
+            .DWE                 (1'b0),
+            // Ports for dynamic phase shift
+            .PSCLK               (1'b0),
+            .PSEN                (1'b0),
+            .PSINCDEC            (1'b0),
+            .PSDONE              (psdone_unused),
+            // Other control and status signals
+            .LOCKED              (locked_int),
+            .CLKINSTOPPED        (clkinstopped_unused),
+            .CLKFBSTOPPED        (clkfbstopped_unused),
+            .PWRDWN              (1'b0),
+            .RST                 (1'b0));
+
+
+`elsif WUKONG
+
+    MMCME2_ADV
+        #(.BANDWIDTH            ("OPTIMIZED"),
+          .CLKOUT4_CASCADE      ("FALSE"),
+          .COMPENSATION         ("ZHOLD"),
+          .STARTUP_WAIT         ("FALSE"),
+          .DIVCLK_DIVIDE        (1),
+          .CLKFBOUT_MULT_F      (17.500),
+          .CLKFBOUT_PHASE       (0.000),
+          .CLKFBOUT_USE_FINE_PS ("FALSE"),
+          .CLKOUT0_DIVIDE_F     (35.000),
+          .CLKOUT0_PHASE        (0.000),
+          .CLKOUT0_DUTY_CYCLE   (0.500),
+          .CLKOUT0_USE_FINE_PS  ("FALSE"),
+          .CLKOUT1_DIVIDE       (7),
+          .CLKOUT1_PHASE        (0.000),
+          .CLKOUT1_DUTY_CYCLE   (0.500),
+          .CLKOUT1_USE_FINE_PS  ("FALSE"),
+          .CLKOUT2_DIVIDE       (5),
+          .CLKOUT2_PHASE        (0.000),
+          .CLKOUT2_DUTY_CYCLE   (0.500),
+          .CLKOUT2_USE_FINE_PS  ("FALSE"),
+          .CLKIN1_PERIOD        (20.000))
+        mmcm_adv_inst
+        // Output clocks
+        (
+            .CLKFBOUT            (clkfbout_sys_clks),
+            .CLKFBOUTB           (clkfboutb_unused),
+            .CLKOUT0             (pclk_sys_clks),
+            .CLKOUT0B            (clkout0b_unused),
+            .CLKOUT1             (pclk_x5_sys_clks),
+            .CLKOUT1B            (clkout1b_unused),
+            .CLKOUT2             (sys_clk_sys_clks),
+            .CLKOUT2B            (clkout2b_unused),
+            .CLKOUT3             (clkout3_unused),
+            .CLKOUT3B            (clkout3b_unused),
+            .CLKOUT4             (clkout4_unused),
+            .CLKOUT5             (clkout5_unused),
+            .CLKOUT6             (clkout6_unused),
+            // Input clock control
+            .CLKFBIN             (clkfbout_buf_sys_clks),
+            .CLKIN1              (clk_osc_sys_clks),
+            .CLKIN2              (1'b0),
+            // Tied to always select the primary input clock
+            .CLKINSEL            (1'b1),
+            // Ports for dynamic reconfiguration
+            .DADDR               (7'h0),
+            .DCLK                (1'b0),
+            .DEN                 (1'b0),
+            .DI                  (16'h0),
+            .DO                  (do_unused),
+            .DRDY                (drdy_unused),
+            .DWE                 (1'b0),
+            // Ports for dynamic phase shift
+            .PSCLK               (1'b0),
+            .PSEN                (1'b0),
+            .PSINCDEC            (1'b0),
+            .PSDONE              (psdone_unused),
+            // Other control and status signals
+            .LOCKED              (locked_int),
+            .CLKINSTOPPED        (clkinstopped_unused),
+            .CLKFBSTOPPED        (clkfbstopped_unused),
+            .PWRDWN              (1'b0),
+            .RST                 (1'b0));
+
+    // Clock Monitor clock assigning
+    //--------------------------------------
+    // Output buffering
+    //-----------------------------------
+
+`endif
+    BUFG clkf_buf
+         (.O (clkfbout_buf_sys_clks),
+          .I (clkfbout_sys_clks));
+
+
+    BUFG clkout1_buf
+         (.O   (pclk),
+          .I   (pclk_sys_clks));
+
+
+    BUFG clkout2_buf
+         (.O   (pclk_x5),
+          .I   (pclk_x5_sys_clks));
+
+    BUFG clkout3_buf
+         (.O   (sys_clk),
+          .I   (sys_clk_sys_clks));
+endmodule
+`endif

@@ -19,9 +19,13 @@
 `ifndef KIANV_RISCV_HARRIS
 `define KIANV_RISCV_HARRIS
 
+`ifndef RV32M
 `define RV32M
+`endif
 //`undef  RV32M
+`ifndef CSR
 `define CSR
+`endif
 //`undef  CSR
  
 // mux SRCA

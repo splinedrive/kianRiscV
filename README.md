@@ -2,7 +2,7 @@
 # kianv RISC-V Harris MultiCycle Edition (SOC)
 RISC-V is an open standard instruction set architecture (ISA) according to
 the principles of reduced instruction set computer (RISC) principles.
-Afterward when I sucessfully completed my **HarveyMuddX-ENGR85B** Exam certificate. 
+Afterward when I sucessfully completed my **HarveyMuddX-ENGR85B** Exam certificate.
 I learned howto design a RISC-V CPU **hierarchical**.
 Last year I have sucessfully completed an exam in **Building a RISC-V CPU Core**
 and finalized my previous RISC-V soc [kianv simple edition](https://github.com/splinedrive/kianRiscV/tree/master/archive/simple).
@@ -13,7 +13,7 @@ was a good experience to think in **logical design**.
 
 
 CPU
-=== 
+===
 The processor supports `RV32IM` instruction set
 
 * `RV`: RISC-V
@@ -21,7 +21,7 @@ The processor supports `RV32IM` instruction set
 * `I` : integer instructions
 * `M` : multiply/divide/modulo instructions
 
-and passes the RISC-V [unit tests for RISC-V processors](https://github.com/riscv-software-src/riscv-tests). 
+and passes the RISC-V [unit tests for RISC-V processors](https://github.com/riscv-software-src/riscv-tests).
 The cpu is implemented with strong hierarchical method design rules I have learned from **Computer
 Architecture RISC-V Edition**, Harris, Harris. As you can see here (taken from my exam documents):
 <figure>
@@ -57,7 +57,7 @@ My architecture will presented by following verilog files:
 
 Register Transfer Logik (RTL)
 =============================
-Some examples of CPU components shown in RTL of the top layer of the cpu, 
+Some examples of CPU components shown in RTL of the top layer of the cpu,
 control unit, data unit and the main finite state machine (FSM) here:
 
 # Top CPU Layer
@@ -108,6 +108,7 @@ Supported **fpgas**:
 * icebreaker ice40
 * colorlighi5, colorlighti9 ecp5
 * icefun ice40
+* digilent arty7, nexys a7 and nexys video
 
 ## Synthesis of SOC
 You should study `defines.vh` file you can choose the sytemfrequency,
@@ -130,7 +131,7 @@ cd gateware
 ./sim.sh # for iverilog simulation
 ./verilator.sh # for verilator simulation
 ```
-## Simulation of CPU only 
+## Simulation of CPU only
 ```bash
 cd kianv_harris_mcycle_edition
 ./sim.sh # for iverilog simulation
@@ -147,7 +148,7 @@ cd firmware
 ## Toolchain
 
 Build [RISC-V GNU toolchain](https://github.com/riscv/riscv-gnu-toolchain)
-Invoke the build_toolchain.sh script to have a riscv toolchain for rv32im 
+Invoke the build_toolchain.sh script to have a riscv toolchain for rv32im
 and will build under /opt/riscv32im
 ```bash
 cd ./kianv_harris_mcycle_edition/firmware/
@@ -157,7 +158,7 @@ cd ./kianv_harris_mcycle_edition/firmware/
 Or use another toolchain
 and adjust:\
 ```bash
-./firmware/kianv_firmware_bram_gcc.sh  
+./firmware/kianv_firmware_bram_gcc.sh
 ./firmware/kianv_firmware_gcc.sh
 ```
 ## Trying Firmware
@@ -165,7 +166,7 @@ The firmware will flashed on nor memory!
 Firmware:\
 ```bash
 cd ./firmware\
-flash with\ 
+flash with\
 ./flash_firmware.sh \
 ulx3s|ice|colori5 <*.ld> <*.c>
 
@@ -192,13 +193,19 @@ to get output like pi.c, main_prime.c, main_rv32m.c, main_rv32m_printf.c, ....
 
 ## GPIO interface
 Added a generic purpose io interface for each soc. You can drive the IOs from firmwarespace. The firmware folder
-provides an i2c and spi lib. 
-There are some bitbang examples like to drive via i2c a liquidchrystal or an oled sdd1306 display. 
+provides an i2c and spi lib.
+There are some bitbang examples like to drive via i2c a liquidchrystal or an oled sdd1306 display.
 The highlight is the spi bitbanging example to read, write files from fat16/32 sd card...The driver
 is from ultraembedded I stripped down to an one file implementation.
 Check the .pcf or .lcf files to remap or to expand the ios to 32 with current implementation.
 
 ## PMODs
 * PSRAM 32MByte: https://machdyne.com/product/qqspi-psram32/
+
+## Xilinx
+Check the XilinxVivado folder and
+```bash
+./build.sh
+```
 
 Hirosh

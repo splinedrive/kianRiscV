@@ -26,31 +26,35 @@ module video_fb
          parameter FRAME_BUFFER_CTRL = 32'h 30_000_024
      )
      (
-         input clk_pclk,
-         input clk_x5,
-         input clk_sys,
-         input resetn,
-         output [3:0] gpdi_dp,
-
-         output wire        video_sel,
-         input  wire        iomem_valid,
-         output wire        iomem_ready,
-         input  wire [ 3:0] iomem_wstrb,
-         input  wire [31:0] iomem_addr,
-         input  wire [31:0] iomem_wdata,
-         output wire [31:0] iomem_rdata
+         input  wire         clk_pclk,
+         input  wire         clk_x5,
+         input  wire         clk_sys,
+         input  wire         resetn,
+`ifdef ECP5
+         output wire [ 3 :0] gpdi_dp,
+`elsif ARTIX7
+         output wire [ 3: 0] hdmi_p,
+         output wire [ 3: 0] hdmi_n,
+`endif
+         output wire         video_sel,
+         input  wire         iomem_valid,
+         output wire         iomem_ready,
+         input  wire [ 3: 0] iomem_wstrb,
+         input  wire [31: 0] iomem_addr,
+         input  wire [31: 0] iomem_wdata,
+         output wire [31: 0] iomem_rdata
      );
 
     wire       clk = clk_sys;
     wire       hsync;
     wire       vsync;
     wire       blank;
-    wire       [10:0] hcnt; /* 0..2043 */
-    wire       [10:0] vcnt; /* 0..2043 */
+    wire       [10: 0] hcnt; /* 0..2043 */
+    wire       [10: 0] vcnt; /* 0..2043 */
 
-    reg        [7:0]  vga_red;
-    reg        [7:0]  vga_blue;
-    reg        [7:0]  vga_green;
+    reg        [ 7: 0]  vga_red;
+    reg        [ 7: 0]  vga_blue;
+    reg        [ 7: 0]  vga_green;
 
     // hardwired inside but you can do parameter from it
     localparam XRES              = 80;
@@ -58,8 +62,8 @@ module video_fb
     localparam SCREEN_RESOLUTION = XRES*YRES; // 24 bit
 
     // hardwired inside but you can do parameter from it
-    localparam VPOL = 1'b1;
-    localparam HPOL = 1'b0;
+    localparam VPOL = 1'b 1;
+    localparam HPOL = 1'b 0;
 
     // hardwired inside but you can do parameter from it
     vga_ctrl #(
@@ -85,18 +89,6 @@ module video_fb
                  .resetn       ( resetn     )
              );
 
-    always @(*) begin
-        if (!blank) begin
-            vga_blue  = fb_rdata[fb_segment][ 7: 0];
-            vga_green = fb_rdata[fb_segment][15 :8];
-            vga_red   = fb_rdata[fb_segment][23:16];
-        end else begin
-            vga_red   = 8'b 0;
-            vga_blue  = 8'b 0;
-            vga_green = 8'b 0;
-        end
-    end
-
     wire [23: 0] fb_rdata[0:1];
 
     reg  [12: 0] fb_rd_addr;
@@ -118,9 +110,22 @@ module video_fb
     reg hsync_reg;
     always @(posedge clk_pclk) hsync_reg <= hsync;
 
+    always @(*) begin
+        if (!blank) begin
+            vga_blue  = fb_rdata[fb_segment][ 7: 0];
+            vga_green = fb_rdata[fb_segment][15 :8];
+            vga_red   = fb_rdata[fb_segment][23:16];
+        end else begin
+            vga_red   = 8'b 0;
+            vga_blue  = 8'b 0;
+            vga_green = 8'b 0;
+        end
+    end
+
+
     genvar i;
     generate
-        for (i = 0; i < 2; i++) begin
+        for (i = 0; i < 2; i = i +1) begin
             assign fb_ready_comb  [ i ]  = |fb_ready[i] | fb_seg_ready;
             assign video_sel_comb [ i ]  = |fb_valid[i];
         end
@@ -139,7 +144,7 @@ module video_fb
 
     genvar j;
     generate
-        for (j = 0; j < 2; j++)
+        for (j = 0; j < 2; j = j + 1)
             always @(posedge clk) fb_ready[j] <= !resetn ? 0 : fb_valid[j];
     endgenerate
 
@@ -185,11 +190,11 @@ module video_fb
 
     genvar k;
     generate
-        for (k = 0; k < 2; k++)
+        for (k = 0; k < 2; k = k + 1)
             dual_port_ram #(
                               .DATA_WIDTH( 24 ),
                               .ADDR_WIDTH( 13 ) // 80*60*1
-                          ) fb_I[k]
+                          ) fb_I[k:k]
                           (
                               .wdata   ( iomem_wdata[23:0]                    ),
                               .rd_addr ( fb_rd_addr                           ),  // read only fb ctrl
@@ -202,15 +207,15 @@ module video_fb
     endgenerate
 
     // hardwired inside but you can do parameter from it
-    localparam DDR_HDMI_TRANSFER = 1;
-    localparam OUT_TMDS_MSB = DDR_HDMI_TRANSFER ? 1 : 0;
+    //localparam DDR_HDMI_TRANSFER = 1'b 1;
+    localparam OUT_TMDS_MSB = `DDR_HDMI_TRANSFER ? 1 : 0;
     wire [OUT_TMDS_MSB:0] out_tmds_red;
     wire [OUT_TMDS_MSB:0] out_tmds_green;
     wire [OUT_TMDS_MSB:0] out_tmds_blue;
     wire [OUT_TMDS_MSB:0] out_tmds_clk;
 
     hdmi_device #(
-                    .DDR_ENABLED(DDR_HDMI_TRANSFER)
+                    .DDR_ENABLED(`DDR_HDMI_TRANSFER)
                 )
                 hdmi_device_i
                 (
@@ -234,7 +239,7 @@ module video_fb
 `ifdef ECP5
     // SDR and DDR
     generate
-        if (DDR_HDMI_TRANSFER) begin
+        if (`DDR_HDMI_TRANSFER) begin
             ODDRX1F ddr0_clock (.D0(out_tmds_clk   [0] ), .D1(out_tmds_clk   [1] ), .Q(gpdi_dp[3]), .SCLK(clk_x5), .RST(0));
             ODDRX1F ddr0_red   (.D0(out_tmds_red   [0] ), .D1(out_tmds_red   [1] ), .Q(gpdi_dp[2]), .SCLK(clk_x5), .RST(0));
             ODDRX1F ddr0_green (.D0(out_tmds_green [0] ), .D1(out_tmds_green [1] ), .Q(gpdi_dp[1]), .SCLK(clk_x5), .RST(0));
@@ -246,5 +251,93 @@ module video_fb
             assign gpdi_dp[0] = out_tmds_blue;
         end
     endgenerate
+`elsif ARTIX7
+    wire tmds_clk = clk_x5;
+generate if (!`DDR_HDMI_TRANSFER) begin
+            /*
+                      OBUFDS OBUFDS_clock     ( .I( out_tmds_clk   ),   .O( hdmi_p[3]), .OB(hdmi_n[3]) );
+                      OBUFDS OBUFDS_red       ( .I( out_tmds_red   ),   .O( hdmi_p[2]), .OB(hdmi_n[2]) );
+                      OBUFDS OBUFDS_green     ( .I( out_tmds_green ),   .O( hdmi_p[1]), .OB(hdmi_n[1]) );
+                      OBUFDS OBUFDS_blue      ( .I( out_tmds_blue  ),   .O( hdmi_p[0]), .OB(hdmi_n[0]) );
+            */
+            assign hdmi_p[3] = out_tmds_clk;
+            assign hdmi_p[2] = out_tmds_red;
+            assign hdmi_p[1] = out_tmds_green;
+            assign hdmi_p[0] = out_tmds_blue;
+
+            assign hdmi_n[3] = ~out_tmds_clk;
+            assign hdmi_n[2] = ~out_tmds_red;
+            assign hdmi_n[1] = ~out_tmds_green;
+            assign hdmi_n[0] = ~out_tmds_blue;
+
+        end else begin
+            wire out_ddr_tmds_clk;
+            ODDR
+                #(.DDR_CLK_EDGE   ("SAME_EDGE"), //"OPPOSITE_EDGE" "SAME_EDGE"
+                  .INIT           (1'b 0      ),
+                  .SRTYPE         ("ASYNC"))
+                oddr_clk
+                (
+                    .D1( out_tmds_clk[0]  ),
+                    .D2( out_tmds_clk[1]  ) ,
+                    .C ( tmds_clk         ),
+                    .CE( 1'b1             ),
+                    .Q ( out_ddr_tmds_clk ),
+                    .R ( 1'b0             ),
+                    .S ( 1'b0             )
+                );
+            OBUFDS OBUFDS_clock( .I(out_ddr_tmds_clk), .O(hdmi_p[3]), .OB(hdmi_n[3]) );
+
+            wire out_ddr_tmds_red;
+            ODDR
+                #(.DDR_CLK_EDGE   ("SAME_EDGE"), //"OPPOSITE_EDGE" "SAME_EDGE"
+                  .INIT           (1'b 0      ),
+                  .SRTYPE         ("ASYNC"))
+                oddr_red
+                (
+                    .D1( out_tmds_red[0]  ),
+                    .D2( out_tmds_red[1]  ),
+                    .C ( tmds_clk         ),
+                    .CE( 1'b1             ),
+                    .Q ( out_ddr_tmds_red ),
+                    .R ( 1'b0             ),
+                    .S ( 1'b0             )
+                );
+            OBUFDS OBUFDS_red( .I(out_ddr_tmds_red), .O(hdmi_p[2]), .OB(hdmi_n[2]) );
+
+            wire out_ddr_tmds_green;
+            ODDR
+                #(.DDR_CLK_EDGE   ("SAME_EDGE"), //"OPPOSITE_EDGE" "SAME_EDGE"
+                  .INIT           (1'b       0),
+                  .SRTYPE         ("ASYNC"))
+                oddr_green
+                (
+                    .D1( out_tmds_green[0]   ),
+                    .D2( out_tmds_green[1]   ),
+                    .C ( tmds_clk            ),
+                    .CE( 1'b1                ),
+                    .Q ( out_ddr_tmds_green  ),
+                    .R ( 1'b0                ),
+                    .S ( 1'b0                )
+                );
+            OBUFDS OBUFDS_green( .I(out_ddr_tmds_green), .O(hdmi_p[1]), .OB(hdmi_n[1]) );
+
+            wire out_ddr_tmds_blue;
+            ODDR
+                #(.DDR_CLK_EDGE   ("SAME_EDGE"), //"OPPOSITE_EDGE" "SAME_EDGE"
+                  .INIT           (1'b       0),
+                  .SRTYPE         ("ASYNC"))
+                oddr_blue
+                (
+                    .D1( out_tmds_blue[0]    ),
+                    .D2( out_tmds_blue[1]    ),
+                    .C ( tmds_clk            ),
+                    .CE( 1'b1                ),
+                    .Q ( out_ddr_tmds_blue   ),
+                    .R ( 1'b0                ),
+                    .S ( 1'b0                )
+                );
+            OBUFDS OBUFDS_blue( .I(out_ddr_tmds_blue), .O(hdmi_p[0]), .OB(hdmi_n[0]) );
+        end endgenerate
 `endif
 endmodule

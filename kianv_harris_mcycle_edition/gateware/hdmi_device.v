@@ -17,28 +17,30 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 `timescale 1 ns / 100 ps
 `default_nettype none
-module hdmi_device(
-        input pclk,
-        input tmds_clk, /* 10 times faster of pclk */
+module hdmi_device
+    #(
+         parameter  DDR_ENABLED = 0,
+         localparam OUT_TMDS_MSB = DDR_ENABLED ? 1 : 0
+     )
+     (
+         input wire pclk,
+         input wire tmds_clk, /* 10 times faster of pclk */
 
-        input [7:0] in_vga_red,
-        input [7:0] in_vga_green,
-        input [7:0] in_vga_blue,
+         input wire [7:0] in_vga_red,
+         input wire [7:0] in_vga_green,
+         input wire [7:0] in_vga_blue,
 
-        input in_vga_blank,
-        input in_vga_vsync,
-        input in_vga_hsync,
+         input wire in_vga_blank,
+         input wire in_vga_vsync,
+         input wire in_vga_hsync,
 
-        output [OUT_TMDS_MSB:0] out_tmds_red,
-        output [OUT_TMDS_MSB:0] out_tmds_green,
-        output [OUT_TMDS_MSB:0] out_tmds_blue,
-        output [OUT_TMDS_MSB:0] out_tmds_clk
-    );
+         output wire [OUT_TMDS_MSB:0] out_tmds_red,
+         output wire [OUT_TMDS_MSB:0] out_tmds_green,
+         output wire [OUT_TMDS_MSB:0] out_tmds_blue,
+         output wire [OUT_TMDS_MSB:0] out_tmds_clk
+     );
 
     /* verilator lint_off WIDTH */
-    parameter DDR_ENABLED = 0;
-    localparam OUT_TMDS_MSB = DDR_ENABLED ? 1 : 0;
-
     /* */
     wire [9:0] tmds_red;
     wire [9:0] tmds_green;

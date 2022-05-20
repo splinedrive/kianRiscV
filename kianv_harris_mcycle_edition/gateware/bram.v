@@ -35,10 +35,12 @@ module bram #(
     integer i;
     initial
     begin
-`ifdef SIM
-        for (i = 0; i < (1<<WIDTH); i = i + 1)
-            mem[i] = 0;
-`endif
+        /*
+        `ifdef SIM
+          for (i = 0; i < (1<<WIDTH); i = i + 1)
+              mem[i] = 0;
+        `endif
+        */
 
         if (INIT_FILE != "")begin
             $display(INIT_FILE);

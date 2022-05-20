@@ -65,7 +65,6 @@ module datapath_unit
          output wire [31: 0] ProgCounter
      );
 
-    assign ProgCounter = OldPC;
 
     wire [31: 0] Rd1;
     wire [31: 0] Rd2;
@@ -75,8 +74,6 @@ module datapath_unit
     wire [ 4: 0] Rd  = Instr[11:7];
 
     wire [31: 0] WD3;
-
-    assign immb10    = ImmExt[10];
 
     register_file #(
                       .REGISTER_DEPTH(RV32E ? 16 : 32),
@@ -114,7 +111,9 @@ module datapath_unit
     wire [31: 0] CSRDataOut;
     wire         div_by_zero_err;
 
-    assign mem_wstrb = wmask & {4{MemWrite}};
+    assign immb10      = ImmExt[10];
+    assign ProgCounter = OldPC;
+    assign mem_wstrb   = wmask & {4{MemWrite}};
 
     assign WD3    = Result;
     assign PCNext = Result;

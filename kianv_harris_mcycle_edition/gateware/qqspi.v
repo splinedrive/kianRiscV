@@ -14,20 +14,21 @@ module qqspi #(
         parameter [0:0] QUAD_MODE = 1
     )(
 
-        input [24:0] addr, output reg [31:0] rdata,
-        input [31:0] wdata,
-        input [ 3:0] wstrb,
+        input wire [24:0] addr,
+        output reg [31:0] rdata,
+        input wire [31:0] wdata,
+        input wire [ 3:0] wstrb,
         output reg ready,
-        input valid,
-        input clk,
-        input resetn,
+        input wire valid,
+        input wire clk,
+        input wire resetn,
 
         output reg ss,
         output reg sclk,
-        inout mosi,
-        inout miso,
-        inout sio2,
-        inout sio3,
+        inout wire mosi,
+        inout wire miso,
+        inout wire sio2,
+        inout wire sio3,
         output reg [1:0] cs,
         output reg [2:0] state
 

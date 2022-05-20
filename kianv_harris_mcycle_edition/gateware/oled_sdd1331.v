@@ -23,25 +23,23 @@ module oled_ssd1331 #(
         parameter SYSTEM_CLK           = 50_000_000,
         parameter SPI_TRANSFER_RATE    = 25_000_000
     ) (
-        input     wire clk,
-        input     wire resetn,
+        input     wire          clk,
+        input     wire          resetn,
 
-        input     wire setpixel_raw8tx,
-        input     wire [7:0]  x_dc, // in raw dc = x[0]
-        input     wire [7:0]  y_data, // in raw is 8 bit data
-        input     wire [15:0] rgb,
+        input     wire          setpixel_raw8tx,
+        input     wire [ 7: 0]  x_dc, // in raw dc = x[0]
+        input     wire [ 7: 0]  y_data, // in raw is 8 bit data
+        input     wire [15: 0]  rgb,
 
-        input          valid,
-        output    reg  ready,
+        input     wire          valid,
+        output    reg           ready,
 
         // external
-        output    reg   spi_cs,
-        output    reg   spi_dc,
-        output    wire  spi_mosi,
-        output    wire  spi_sck,
-        output    wire  vccen,
-        output    wire  pmoden,
-        output    wire  oled_rst
+        output    reg           spi_cs,
+        output    reg           spi_dc,
+        output    wire          spi_mosi,
+        output    wire          spi_sck,
+        output    wire          oled_rst
     );
 
     localparam SYSTEM_CYCLES        = SYSTEM_CLK;
@@ -56,15 +54,14 @@ module oled_ssd1331 #(
         $display("CLK_DIV_WIDTH:\t", CLK_DIV_WIDTH);
     end
 
-    assign spi_sck = spi_clk;
-    assign spi_mosi = shift_reg[7];
+    reg    spi_clk;
+    assign spi_sck  = spi_clk;
     assign oled_rst = resetn;
 
-    reg spi_clk;
 
-    reg [7:0] data;
-    reg [5:0] rom_addr;
-    reg [CLK_DIV_WIDTH -1:0] clk_div;
+    reg [ 7: 0] data;
+    reg [ 5: 0] rom_addr;
+    reg [CLK_DIV_WIDTH -1: 0] clk_div;
     always @(*) begin: oled_initial
         case(rom_addr)
             0 : data = 8'hfd;  1 : data = 8'h12;  2 : data = 8'hae;  3 : data = 8'ha0;
@@ -84,15 +81,14 @@ module oled_ssd1331 #(
     end
 
 
-    reg [2:0] state;
-    reg [4:0] shift_cnt;
-    reg [7:0] shift_reg;
-    reg [6:0] setpixel_cmd_pos;
+    reg [ 2: 0] state;
+    reg [ 4: 0] shift_cnt;
+    reg [ 7: 0] shift_reg;
+    reg [ 6: 0] setpixel_cmd_pos;
 
-    assign vccen  = 1'b1;
-    assign pmoden = 1'b1;
+    assign spi_mosi = shift_reg[7];
 
-    wire [63:0] setpixel_cmd = {8'h15, x_dc, 8'h5f, 8'h75, y_data, 8'h3f, rgb};
+    wire [63: 0] setpixel_cmd = {8'h15, x_dc, 8'h5f, 8'h75, y_data, 8'h3f, rgb};
     always @(posedge clk) begin
         if (!resetn) begin
 
@@ -118,7 +114,7 @@ module oled_ssd1331 #(
 
                     spi_cs   <= spi_cs ^ x_dc[1] ? ~spi_cs : spi_cs;
 
-                    if (valid & !ready) begin
+                    if (valid && !ready) begin
                         if (setpixel_raw8tx) begin
                             spi_cs   <= 1'b0;
                             setpixel_cmd_pos <= 64;
