@@ -58,6 +58,8 @@ module datapath_unit
          output wire [31: 0] mem_addr,
          output wire [31: 0] mem_wdata,
          input  wire [31: 0] mem_rdata,
+         input  wire         alu_valid,
+         output wire         alu_ready,
          input  wire         mul_valid,
          output wire         mul_ready,
          input  wire         div_valid,
@@ -119,7 +121,17 @@ module datapath_unit
     assign PCNext = Result;
 
     mux2 #(32) Addr_I   (PC, Result, AdrSrc, mem_addr);
+`ifdef RV32M
+`define RV32M_OR_CSR
+`elsif CSR
+`define RV32M_OR_CSR
+`endif
+
+`ifdef RV32M_OR_CSR // hack, only to fit in ice40hx1k
     mux5 #(32) Result_I (ALUOut, DataLatched, ALUResult, MULExtResultOut, CSRDataOut, ResultSrc, Result);
+`else
+    mux3 #(32) Result_I (ALUOut, DataLatched, ALUResult, ResultSrc[1:0], Result);
+`endif
 
     dflop_rsync #(32, RESET_ADDR) PC_I       (resetn, clk, PCWrite, PCNext, PC);
     dflop_rsync #(32)             Instr_I    (resetn, clk, IRWrite, mem_rdata, Instr);
@@ -132,8 +144,12 @@ module datapath_unit
 
     // todo: data, csrdata, mulex could be stored in one latch
     latch #(32) Data_I            (clk, Data, DataLatched);
+`ifdef CSR
     latch #(32) CSROut_I          (clk, CSRData, CSRDataOut);
+`endif
+`ifdef RV32M
     latch #(32) MULExtResultOut_I (clk, MULExtResult, MULExtResultOut);
+`endif
 
     extend          extend_I          (Instr[31:7], ImmSrc, ImmExt);
     store_alignment store_alignment_I (mem_addr[1:0], STOREop, A2, mem_wdata, wmask);
@@ -142,7 +158,7 @@ module datapath_unit
     mux3 #(32) SrcA_I   (PC, OldPC,      A1 /* Rd1 */, ALUSrcA, SrcA);
     mux3 #(32) SrcB_I   (A2 /* Rd2 */, ImmExt, 32'd 4, ALUSrcB, SrcB);
 
-    alu alu_I(SrcA, SrcB, ALUControl, ALUResult, Zero);
+    alu alu_I(clk, resetn, SrcA, SrcB, ALUControl, ALUResult, alu_valid, alu_ready, Zero);
 
 `ifdef RV32M
     mux2 #(32) mul_ext_I  (MULResult, DIVResult, !mul_valid, MULExtResult);

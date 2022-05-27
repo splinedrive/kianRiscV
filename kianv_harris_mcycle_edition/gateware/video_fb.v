@@ -208,6 +208,9 @@ module video_fb
 
     // hardwired inside but you can do parameter from it
     //localparam DDR_HDMI_TRANSFER = 1'b 1;
+`ifndef DDR_HDMI_TRANSFER
+`define DDR_HDMI_TRANSFER 1'b 1
+`endif
     localparam OUT_TMDS_MSB = `DDR_HDMI_TRANSFER ? 1 : 0;
     wire [OUT_TMDS_MSB:0] out_tmds_red;
     wire [OUT_TMDS_MSB:0] out_tmds_green;

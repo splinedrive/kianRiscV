@@ -39,6 +39,9 @@ module main_fsm(
         output wire ALUOutWrite,
         output reg  mem_valid,
 
+        output reg  alu_valid,
+        input  wire alu_ready,
+
         output reg  mul_ext_valid,
         input  wire mul_ext_ready,
 
@@ -90,7 +93,11 @@ module main_fsm(
     wire is_branch  = op == branch;
     wire is_lui     = op == lui;
     wire is_aupic   = op == aupic;
+`ifdef CSR
     wire is_system  = op == system;
+`else
+    wire is_system  = 1'b 0;
+`endif
 
     assign ALUOutWrite = !mem_valid;
 
@@ -114,41 +121,61 @@ module main_fsm(
     begin
         next_state = S0;
         case (state)
+`ifndef CYCLE_BASED_SHIFTER
             S0: next_state = mem_ready ? S1 : S0;  // fetch
+`else
+            S0: next_state = alu_ready ? S1 : S0;  // fetch
+`endif
             S1:  // decode
             begin
-                if (is_load  |  is_store  ) next_state = S2;
-                if (is_rtype & !funct7b1  ) next_state = S6;  // reg op reg in common alu
-                if (is_rtype &  funct7b1  ) next_state = S14; // reg op reg in mul/div
-                if (is_itype              ) next_state = S8;
-                if (is_jal                ) next_state = S9;
-                if (is_jalr               ) next_state = S11;
-                if (is_branch             ) next_state = S10;
-                if (is_lui                ) next_state = S12;
-                if (is_aupic              ) next_state = S13;
-                if (is_aupic              ) next_state = S13;
-                if (is_system             ) next_state = S16;
+                if (alu_ready) begin
+                    if (is_load  |  is_store  ) next_state = S2;
+                    if (is_rtype & !funct7b1  ) next_state = S6;  // reg op reg in common alu
+`ifdef RV32M
+                    if (is_rtype &  funct7b1  ) next_state = S14; // reg op reg in mul/div
+`endif
+                    if (is_itype              ) next_state = S8;
+                    if (is_jal                ) next_state = S9;
+                    if (is_jalr               ) next_state = S11;
+                    if (is_branch             ) next_state = S10;
+                    if (is_lui                ) next_state = S12;
+                    if (is_aupic              ) next_state = S13;
+                    if (is_aupic              ) next_state = S13;
+`ifdef CSR
+                    if (is_system             ) next_state = S16;
+`endif
+                end else begin
+                    next_state = S1;
+                end
             end
             S2:  // memaddr
             begin
-                if (is_load            ) next_state = S3;
-                if (is_store           ) next_state = S5;
+                if (alu_ready) begin
+                    if (is_load            ) next_state = S3;
+                    if (is_store           ) next_state = S5;
+                end else begin
+                    next_state = S1;
+                end
             end
-            S3:  next_state = mem_ready ? S4 : S3;  // memread
-            S4:  next_state = S0;  // mem wb
-            S5:  next_state = mem_ready ? S0 : S5;  // mem write
-            S6:  next_state = S7;  // exec rtype
-            S7:  next_state = S0;  // alu wb
-            S8:  next_state = S7;  // exec itype
-            S9:  next_state = S7;  // jal
-            S10: next_state = S0;  // branch
-            S11: next_state = S9;  // jalr
-            S12: next_state = S7;  // lui
-            S13: next_state = S7;  // aupic
-            S14: next_state = mul_ext_ready ? S15 : S14; // exec multplier
-            S15: next_state = S0;  // multiplier wb
-            S16: next_state = S17; // exec system/itype
-            S17: next_state = S0;  // system wb
+            S3:   next_state = mem_ready ? S4 : S3;   // memread
+            S4:   next_state = S0;                    // mem wb
+            S5:   next_state = mem_ready ? S0 : S5;   // mem write
+            S6:   next_state = alu_ready ? S7 : S6;   // exec rtype
+            S7:   next_state = S0;                    // alu wb
+            S8:   next_state = alu_ready ? S7 : S8;   // exec itype
+            S9:   next_state = alu_ready ? S7 : S9;   // jal
+            S10:  next_state = alu_ready ? S0 : S10;  // branch
+            S11:  next_state = alu_ready ? S9 : S11;  // jalr
+            S12:  next_state = alu_ready ? S7 : S12;  // lui
+            S13:  next_state = alu_ready ? S7 : S13;  // auipc
+`ifdef RV32M
+            S14:  next_state = mul_ext_ready ? S15 : S14; // exec multplier
+            S15:  next_state = S0;                        // multiplier wb
+`endif
+`ifdef CSR
+            S16:  next_state = alu_ready ? S17 : S16;  // exec system/itype
+`endif
+            S17:  next_state = S0;                     // system wb
             default:
                 next_state = S0;
         endcase
@@ -167,22 +194,23 @@ module main_fsm(
         MemWrite  = 1'b 0;
 
         mem_valid = 1'b 0;
-
+        alu_valid = 1'b 0;
         mul_ext_valid = 1'b 0;
 
         case (state)
             S0  : begin
                 // fetch
                 // Instr <- MEM[PC], PC <- PC + 4, OldPC <- PC
-                mem_valid = 1'b 1;
+                mem_valid     = 1'b 1;
 
-                AdrSrc    = `ADDR_PC;
-                IRWrite   = mem_ready;//1'b 1;
-                ALUSrcA   = `SRCA_PC;
-                ALUSrcB   = `SRCB_CONST_4;
-                ALUOp     = `ALU_OP_ADD;
-                ResultSrc = `RESULT_ALURESULT;
-                PCUpdate  = mem_ready;//1'b 1;
+                AdrSrc        = `ADDR_PC;
+                IRWrite       = mem_ready;
+                ALUSrcA       = `SRCA_PC;
+                ALUSrcB       = `SRCB_CONST_4;
+                ALUOp         = `ALU_OP_ADD;
+                ResultSrc     = `RESULT_ALURESULT;
+                alu_valid     = mem_ready;
+                PCUpdate      = mem_ready;
             end
             S1  : begin
                 // decode
@@ -190,6 +218,7 @@ module main_fsm(
                 ALUSrcA   = `SRCA_OLD_PC;
                 ALUSrcB   = `SRCB_IMM_EXT;
                 ALUOp     = `ALU_OP_ADD;
+                alu_valid = 1'b 1;
             end
             S2  : begin
                 // mem addr
@@ -197,6 +226,7 @@ module main_fsm(
                 ALUSrcA   = `SRCA_RD1_BUF;
                 ALUSrcB   = `SRCB_IMM_EXT;
                 ALUOp     = `ALU_OP_ADD;
+                alu_valid = 1'b 1;
             end
             S3  : begin
                 // mem read
@@ -225,6 +255,7 @@ module main_fsm(
                 ALUSrcA   = `SRCA_RD1_BUF;
                 ALUSrcB   = `SRCB_RD2_BUF;
                 ALUOp     = `ALU_OP_ARITH_LOGIC;
+                alu_valid = 1'b 1;
             end
             S7  : begin
                 // alu wb
@@ -238,6 +269,7 @@ module main_fsm(
                 ALUSrcA   = `SRCA_RD1_BUF;
                 ALUSrcB   = `SRCB_IMM_EXT;
                 ALUOp     = `ALU_OP_ARITH_LOGIC;
+                alu_valid = 1'b 1;
             end
             S9  : begin
                 // jal
@@ -247,6 +279,7 @@ module main_fsm(
                 ALUOp     = `ALU_OP_ADD;
                 ResultSrc = `RESULT_ALUOUT;
                 PCUpdate  = 1'b 1;
+                alu_valid = 1'b 1;
             end
             S10 : begin
                 // branch
@@ -257,6 +290,7 @@ module main_fsm(
                 ALUOp     = `ALU_OP_BRANCH;
                 ResultSrc = `RESULT_ALUOUT;
                 Branch    = 1'b 1;
+                alu_valid = 1'b 1;
             end
             S11  : begin
                 // jalr itype
@@ -264,6 +298,7 @@ module main_fsm(
                 ALUSrcA   = `SRCA_RD1_BUF;
                 ALUSrcB   = `SRCB_IMM_EXT;
                 ALUOp     = `ALU_OP_ADD;
+                alu_valid = 1'b 1;
             end
             S12  : begin
                 // lui utype
@@ -272,6 +307,7 @@ module main_fsm(
                 // not used: ALUSrcA   =
                 ALUSrcB   = `SRCB_IMM_EXT;
                 ALUOp     = `ALU_OP_LUI; // 0 + imm<<12
+                alu_valid = 1'b 1;
             end
             S13  : begin
                 // aupic utype
@@ -279,7 +315,9 @@ module main_fsm(
                 ALUSrcA   = `SRCA_OLD_PC;
                 ALUSrcB   = `SRCB_IMM_EXT;
                 ALUOp     = `ALU_OP_AUIPC; // pc + imm<<12
+                alu_valid = 1'b 1;
             end
+`ifdef RV32M
             S14  : begin
                 // execute rtype
                 // MULOut <- rs1 op rs2
@@ -293,11 +331,14 @@ module main_fsm(
                 ResultSrc = `RESULT_MULOUT;
                 RegWrite  = 1'b 1;
             end
+`endif
+`ifdef CSR
             S16  : begin
                 // execute itype
                 // CSRData
                 ALUSrcA   = `SRCA_RD1_BUF;
                 ALUSrcB   = `SRCB_IMM_EXT;
+                alu_valid = 1'b 1;
             end
             S17  : begin
                 // system wb
@@ -305,6 +346,7 @@ module main_fsm(
                 ResultSrc = `RESULT_CSROUT;
                 RegWrite  = 1'b 1;
             end
+`endif
             default: begin
                 /* verilator lint_off WIDTH */
                 AdrSrc    = 'b 0;
@@ -317,6 +359,7 @@ module main_fsm(
                 Branch    = 'b 0;
                 RegWrite  = 'b 0;
                 MemWrite  = 'b 0;
+                alu_valid = 1'b 0;
                 /* verilator lint_on WIDTH */
             end
         endcase

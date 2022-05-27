@@ -168,7 +168,7 @@ Firmware:\
 cd ./firmware\
 flash with\
 ./flash_firmware.sh \
-ulx3s|ice|colori5 <*.ld> <*.c>
+ulx3s|ice|colori5|arty7|nexysa7|nexysa_video|stick <*.ld> <*.c>
 
 spi_nor2bram_fun.ld # boot from spi-nor icefun and copy code to bram\
 spi_nor2bram.ld # boot from spi-nor icebreaker and copy to bram\
@@ -179,6 +179,14 @@ spi_nor_fun.ld # boot and execute instructions only from spi-nor on icefun\
 spi_nor.ld # boot and execute instructions only from spi-nor all boards, excluded icefun
 spi_nor2spram.d # boot from spi and copy to spram (only icebreaker, ice40up)
 spi_nor2psram.d # boot from spi and copy to psram
+spi_nor_ice40hx1k.ld # boot and execute instructions only from spi-nor, e.g. icestick
+```
+Try for icestick all mandel, raytracer, main_seed.c oled or uart demos.
+Firmware is very restricted, will hang currently if you use hw registers they are not implemented.
+icestick could be configured as soc with oled xor uart.
+icestick is configured as rv32i and needs rv32i toolchain which will selected in flash_firmware. 
+```
+ ./flash_firmware.sh stick spi_nor_ice40hx1k.ld main_raytrace.c -Ofast # would flash firmware for icestick and uses the rv32i firmware
 ```
 ## Preparing Uart
 some programs are using external uart hw, check pcfs but icebreaker, breakout and ulx3s don't need

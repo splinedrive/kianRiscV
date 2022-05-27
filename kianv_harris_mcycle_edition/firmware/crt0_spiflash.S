@@ -51,17 +51,6 @@ addi x30, zero, 0
 addi x31, zero, 0
 lui sp, %hi(__stacktop);
 addi sp, sp, %lo(__stacktop);
-#srli sp,sp,2
-
-
-# icoboard
-#lui sp,      %hi(0x10000000 + 1024*1024);
-#addi sp, sp, %lo(0x10000000 + 1024*1024);
-
-#ifdef ULX3S
-#lui sp,      %hi(0x00000000 + 393216/4)
-#addi sp, sp, %lo(0x00000000 + 393216/4)
-#endif
 
 # zero-init bss section:
 # clears from _sbss to _ebss

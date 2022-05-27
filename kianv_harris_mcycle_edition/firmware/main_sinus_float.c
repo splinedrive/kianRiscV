@@ -17,6 +17,7 @@ void fill_oled(int rgb) {
 
 void main() {
   int i = 0;
+  init_oled1331();
   fill_oled(0);
 
   float div = 1.0;

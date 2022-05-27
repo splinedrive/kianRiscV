@@ -197,8 +197,8 @@ void init_oled8bit_colors() {
 void fb_setpixel(uint32_t *fb, int x, int y, short color) {
   if  ( x > (HRES-1) ) return;
   if  ( y > (VRES-1) ) return;
-  if  ( x <= 0 ) return;
-  if  ( y <= 0) return;
+  if  ( x < 0 ) return;
+  if  ( y < 0) return;
   fb[x + y*HRES] = color;
 }
 
@@ -221,7 +221,7 @@ void fb_draw_bresenham(uint32_t *fb, int x0, int y0, int x1, int y1, short color
 
 void fill_oled(uint32_t *framebuffer, int rgb) {
   for (int i = 0; i < (VRES*HRES); i++) {
-    framebuffer[i] = i<<16;//rgb;
+    framebuffer[i] = rgb;//i<<16;//rgb;
   }
 }
 

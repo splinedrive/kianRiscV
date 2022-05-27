@@ -1,34 +1,22 @@
 MEMORY
 {
   FLASH      (rx)  : ORIGIN = 0x020100000,  LENGTH = 0x10000000
-  BRAM       (rwx) : ORIGIN = 0x00000000,   LENGTH = 0x00002000
+  BRAM       (rwx) : ORIGIN = 0x00000000,   LENGTH = 0x00010000
 }
 
 __stacktop = ORIGIN(BRAM) + LENGTH(BRAM);
+
 SECTIONS {
 
     /*
-     * I do not understand why, but if I do not put this section, I got
-     * an overlapping sections error with some programs (for instance pi.c
-     * or C++ programs)
-     */
-    .misc : {
-        . = ALIGN(4);
-        *(.eh_frame)
-        *(.eh_frame_hdr)
-        *(.init_array)
-        *(.gcc_except_table*)
-    } >FLASH
-
-    /*
      * This is the initialized data and fastcode section
-     * The program executes knowing that the data is in the BRAM
+     * The program executes knowing that the data is in the RAM
      * but the loader puts the initial values in the FLASH (inidata).
-     * It is one task of the startup (crt0_spiflash.S) to copy the initial values from FLASH to BRAM.
+     * It is one task of the startup (crt0_spiflash.S) to copy the initial values from FLASH to RAM.
      */
     .data_and_fastcode : AT ( _sidata ) {
         . = ALIGN(4);
-        _sdata = .;        /* create a global symbol at data start; used by startup code in order to initialise the .data section in BRAM */
+        _sdata = .;        /* create a global symbol at data start; used by startup code in order to initialise the .data section in RAM */
         _ram_start = .;    /* create a global symbol at ram start (e.g., for garbage collector) */
 
 	/* Initialized data */
@@ -36,28 +24,39 @@ SECTIONS {
         *(.data*)
         *(.sdata)
         *(.sdata*)
-	/* functions with attribute((section(FASTCODE".fastcode"))) */
-	/* (e.g., some functions in femtoGL)                */
-	*(.fastcode*)
-	/* integer mul and div */
-/*	*/libgcc.a:muldi3.o(.text) */
-/*	*/libgcc.a:div.o(.text) */
 
         /* floating point add,mul,div                   */
 	/* (commented-out because it takes more space ! */
-	*/libgcc.a:adddsf3.o(.text)
-	*/libgcc.a:divsf3.o(.text)
-	*/libgcc.a:mulsf3.o(.text)
 
+
+	/* functions with attribute((section(".fastcode"))) */
+	/* (e.g., some functions in femtoGL)                */
+
+	/* integer mul and div */
+        /* low-level graphics functions */
+
+        /* timing */
 
         . = ALIGN(4);
-        _edata = .;        /* define a global symbol at data end; used by startup code in order to initialise the .data section in BRAM */
+        _edata = .;        /* define a global symbol at data end; used by startup code in order to initialise the .data section in RAM */
     } > BRAM
 
     /* The (non fastcode) program code and other data goes into FLASH */
     .text : {
         . = ALIGN(4);
         crt0_spiflash.o(.text)  /* c runtime initialization (code) */
+
+
+        /*
+	 * I do not understand why, but if I do not put that here, I got
+	 * an overlapping sections error with some programs (for instance pi.c
+	 * or C++ programs)
+	 */
+        *(.eh_frame)
+        *(.eh_frame_hdr)
+        *(.init_array)
+        *(.gcc_except_table*)
+
         *(.text)                /* .text sections (code) */
         *(.text*)               /* .text* sections (code) */
         . = ALIGN(4);
@@ -89,6 +88,4 @@ SECTIONS {
 	_end = .;           /* as expected by syscalls.c            */
     } >BRAM
 
-
 }
-

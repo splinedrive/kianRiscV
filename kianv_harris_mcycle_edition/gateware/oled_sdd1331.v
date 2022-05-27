@@ -20,7 +20,7 @@
 `default_nettype none
 `timescale 1ns/1ps
 module oled_ssd1331 #(
-        parameter SYSTEM_CLK           = 50_000_000,
+        parameter SYSTEM_CLK           = 35_000_000,
         parameter SPI_TRANSFER_RATE    = 25_000_000
     ) (
         input     wire          clk,
@@ -59,29 +59,9 @@ module oled_ssd1331 #(
     assign oled_rst = resetn;
 
 
-    reg [ 7: 0] data;
-    reg [ 5: 0] rom_addr;
-    reg [CLK_DIV_WIDTH -1: 0] clk_div;
-    always @(*) begin: oled_initial
-        case(rom_addr)
-            0 : data = 8'hfd;  1 : data = 8'h12;  2 : data = 8'hae;  3 : data = 8'ha0;
-            4 : data = 8'h72;  5 : data = 8'ha1;  6 : data = 8'h00;  7 : data = 8'ha2;
-            8 : data = 8'h00;  9 : data = 8'ha4; 10 : data = 8'ha8; 11 : data = 8'h3f;
-            12 : data = 8'had; 13 : data = 8'h8e; 14 : data = 8'hb0; 15 : data = 8'h0b;
-            16 : data = 8'hb1; 17 : data = 8'h31; 18 : data = 8'hb3; 19 : data = 8'hf0;
-            20 : data = 8'h8a; 21 : data = 8'h64; 22 : data = 8'h8b; 23 : data = 8'h78;
-            24 : data = 8'h8c; 25 : data = 8'h64; 26 : data = 8'hbb; 27 : data = 8'h3a;
-            28 : data = 8'hbe; 29 : data = 8'h3e; 30 : data = 8'h87; 31 : data = 8'h0f;
-            32 : data = 8'h81; 33 : data = 8'h91; 34 : data = 8'h82; 35 : data = 8'h50;
-            36 : data = 8'h83; 37 : data = 8'h7d; 38 : data = 8'h2e; 39 : data = 8'h25;
-            40 : data = 8'h00; 41 : data = 8'h00; 42 : data = 8'h5f; 43 : data = 8'h3f;
-            44 : data = 8'haf;
-            default: data = 8'hbc;  // nop
-        endcase
-    end
+    reg [CLK_DIV_WIDTH : 0] clk_div;
 
-
-    reg [ 2: 0] state;
+    reg [ 1: 0] state;
     reg [ 4: 0] shift_cnt;
     reg [ 7: 0] shift_reg;
     reg [ 6: 0] setpixel_cmd_pos;
@@ -92,40 +72,33 @@ module oled_ssd1331 #(
     always @(posedge clk) begin
         if (!resetn) begin
 
-            spi_cs <= 1'b1;
-            spi_dc <= 1'b1;
+            spi_cs           <= 1'b1;
+            spi_dc           <= 1'b1;
 
-            clk_div <= 0;
+            clk_div          <= 0;
             setpixel_cmd_pos <= 64;
-            rom_addr <= 0;
-            state <= 3;
-            shift_cnt <= 44;
-            shift_reg <= 0;
-            ready <= 1'b0;
-
-            spi_clk    <= 0;
-
+            state            <= 0;
+            shift_cnt        <= 0;
+            shift_reg        <= 0;
+            ready            <= 1'b0;
+            spi_clk          <= 0;
         end else begin
-
-
             case (state)
                 0: begin
                     ready    <= 1'b0;
-
                     spi_cs   <= spi_cs ^ x_dc[1] ? ~spi_cs : spi_cs;
-
                     if (valid && !ready) begin
                         if (setpixel_raw8tx) begin
-                            spi_cs   <= 1'b0;
+                            spi_cs           <= 1'b0;
                             setpixel_cmd_pos <= 64;
-                            state <= 1;
+                            state            <= 1;
                         end else begin
-                            spi_cs   <= 1'b0;
+                            spi_cs    <= 1'b0;
                             spi_dc    <= x_dc[0];
                             shift_reg <= y_data;
                             shift_cnt <= 7;
-                            clk_div <= 0;
-                            state <= 2;
+                            clk_div   <= 0;
+                            state     <= 2;
                         end
                     end
                 end
@@ -133,14 +106,14 @@ module oled_ssd1331 #(
                 1: begin
                     setpixel_cmd_pos <= setpixel_cmd_pos - 8;
                     if (setpixel_cmd_pos == 0) begin
-                        ready <= 1'b1;
-                        state <= 0;
+                        ready     <= 1'b1;
+                        state     <= 0;
                     end else begin
                         spi_dc    <= (setpixel_cmd_pos > 16) ? 1'b0 : 1'b1;  // data or cmd
                         shift_cnt <= 7;
                         shift_reg <= setpixel_cmd[(setpixel_cmd_pos-1) -:8];
-                        clk_div <= 0;
-                        state <= 2;
+                        clk_div   <= 0;
+                        state     <= 2;
                     end
                 end
 
@@ -158,39 +131,6 @@ module oled_ssd1331 #(
                             end
                         end
                     end
-                end
-
-                3: begin
-                    if (rom_addr == 45) begin
-                        spi_cs   <= 1'b1;
-                        ready    <= 1'b0;
-                        state    <= 0;
-                    end else begin
-                        spi_cs   <= 1'b0;  // always low
-                        spi_dc   <= 1'b0;  // command
-                        spi_clk  <= 1'b0;
-                        shift_cnt <= 7;
-                        shift_reg <= data; // rom data
-                        clk_div <= 0;
-                        state <= 4;
-                    end
-                end
-
-                4: begin
-                    clk_div <= clk_div + 1;
-                    if (&clk_div) begin
-                        spi_clk <= ~spi_clk;
-                        if (spi_clk) begin
-                            shift_cnt <= shift_cnt - 1;
-                            shift_reg <= {shift_reg[6:0], 1'b0};
-
-                            if (shift_cnt == 0) begin
-                                rom_addr <= rom_addr + 1;  // next rom data
-                                state <= 3;
-                            end
-                        end
-                    end
-
                 end
 
                 default:

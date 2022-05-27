@@ -45,7 +45,7 @@ void mandel(Pixel *framebuffer, short shift) {
         }
         --iter;
       }
-       setpixel(framebuffer, X, Y, (iter << shift)|!(iter << shift)|(iter << shift));
+       setpixel(framebuffer, X, Y, (iter << shift<<8)|!(iter << shift << 5)|(iter << shift << 5));
       //setpixel(framebuffer, X, Y, (iter << 8)|!(iter << 5)|(iter << 0));
       Cr += dx;
     }
@@ -62,6 +62,7 @@ void main() {
   short *q = (volatile short*) BASE;
   int iter = 1;
   volatile short *p = (volatile short *) BASE;
+  init_oled1331();
 
   /*
   for (int i = 0; i < 640*480; i++) { 

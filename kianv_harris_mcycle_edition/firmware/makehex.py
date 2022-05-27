@@ -15,7 +15,7 @@ nwords = int(argv[2])
 with open(binfile, "rb") as f:
     bindata = f.read()
 
-assert len(bindata) < 4*nwords
+#assert len(bindata) < 4*nwords
 #assert len(bindata) % 4 == 0
 
 for i in range(nwords):

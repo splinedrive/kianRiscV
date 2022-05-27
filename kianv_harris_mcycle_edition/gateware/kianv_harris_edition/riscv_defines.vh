@@ -19,15 +19,15 @@
 `ifndef KIANV_RISCV_HARRIS
 `define KIANV_RISCV_HARRIS
 
-`ifndef RV32M
+
+//`define CYCLE_BASED_SHIFTER
+
+`ifdef SIM
 `define RV32M
-`endif
-//`undef  RV32M
-`ifndef CSR
 `define CSR
+//`define CYCLE_BASED_SHIFTER
 `endif
-//`undef  CSR
- 
+
 // mux SRCA
 `define     SRCA_WIDTH  $clog2(`SRCA_LAST)
 `define     SRCA_PC              0

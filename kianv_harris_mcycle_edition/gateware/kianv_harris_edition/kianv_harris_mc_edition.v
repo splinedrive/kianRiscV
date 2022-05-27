@@ -23,7 +23,8 @@
 module kianv_harris_mc_edition
     #(
          parameter RESET_ADDR = 0,
-         parameter STACKADDR  = 0
+         parameter STACKADDR  = 0,
+         parameter RV32E      = 0
      )
      (
          input  wire clk,
@@ -64,6 +65,8 @@ module kianv_harris_mc_edition
     wire IRWrite;
     wire ALUOutWrite;
 
+    wire alu_valid;
+    wire alu_ready;
     wire mul_valid;
     wire mul_ready;
     wire div_valid;
@@ -101,6 +104,9 @@ module kianv_harris_mc_edition
                      .mem_valid    ( mem_valid   ),
                      .mem_ready    ( mem_ready   ),
                      .MULop        ( MULop       ),
+                     .alu_valid    ( alu_valid   ),
+                     .alu_ready    ( alu_ready   ),
+
                      .mul_valid    ( mul_valid   ),
                      .mul_ready    ( mul_ready   ),
                      .DIVop        ( DIVop       ),
@@ -110,7 +116,8 @@ module kianv_harris_mc_edition
 
     datapath_unit #(
                       .RESET_ADDR ( RESET_ADDR ),
-                      .STACKADDR  ( STACKADDR  )
+                      .STACKADDR  ( STACKADDR  ),
+                      .RV32E      ( RV32E      )
                   )
                   datapath_unit_I
                   (
@@ -142,6 +149,8 @@ module kianv_harris_mc_edition
                       .mem_rdata       (  mem_rdata      ),
 
                       .MULop           (  MULop          ),
+                      .alu_valid       (  alu_valid      ),
+                      .alu_ready       (  alu_ready      ),
                       .mul_valid       (  mul_valid      ),
                       .mul_ready       (  mul_ready      ),
                       .DIVop           (  DIVop          ),

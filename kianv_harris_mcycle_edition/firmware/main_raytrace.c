@@ -313,10 +313,10 @@ void render(volatile Pixel *fb, Sphere* spheres, int nb_spheres, Light* lights, 
  // volatile uint32_t tmph1;
  // volatile uint32_t tmpl1;
   for (int j = 0; j<VRENDER; j++) { // actual rendering loop
-    print_str("Y:");
-    print_dec(j);
-    putchar(10);
-    show_csr_timer_cnt();
+    //print_str("Y:");
+    //print_dec(j);
+   // putchar(10);
+   // show_csr_timer_cnt();
     /*
     asm volatile ("rdcycleh %0" : "=r"(tmph0));
     asm volatile ("rdcycle  %0" : "=r"(tmpl0));
@@ -392,15 +392,16 @@ void main() {
   }
   */
 
+  init_oled1331();
   for (;;) {
 //    short *p = FRAMEBUFFER;
     fill_oled(0);
     init_scene();
     render(fb, spheres, nb_spheres, lights, nb_lights);
-    print_str("done=======================");
-    putchar(10);
-    show_csr_timer_cnt();
-    wait_cycles(40000000*5);
+ //   print_str("done=======================");
+//    putchar(10);
+ //   show_csr_timer_cnt();
+//    wait_cycles(40000000*5);
   //*((volatile uint32_t*) VIDEOENABLE) = 0x1;
   }
 }

@@ -62,7 +62,6 @@
 #include <math.h>
 //#include <stdlib.h>
 #include "stdlib.c"
-#include "SSD1331.h"
 
 
 
@@ -544,23 +543,6 @@ void fillScreen(uint16_t color)
     fillRectangle(0, 0, _width, _height, color);
 }
 
-void _sendCmd(uint8_t c)
-{
-    //digitalWrite(_dc,LOW);
-    //digitalWrite(_cs,LOW);
-    // SPI.transfer(c);
-    *((volatile uint32_t *) VIDEO_RAW) = ((0x00) << 8) | c;
-    //digitalWrite(_cs,HIGH);
-}
-
-void _sendData(uint8_t c)
-{
-    //digitalWrite(_dc,LOW);
-    //digitalWrite(_cs,LOW);
-    // SPI.transfer(c);
-    *((volatile uint32_t *) VIDEO_RAW) = ((0x01) << 8) | c;
-    //digitalWrite(_cs,HIGH);
-}
 
 void init(void)
 {
@@ -769,7 +751,7 @@ void setDisplayPower(DisplayPower power)
     _sendCmd(power);
 }
 
-#define delay wait_cycles
+#define delay(x) for (int i = 0; i < x/100; i++) {__asm__ volatile("nop");};
 #define cs     5
 #define dc     3
 #define mosi   16
@@ -784,7 +766,7 @@ void setup()
 void main()
 {
     for (;;) {
-        print_str_ln("run...");
+       // print_str_ln("run...");
         setup();
         delay(450000);
         drawString("Seeed", 15, 25, 2, COLOR_GREEN);

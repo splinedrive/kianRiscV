@@ -22,8 +22,9 @@
 module top
     (
         input  wire        clk_in,
+`ifdef UART_TX
         output wire        uart_tx,
-
+`endif
 `ifdef IOMEM_INTERFACING
         output wire        iomem_valid,
         input  wire        iomem_ready,
@@ -66,13 +67,13 @@ module top
     // system
     wire clk = clk_in;
 
-    reg [7:0] rst_cnt = 0;
+    reg [8:0] rst_cnt = 0;
     always @(posedge clk) begin
-        if (!rst_cnt[7])
+        if (!rst_cnt[8])
             rst_cnt <= rst_cnt + 1;
     end
 
-    assign resetn = rst_cnt[7];
+    assign resetn = rst_cnt[8];
 
     // cpu
     wire [31: 0] pc;
@@ -91,11 +92,13 @@ module top
     reg         bram_ready;
     wire        bram_valid;
 
+`ifdef UART_TX
     // uart
     wire  uart_tx_valid;
     wire  uart_tx_ready;
     wire  uart_ctrl_ready;
     reg   uart_rdy_ready;
+`endif
 
     // spi flash memory
     wire [31:0] spi_nor_mem_data;
@@ -125,43 +128,59 @@ module top
     assign iomem_wdata = mem_wdata;
 `endif
 
+`ifdef CSR
     // cpu_freq
     wire system_cpu_freq_valid;
     reg  system_cpu_freq_ready;
+`endif
 
     // RISC-V is byte-addressable, alignment memory devices word organized
     // memory interface
     wire wr                       = |mem_wstrb;
     wire [29:0] word_aligned_addr = {mem_addr[31:2]};
 
-    assign mem_ready   = uart_tx_ready || uart_rdy_ready || spi_nor_mem_ready    ||
-           bram_ready
+    assign mem_ready   = bram_ready
+`ifdef UART_TX
+           || uart_tx_ready || uart_rdy_ready
+`endif
+`ifndef BRAM_FIRMWARE
+           || spi_nor_mem_ready
+`endif
 `ifdef PSRAM_MEMORY_32MB
            || mem_psram_pmod_ready
 `endif
+`ifdef CSR
            || system_cpu_freq_ready
-`ifdef IOMEM_INTERFACING
-           || iomem_ready;
-`else
-           ;
 `endif
+`ifdef IOMEM_INTERFACING
+           || iomem_ready
+`endif
+           ;
 
     assign mem_rdata   =
            bram_ready            ? bram_rdata           :
+`ifndef BRAM_FIRMWARE
            spi_nor_mem_ready     ? spi_nor_mem_data     :
+`endif
 `ifdef PSRAM_MEMORY_32MB
            mem_psram_pmod_ready  ? mem_psram_pmod_rdata :
 `endif
+`ifdef CSR
            system_cpu_freq_ready ? `SYSTEM_CLK          :
+`endif
 `ifdef IOMEM_INTERFACING
            iomem_ready           ? iomem_rdata          :
 `endif
+`ifdef UART_TX
            uart_rdy_ready        ? ~0                   :
+`endif
            32'h 0000_0000;
 
+`ifdef CSR
     // cpu_freq
     assign system_cpu_freq_valid   = !system_cpu_freq_ready && mem_valid && (mem_addr == `CPU_FREQ_REG_ADDR) && !wr;
     always @(posedge clk) system_cpu_freq_ready <= !resetn ? 1'b 0 : system_cpu_freq_valid;
+`endif
 
 `ifdef PSRAM_MEMORY_32MB
     // SPI nor flash
@@ -272,6 +291,7 @@ module top
 `endif
 `endif
 
+`ifndef BRAM_FIRMWARE
     // SPI nor flash
     assign spi_nor_mem_valid = !spi_nor_mem_ready && mem_valid &&
            (mem_addr >= `SPI_NOR_MEM_ADDR_START && mem_addr < `SPI_NOR_MEM_ADDR_END) && !wr;
@@ -301,7 +321,9 @@ module top
             .spi_mosi ( flash_mosi                             ),
             .spi_sclk ( flash_sclk                             )
         );
+`endif
 
+`ifdef UART_TX
     // UART
     assign uart_tx_valid     = !uart_rdy_ready && mem_valid && (mem_addr == `UART_TX_ADDR) && wr;
 
@@ -322,6 +344,7 @@ module top
             .tx_out  ( uart_tx                               ),
             .ready   ( uart_tx_ready                         )
         );
+`endif
 
     // BRAM
     assign bram_valid      = !bram_ready && mem_valid && (mem_addr < (`BRAM_WORDS << 2));

@@ -50,6 +50,9 @@ module control_unit
         output         wire        mem_valid,
         input          wire        mem_ready,
 
+        output         wire        alu_valid,
+        input          wire        alu_ready,
+
         output         wire        mul_valid,
         input          wire        mul_ready,
 
@@ -67,6 +70,7 @@ module control_unit
     assign PCWrite = Branch & taken_branch | PCUpdate;
 
     assign mul_ext_ready = mul_ready | div_ready;
+
     main_fsm main_fsm_I
              (
                  .clk            ( clk            ),
@@ -88,15 +92,22 @@ module control_unit
                  .mem_valid      ( mem_valid      ),
                  .mem_ready      ( mem_ready      ),
 
+                 .alu_valid      ( alu_valid      ),
+                 .alu_ready      ( alu_ready      ),
+
                  .mul_ext_valid  ( mul_ext_valid  ),
                  .mul_ext_ready  ( mul_ext_ready  )
              );
 
     load_decoder  load_decoder_I  (funct3, LOADop  );
     store_decoder store_decoder_I (funct3, STOREop );
+`ifdef CSR
     csr_decoder   csr_decoder_I   (funct3, CSRop   );
-    alu_decoder alu_decoder_I     (immb10, op[5], funct3, funct7b5, ALUOp, ALUControl);
+`endif
+    alu_decoder   alu_decoder_I   (immb10, op[5], funct3, funct7b5, ALUOp, ALUControl);
 
+`ifdef RV32M
     multiplier_extension_decoder mul_ext_de_I (funct3, MULop, DIVop, mul_ext_valid, mul_valid, div_valid);
+`endif
 
 endmodule

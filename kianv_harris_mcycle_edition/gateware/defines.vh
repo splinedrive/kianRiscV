@@ -36,40 +36,79 @@
 `define FRAME_BUFFER_CTRL 32'h 30_000_024
 `define LED8X4_FB_ADDR    32'h 30_000_028
 /////////////////////////////////
+`define BAUDRATE          115200
+
+`define GPIO_NR 8  // 0->32
 
 
 `ifdef ULX3S
+`define RV32M
+`define CSR
+//`define CYCLE_BASED_SHIFTER
 `define LED_ULX3S
 `define ECP5
 `define GPIO
+`define UART_TX
+`define DDR_HDMI_TRANSFER 1'b 1
+`define HDMI_VIDEO_FB
 `endif
 
 `ifdef COLORLIGHT_I5_I9
+`define RV32M
+`define CSR
+//`define CYCLE_BASED_SHIFTER
+
 `define ECP5
 `define GPIO
+`define OLED_SD1331
+`define DDR_HDMI_TRANSFER 1'b 1
+//`define HDMI_VIDEO_FB
+`define UART_TX
 `endif
 
 `ifdef NEXYSA7
+`define RV32M
+`define CSR
+//`define CYCLE_BASED_SHIFTER
+
+
 `define FAKE_MULTIPLIER
 `define CPU_HALT 1'b 1
 `define PC_OUT
 `define DDR_HDMI_TRANSFER 1'b 0
-`define DIGILENT
-`elsif ARTY7
-`define FAKE_MULTIPLIER
-`define DDR_HDMI_TRANSFER 1'b 1
-`define DIGILENT
-`elsif NEXYS_VIDEO
-`define FAKE_MULTIPLIER
-`define DDR_HDMI_TRANSFER 1'b 1
-`define DIGILENT
-`elsif ECP5
-`define DDR_HDMI_TRANSFER 1'b 1
-`else
-`define DDR_HDMI_TRANSFER 1'b 1
-`endif
+`define SPI_NOR_PRESCALER_ENABLE
+`define SPI_NOR_PRESCALER_DIVIDER 7
+//`define OLED_SD1331
+`define HDMI_VIDEO_FB
+`define GPIO
 
-`ifdef DIGILENT
+`elsif ARTY7
+`define RV32M
+`define CSR
+//`define CYCLE_BASED_SHIFTER
+
+
+`define FAKE_MULTIPLIER
+`define SPI_NOR_PRESCALER_ENABLE
+`define SPI_NOR_PRESCALER_DIVIDER 7
+//`define OLED_SD1331
+`define HDMI_VIDEO_FB
+`define GPIO
+`define DDR_HDMI_TRANSFER 1'b 1
+`define GPIO
+`define UART_TX
+`define SPI_NOR_PRESCALER_ENABLE
+`define SPI_NOR_PRESCALER_DIVIDER 7
+//`define OLED_SD1331
+`define GPIO
+
+`elsif NEXYS_VIDEO
+`define RV32M
+`define CSR
+//`define CYCLE_BASED_SHIFTER
+
+`define FAKE_MULTIPLIER
+`define DDR_HDMI_TRANSFER 1'b 1
 `define SPI_NOR_PRESCALER_ENABLE
 `define SPI_NOR_PRESCALER_DIVIDER 7
 //`define OLED_SD1331
@@ -77,24 +116,45 @@
 `define GPIO
 `endif
 
-`ifdef GPIO
-`define GPIO_NR 8  // 0->32
+`ifdef ICESTICK
+//`define RV32M
+//`define CSR
+`define CYCLE_BASED_SHIFTER
+
+`define OLED_SD1331
+`endif
+
+`ifdef TANGNANO1K
+`define UART_TX
 `endif
 
 `ifdef ICEBREAKER
+`define RV32M
+`define CSR
+//`define CYCLE_BASED_SHIFTER
 `define OLED_SD1331
 `define SPRAM
+`define GPIO
 `endif
 
 `ifdef ICEFUN
 //`define PC_OUT
+`define RV32M
+`define CSR
+//`define CYCLE_BASED_SHIFTER
 `define OLED_SD1331
 `define LED_MATRIX8X4_FB
+`define GPIO
 `endif
 
+`ifdef SIM
+`define RV32M
+`define CSR
+`define CYCLE_BASED_SHIFTER
+`define UART_TX
+`define BRAM_FIRMWARE
+`endif
 
-`define BAUDRATE          115200
-//`define BAUDRATE          3_000_000
 
 `ifdef KROETE
 `define SYSTEM_CLK        30_000_000
@@ -102,11 +162,16 @@
 `elsif ICEBREAKER
 `define SYSTEM_CLK        19_000_000
 
+`elsif ICESTICK
+`define SYSTEM_CLK        35_000_000
+
+`elsif TANGNANO1K
+`define SYSTEM_CLK        25_000_000
+
 `elsif ICEFUN
 `define SYSTEM_CLK        30_000_000
 
 `elsif ECP5
-//`define SYSTEM_CLK        80_000_000
 `define SYSTEM_CLK        70_000_000
 `elsif ARTIX7
 `ifdef ARTY7
@@ -117,7 +182,6 @@
 `define SYSTEM_CLK        180_000_000
 `elsif WUKONG
 `define SYSTEM_CLK        175_000_000
-//`define SYSTEM_CLK        25_000_000
 `endif
 `else
 `define SYSTEM_CLK        25_000_000
@@ -131,27 +195,17 @@
 `define SHOW_REGISTER_SET 1'b0
 `define DUMP_MEMORY       1'b0
 
-// cpu
-`define RV32M             1'b1
-//`undef RV32M
-
-`define CSR_TIME_COUNTER  1'b1
-//`undef CSR_TIME_COUNTER
 
 // features
 `define IOMEM_INTERFACING
-`define IOMEM_INTERFACING_EXTERNAL
-`undef IOMEM_INTERFACING_EXTERNAL
-//`undef IOMEM_INTERFACING
 
-// hdmi video buffer
-`ifdef ECP5
-`define FAKE_MULTIPLIER
-`define HDMI_VIDEO_FB
+//`define IOMEM_INTERFACING_EXTERNAL
+//`ifdef ECP5
+//`define FAKE_MULTIPLIER
+//`define HDMI_VIDEO_FB
 //`define OLED_SD1331
 //`define PSRAM_MEMORY_32MB
-`endif
-//`undef HDMI_VIDEO_FB
+//`endif
 
 // offset for simulation only
 `define SPI_NOR_MEM_ADDR_START    32'h 20_000_000
@@ -174,7 +228,7 @@
 `define SPI_NOR_MEM_ADDR_END      ((`SPI_NOR_MEM_ADDR_START) + (32*1024*1024))
 `endif
 
-`else
+`else /* 1M */
 `define SPI_MEMORY_OFFSET         (1024*1024)
 `define SPI_NOR_MEM_ADDR_END      ((`SPI_NOR_MEM_ADDR_START) + (16*1024*1024))
 `endif
@@ -197,11 +251,9 @@
 `define SPRAM_MEM_ADDR_END        ((`SPRAM_MEM_ADDR_START) + (`SPRAM_SIZE))
 `endif
 
-`ifdef SIM
-`define BRAM_FIRMWARE
-`endif
-
 //`define BRAM_FIRMWARE
+//`undef BRAM_FIRMWARE
+
 `ifdef BRAM_FIRMWARE
 
 `define RESET_ADDR        0
@@ -209,6 +261,7 @@
 `define FIRMWARE_SPI      ""
 //`define BRAM_WORDS        (1024*2)
 `define BRAM_WORDS        ('h10_000)
+//`define BRAM_WORDS        (1024)
 `else
 
 `define RESET_ADDR        (`SPI_NOR_MEM_ADDR_START + `SPI_MEMORY_OFFSET)
@@ -218,10 +271,13 @@
 `define BRAM_WORDS        (1024*16)
 `elsif ARTIX7
 `define BRAM_WORDS        (1024*16)
+`elsif ICESTICK
+`define BRAM_WORDS        (1024)
+`elsif TANGNANO1K
+`define BRAM_WORDS        (64)
 `else
 `define BRAM_WORDS        (1024*2)
 `endif
 `endif
-
 
 `endif  // KIANV_SOC

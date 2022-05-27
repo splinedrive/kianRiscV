@@ -40,13 +40,9 @@ module store_alignment
                 result[15: 8]  = addr[1:0] == 2'b01 ? data[7:0] : 8'hx;
                 result[23:16]  = addr[1:0] == 2'b10 ? data[7:0] : 8'hx;
                 result[31:24]  = addr[1:0] == 2'b11 ? data[7:0] : 8'hx;
-                wmask          = 4'b 0001 << addr[1:0];
-                /*
                 wmask          = addr[1:0] == 2'b00 ? 4'b 0001 :
-                                 addr[1:0] == 2'b01 ? 4'b 0010 :
-                                 addr[1:0] == 2'b10 ? 4'b 0100 :
-                                                      4'b 1000;
-                                                    */
+                    addr[1:0] == 2'b01 ? 4'b 0010 :
+                        addr[1:0] == 2'b10 ? 4'b 0100 : 4'b 1000;
             end
             (`STORE_OP_SH): begin
                 result[15: 0]  = ~addr[1] ? data[15: 0] : 16'hx;

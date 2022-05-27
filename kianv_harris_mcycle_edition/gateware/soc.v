@@ -21,8 +21,13 @@
 `include "defines.vh"
 module soc
     (
-        input  wire        clk_osc,
-        output wire        uart_tx,
+        input  wire         clk_osc,
+`ifdef UART_TX
+        output wire         uart_tx,
+`endif
+`ifdef ICESTICK
+        output wire [ 4: 0] led,
+`endif
 `ifdef ICEFUN
         /* led  */
         output wire led1,
@@ -125,13 +130,19 @@ module soc
         inout    wire       psram_sio3,
         output   wire [1:0] psram_cs,
 `endif  // PSRAM_MEMORY_32MB
+`ifndef BRAM_FIRMWARE
         output wire        flash_csn,
         input  wire        flash_miso,
         output wire        flash_mosi
 `ifndef USR_SCLK
         ,output wire       flash_sclk
 `endif
+`endif
     );
+
+    wire resetn;
+    wire clk;
+
 `ifdef OLED_SD1331
 `ifdef ULX3S
     wire         oled_sck;
@@ -219,9 +230,6 @@ module soc
     assign led = iomem_addr[31:24];
 `endif
 
-    wire resetn;
-    wire clk;
-
 `ifdef ARTIX7
     localparam cnt_msb = $clog2(`SYSTEM_CLK);
     wire [cnt_msb -1: 0] cnt;
@@ -271,6 +279,26 @@ module soc
             clk
         );
 `endif
+
+`ifdef TANGNANO1K
+    assign clk = clk_osc;
+`endif
+`ifdef ICESTICK
+    ice40hx8pll
+        #(
+            .freq(`SYSTEM_CLK_MHZ)
+        ) pll_I0 (
+            clk_osc,
+            clk
+        );
+    //localparam cnt_msb = $clog2(`SYSTEM_CLK);
+    localparam cnt_msb = 24;
+    wire [cnt_msb -1: 0] cnt;
+    counter #(cnt_msb) led_cnt_I (resetn, clk, 1'b 1, cnt);
+    wire   led_msb = cnt[cnt_msb -1];
+    assign led = {led_msb, ~led_msb, ~led_msb, ~led_msb, ~led_msb};  // 0 is on
+`endif
+
 
 `ifdef ICEFUN
     ice40hx8pll
@@ -401,7 +429,10 @@ module soc
 
     oled_ssd1331
         #(
-            .SYSTEM_CLK( `SYSTEM_CLK )
+            .SYSTEM_CLK         ( `SYSTEM_CLK )
+`ifdef ICESTICK
+            ,.SPI_TRANSFER_RATE ( 5_000_000  )
+`endif
         )
         oled_ssd1331_I
         (
@@ -474,8 +505,9 @@ module soc
 
     top top_I (
             .clk_in        ( clk                       ),
+`ifdef UART_TX
             .uart_tx       ( uart_tx                   ),
-
+`endif
 `ifdef IOMEM_INTERFACING
             .iomem_valid   ( iomem_valid               ),
             .iomem_ready   ( iomem_ready               ),
@@ -494,10 +526,12 @@ module soc
             .psram_sio3    ( psram_sio3                ),
             .psram_cs      ( psram_cs                  ),
 `endif
+`ifndef BRAM_FIRMWARE
             .flash_csn     ( flash_csn                 ),
             .flash_miso    ( flash_miso                ),
             .flash_mosi    ( flash_mosi                ),
             .flash_sclk    ( flash_sclk                ),
+`endif
             .resetn        ( resetn                    ),
 `ifdef PC_OUT
             .PC            ( PC                        ),

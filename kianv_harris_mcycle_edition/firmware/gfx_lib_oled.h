@@ -173,6 +173,29 @@ char oled_8bit_init_seq[] = {
   0xaf       // Display on
 };
 
+// is hack, duplicated code
+char oled_16bit_init_seq[] = {
+  0xae,       //   display off (sleep mode)
+//  0xa0, 0x32, // 256 color RGB, horizontal RAM increment
+  0xa0, 0x72, // 16 bit color RGB, horizontal RAM increment
+  0xa1, 0x00, // Startline row 0
+  0xa2, 0x00, // Vertical offset 0
+  0xa4,       // Normal display
+  0xa8, 0x3f, // Set multiplex ratio
+  0xad, 0x8e, // External supply
+  0xb0, 0x0b, // Disable power save mode
+  0xb1, 0x31, // Phase period
+  0xb3, 0xf0, // Oscillator frequency
+  0x8a, 0x64, 0x8b, 0x78, 0x8c, 0x64, // Precharge
+  0xbb, 0x3a, // Precharge voltge
+  0xbe, 0x3e, // COM deselect level
+  0x87, 0x06, // master current attenuation factor
+  0x81, 0x91, // contrast for all color "A" segment
+  0x82, 0x50, // contrast for all color "B" segment
+  0x83, 0x7d, // contrast for all color "C" segment
+  0xaf       // Display on
+};
+
 void init_oled8bit_colors() {
   for (int i = 0; i < sizeof(oled_8bit_init_seq)/
       sizeof(oled_8bit_init_seq[0]); i++) {
@@ -182,12 +205,21 @@ void init_oled8bit_colors() {
   }
 }
 
+void init_oled16bit_colors() {
+  for (int i = 0; i < sizeof(oled_16bit_init_seq)/
+      sizeof(oled_16bit_init_seq[0]); i++) {
+
+    char p = oled_16bit_init_seq[i];
+    oled_spi_tx(p, 0);
+  }
+}
+
 
 void fb_setpixel(uint16_t *fb, int x, int y, short color) {
   if  ( x > (HRES-1) ) return;
   if  ( y > (VRES-1) ) return;
-  if  ( x <= 0 ) return;
-  if  ( y <= 0) return;
+  if  ( x < 0 ) return;
+  if  ( y < 0) return;
   fb[x + y*HRES] = color;
 }
 

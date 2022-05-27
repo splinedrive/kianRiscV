@@ -2,7 +2,7 @@
 FIRMWARE=firmware.bin
 
 usage () {
-  echo "ico|ulx3s|ice|fun|breakout|colori5|arty7|nexysa7|nexys_video <*.ld> <*.c> [-Ox]"
+  echo "ico|ulx3s|ice|fun|breakout|colori5|arty7|nexysa7|nexys_video|stick <*.ld> <*.c> [-Ox]"
   echo "Default OPT_LEVEL is -Os, you can choose -O0, -O1, -O2, -O3"
 }
 
@@ -11,7 +11,12 @@ if [ -z "$1" ] | [ -z "$2" ] | [ -z "$3" ]; then
   exit 1
 fi
 
+if   [ "$1" != "stick" ]; then
 rm *.o; OPT_LEVEL=$4 ./kianv_firmware_gcc.sh $2 $3
+else
+rm *.o; OPT_LEVEL=$4 ./kianv_firmware_gcc_ri.sh $2 $3
+fi
+
 if   [ "$1" = "ico"   ]; then
   icoprog -O16 -f  < $FIRMWARE && icoprog -b
 elif [ "$1" = "ulx3s" ]; then
@@ -21,6 +26,8 @@ elif [ "$1" = "ulx3s" ]; then
 elif [ "$1" = "colori5" ]; then
   openFPGALoader  -f -o 1048576 --board=colorlight-i5 -r $FIRMWARE
 elif [ "$1" = "ice"   ]; then
+  iceprog -o 1M $FIRMWARE
+elif [ "$1" = "stick"   ]; then
   iceprog -o 1M $FIRMWARE
 elif [ "$1" = "fun"   ]; then
   iceFUNprog -o $((64*1024*4)) $FIRMWARE

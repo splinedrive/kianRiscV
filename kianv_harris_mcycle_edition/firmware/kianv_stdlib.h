@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <math.h>
+#include "SSD1331.h"
 
 /* kian hardware register */
 #define IO_BASE 0x30000000
@@ -37,6 +38,72 @@
 #define BOLD      "\x1B[1m"
 #define BLINK     "\x1B[5m"
 #define BLINK_OFF "\x1B[25m"
+
+void _sendCmd(uint8_t c)
+{
+    //digitalWrite(_dc,LOW);
+    //digitalWrite(_cs,LOW);
+    // SPI.transfer(c);
+    *((volatile uint32_t *) VIDEO_RAW) = ((0x00) << 8) | c;
+    //digitalWrite(_cs,HIGH);
+}
+
+void _sendData(uint8_t c)
+{
+    //digitalWrite(_dc,LOW);
+    //digitalWrite(_cs,LOW);
+    // SPI.transfer(c);
+    *((volatile uint32_t *) VIDEO_RAW) = ((0x01) << 8) | c;
+    //digitalWrite(_cs,HIGH);
+}
+
+void init_oled1331(void)
+{
+    //pinMode(_dc, OUTPUT);
+    //pinMode(_cs, OUTPUT);
+
+    //SPI.begin();
+
+    _sendCmd(CMD_DISPLAY_OFF);	//Display Off
+    _sendCmd(CMD_SET_CONTRAST_A);	//Set contrast for color A
+    _sendCmd(0x91);		//145
+    _sendCmd(CMD_SET_CONTRAST_B);	//Set contrast for color B
+    _sendCmd(0x80);		//80
+    _sendCmd(CMD_SET_CONTRAST_C);	//Set contrast for color C
+    _sendCmd(0x7D);		//125
+    _sendCmd(CMD_MASTER_CURRENT_CONTROL);	//master current control
+    _sendCmd(0x06);		//6
+    _sendCmd(CMD_SET_PRECHARGE_SPEED_A);	//Set Second Pre-change Speed For ColorA
+    _sendCmd(0x64);		//100
+    _sendCmd(CMD_SET_PRECHARGE_SPEED_B);	//Set Second Pre-change Speed For ColorB
+    _sendCmd(0x78);		//120
+    _sendCmd(CMD_SET_PRECHARGE_SPEED_C);	//Set Second Pre-change Speed For ColorC
+    _sendCmd(0x64);		//100
+    _sendCmd(CMD_SET_REMAP);	//set remap & data format
+    _sendCmd(0x72);		//0x72              
+    _sendCmd(CMD_SET_DISPLAY_START_LINE);	//Set display Start Line
+    _sendCmd(0x0);
+    _sendCmd(CMD_SET_DISPLAY_OFFSET);	//Set display offset
+    _sendCmd(0x0);
+    _sendCmd(CMD_NORMAL_DISPLAY);	//Set display mode
+    _sendCmd(CMD_SET_MULTIPLEX_RATIO);	//Set multiplex ratio
+    _sendCmd(0x3F);
+    _sendCmd(CMD_SET_MASTER_CONFIGURE);	//Set master configuration
+    _sendCmd(0x8E);
+    _sendCmd(CMD_POWER_SAVE_MODE);	//Set Power Save Mode
+    _sendCmd(0x00);		//0x00
+    _sendCmd(CMD_PHASE_PERIOD_ADJUSTMENT);	//phase 1 and 2 period adjustment
+    _sendCmd(0x31);		//0x31
+    _sendCmd(CMD_DISPLAY_CLOCK_DIV);	//display clock divider/oscillator frequency
+    _sendCmd(0xF0);
+    _sendCmd(CMD_SET_PRECHARGE_VOLTAGE);	//Set Pre-Change Level
+    _sendCmd(0x3A);
+    _sendCmd(CMD_SET_V_VOLTAGE);	//Set vcomH
+    _sendCmd(0x3E);
+    _sendCmd(CMD_DEACTIVE_SCROLLING);	//disable scrolling
+    _sendCmd(CMD_NORMAL_BRIGHTNESS_DISPLAY_ON);	//set display on
+}
+
 
 void set_reg(volatile uint32_t *p, int gpio, int bit) {
     if (bit) {
