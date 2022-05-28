@@ -210,7 +210,7 @@ module main_fsm(
                 ALUOp         = `ALU_OP_ADD;
                 ResultSrc     = `RESULT_ALURESULT;
                 alu_valid     = mem_ready;
-                PCUpdate      = mem_ready;
+                PCUpdate      = alu_ready;
             end
             S1  : begin
                 // decode
