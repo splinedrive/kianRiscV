@@ -31,7 +31,6 @@ module alu(
         output wire zero
     );
 
-`define CYCLE_BASED_SHIFTER
 `ifdef CYCLE_BASED_SHIFTER
     wire is_CTRL_SLL_SLLI        = alucontrol == `ALU_CTRL_SLL_SLLI;
     wire is_CTRL_SRL_SRLI        = alucontrol == `ALU_CTRL_SRL_SRLI;
