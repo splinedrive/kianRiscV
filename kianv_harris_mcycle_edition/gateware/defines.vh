@@ -69,9 +69,6 @@
 `ifdef NEXYSA7
 `define RV32M
 `define CSR
-//`define CYCLE_BASED_SHIFTER
-
-
 `define FAKE_MULTIPLIER
 `define CPU_HALT 1'b 1
 `define PC_OUT
@@ -81,12 +78,11 @@
 //`define OLED_SD1331
 `define HDMI_VIDEO_FB
 `define GPIO
+`define UART_TX
 
 `elsif ARTY7
 `define RV32M
 `define CSR
-//`define CYCLE_BASED_SHIFTER
-
 
 `define FAKE_MULTIPLIER
 `define SPI_NOR_PRESCALER_ENABLE
@@ -111,20 +107,26 @@
 `define DDR_HDMI_TRANSFER 1'b 1
 `define SPI_NOR_PRESCALER_ENABLE
 `define SPI_NOR_PRESCALER_DIVIDER 7
+`define UART_TX
 //`define OLED_SD1331
 `define HDMI_VIDEO_FB
 `define GPIO
 `endif
 
 `ifdef ICESTICK
+`undef RV32M
+`undef CSR
+`define CYCLE_BASED_SHIFTER
+`define OLED_SD1331
+//`define UART_TX
+`endif
+
+`ifdef FIREANT
+//`define FAKE_MULTIPLIER
 //`define RV32M
 //`define CSR
 `define CYCLE_BASED_SHIFTER
-
-`define OLED_SD1331
-`endif
-
-`ifdef TANGNANO1K
+//`define OLED_SD1331
 `define UART_TX
 `endif
 
@@ -150,7 +152,7 @@
 `ifdef SIM
 `define RV32M
 `define CSR
-`define CYCLE_BASED_SHIFTER
+//`define CYCLE_BASED_SHIFTER
 `define UART_TX
 `define BRAM_FIRMWARE
 `endif
@@ -165,7 +167,7 @@
 `elsif ICESTICK
 `define SYSTEM_CLK        35_000_000
 
-`elsif TANGNANO1K
+`elsif FIREANT
 `define SYSTEM_CLK        25_000_000
 
 `elsif ICEFUN
@@ -273,8 +275,8 @@
 `define BRAM_WORDS        (1024*16)
 `elsif ICESTICK
 `define BRAM_WORDS        (1024)
-`elsif TANGNANO1K
-`define BRAM_WORDS        (64)
+`elsif FIREANT
+`define BRAM_WORDS        (256)
 `else
 `define BRAM_WORDS        (1024*2)
 `endif
