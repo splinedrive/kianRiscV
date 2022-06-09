@@ -29,7 +29,7 @@ VERILOG_FILES := top.v \
 all: clean ${PROJ}.bit
 
 %.json: %.v
-	yosys -DICESTICK -p "synth_ice40 -abc9 -json $@ -top ${PROJ}" ${VERILOG_FILES} $<
+	yosys -DICESTICK -p "synth_ice40 -no-rw-check -abc9 -json $@ -top ${PROJ}" ${VERILOG_FILES} $<
 
 %_out.config: %.json
 	nextpnr-ice40 --freq 30 --timing-allow-fail -r --hx1k --json $(PROJ).json --package tq144 --asc $(PROJ).asc --opt-timing --pcf icestick.pcf
