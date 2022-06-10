@@ -20,8 +20,6 @@
 `define KIANV_RISCV_HARRIS
 
 
-//`define CYCLE_BASED_SHIFTER
-
 `ifdef SIM
 `define RV32M
 `define CSR

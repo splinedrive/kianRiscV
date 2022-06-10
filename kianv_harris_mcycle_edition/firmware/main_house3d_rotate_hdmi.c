@@ -1,6 +1,7 @@
 // kian riscv house rotation demo, author Hirosh Dabui
 /* fast sin/cosine by https://www.atwillys.de/content/cc/sine-lookup-for-embedded-in-c/ */
 
+#define DMA
 #include <stdint.h>
 #include <math.h>
 #include "stdlib.c"

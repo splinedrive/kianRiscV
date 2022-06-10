@@ -8,6 +8,7 @@ VERILOG_FILES := top.v \
 								 oled_sdd1331.v \
 								 ice40up5k_pll.v \
 								 cache/cache.v \
+								 simple_dma/simple_dma.v \
 								 ice40up5k_spram.v \
 								 gpio_ctrl.v \
 								 qqspi.v \
@@ -35,7 +36,7 @@ VERILOG_FILES := top.v \
 all: clean ${PROJ}.bit
 
 %.json: %.v
-	yosys -DICEBREAKER -p "synth_ice40 -json $@ -top ${PROJ}" ${VERILOG_FILES} $<
+	yosys -DICEBREAKER -p "synth_ice40 -abc9 -no-rw-check -json $@ -top ${PROJ}" ${VERILOG_FILES} $<
 
 %_out.config: %.json
 	nextpnr-ice40 --freq 12 --timing-allow-fail -r --up5k --json $(PROJ).json --package sg48 --asc $(PROJ).asc --opt-timing --pcf icebreaker.pcf

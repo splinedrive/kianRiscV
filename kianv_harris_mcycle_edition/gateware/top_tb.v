@@ -52,7 +52,7 @@ module top_tb;
         end
 
         /* verilator lint_off STMTDLY */
-        #100000000 $finish;
+        #2000000 $finish;
     end
     top
         dut_I (

@@ -35,6 +35,10 @@
 `define GPIO_INPUT_ADDR   32'h 30_000_020
 `define FRAME_BUFFER_CTRL 32'h 30_000_024
 `define LED8X4_FB_ADDR    32'h 30_000_028
+`define DMA_SRC           32'h 30_000_02C
+`define DMA_DST           32'h 30_000_030
+`define DMA_LEN           32'h 30_000_034
+`define DMA_CTRL          32'h 30_000_038
 /////////////////////////////////
 `define BAUDRATE          115200
 
@@ -45,6 +49,7 @@
 `define RV32M
 `define CSR
 //`define CYCLE_BASED_SHIFTER
+`define DMA_CONTROLLER
 `define LED_ULX3S
 `define ECP5
 `define GPIO
@@ -54,6 +59,7 @@
 `endif
 
 `ifdef COLORLIGHT_I5_I9
+`define DMA_CONTROLLER
 `define RV32M
 `define CSR
 //`define CYCLE_BASED_SHIFTER
@@ -79,6 +85,7 @@
 `define HDMI_VIDEO_FB
 `define GPIO
 `define UART_TX
+`define DMA_CONTROLLER
 
 `elsif ARTY7
 `define RV32M
@@ -97,6 +104,7 @@
 `define SPI_NOR_PRESCALER_DIVIDER 7
 //`define OLED_SD1331
 `define GPIO
+`define DMA_CONTROLLER
 
 `elsif NEXYS_VIDEO
 `define RV32M
@@ -111,6 +119,7 @@
 //`define OLED_SD1331
 `define HDMI_VIDEO_FB
 `define GPIO
+`define DMA_CONTROLLER
 `endif
 
 `ifdef ICESTICK
@@ -131,6 +140,7 @@
 `endif
 
 `ifdef ICEBREAKER
+`define DMA_CONTROLLER
 `define RV32M
 `define CSR
 //`define CYCLE_BASED_SHIFTER
@@ -179,7 +189,7 @@
 `ifdef ARTY7
 `define SYSTEM_CLK        180_000_000
 `elsif NEXYSA7
-`define SYSTEM_CLK        150_000_000
+`define SYSTEM_CLK        130_000_000
 `elsif NEXYS_VIDEO
 `define SYSTEM_CLK        180_000_000
 `elsif WUKONG
@@ -193,9 +203,8 @@
 
 // sim stuff
 `define DISABLE_WAVE      1'b0
-`define SHOW_MACHINECODE  1'b0
 `define SHOW_REGISTER_SET 1'b0
-`define DUMP_MEMORY       1'b0
+`define DUMP_MEMORY       1'b1
 
 
 // features
@@ -262,8 +271,8 @@
 `define FIRMWARE_BRAM     "./firmware/firmware.hex"
 `define FIRMWARE_SPI      ""
 //`define BRAM_WORDS        (1024*2)
-`define BRAM_WORDS        ('h10_000)
-//`define BRAM_WORDS        (1024)
+//`define BRAM_WORDS        ('h10_000)
+`define BRAM_WORDS        (1024)
 `else
 
 `define RESET_ADDR        (`SPI_NOR_MEM_ADDR_START + `SPI_MEMORY_OFFSET)

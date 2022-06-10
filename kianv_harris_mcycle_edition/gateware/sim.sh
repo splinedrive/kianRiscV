@@ -20,4 +20,4 @@ VFILES="
        ./kianv_harris_edition/csr_unit.v
        ./kianv_harris_edition/csr_decoder.v
        "
-iverilog -DSIM -I./kianv_harris_edition $VFILES defines.vh top_tb.v top.v bram.v tx_uart.v spi_nor_flash.v qqspi.v cache/cache.v && ./a.out -fst
+iverilog -DSIM -I./kianv_harris_edition $VFILES defines.vh top_tb.v top.v bram.v tx_uart.v spi_nor_flash.v qqspi.v cache/cache.v simple_dma/simple_dma.v && ./a.out -fst

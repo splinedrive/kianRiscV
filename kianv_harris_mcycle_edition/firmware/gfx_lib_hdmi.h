@@ -121,10 +121,14 @@ void oled_max_window() {
 
 //#define FRAMEBUFFER (volatile short *) 0x10000000
 void oled_show_fb_8or16(uint32_t *framebuffer, uint32_t *target_fb, int a) {
+#ifndef DMA
   volatile uint32_t *p = target_fb;
   for (int i = 0; i < (VRES*HRES); i++) {
     *p++ = *framebuffer++;
   }
+#else
+  dma_action((uint32_t) framebuffer, target_fb, VRES*HRES, DMA_MEMCPY);
+#endif
 }
 /*
 void oled_show_fb_8or16(uint16_t *framebuffer, int _8bit) {
@@ -159,9 +163,9 @@ void oled_show_fb(uint32_t *framebuffer, uint32_t *target_fb) {
 }
 */
 
-/* 
- * copied from 
- * https://github.com/peterhinch/micropython-nano-gui/blob/master/drivers/ssd1331/ssd1331.py 
+/*
+ * copied from
+ * https://github.com/peterhinch/micropython-nano-gui/blob/master/drivers/ssd1331/ssd1331.py
  * */
 char oled_8bit_init_seq[] = {
   0xae,       //   display off (sleep mode)
@@ -218,11 +222,14 @@ void fb_draw_bresenham(uint32_t *fb, int x0, int y0, int x1, int y1, short color
     if (e2 <= dx) { err += dx; y0 += sy; } /* e_xy+e_y < 0 */
   }
 }
-
 void fill_oled(uint32_t *framebuffer, int rgb) {
+#ifndef DMA
   for (int i = 0; i < (VRES*HRES); i++) {
-    framebuffer[i] = rgb;//i<<16;//rgb;
+    framebuffer[i] = 0x000f01<< (i % 16);//i<< (i % 16);//rgb;
   }
+#else
+  dma_action((uint32_t) framebuffer, rgb, VRES*HRES, DMA_MEMSET);
+#endif
 }
 
 point mirror_x_axis(point *p) {

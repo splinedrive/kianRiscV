@@ -1,13 +1,14 @@
 // kian riscv house rotation demo, author Hirosh Dabui
 /* fast sin/cosine by https://www.atwillys.de/content/cc/sine-lookup-for-embedded-in-c/ */
 
+#define DMA
 #include <stdint.h>
 #include <math.h>
 #include "stdlib.c"
 #include "gfx_lib_hdmi.h"
 
 #define N 360
-#define STEP 20 
+#define STEP 20
 point stars [N];
 #define FRAMEBUFFER (volatile short *) 0x10000000
 #define FB_CTRL     (volatile short *) 0x30000024

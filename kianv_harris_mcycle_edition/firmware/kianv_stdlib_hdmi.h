@@ -16,6 +16,13 @@
 #define GPIO_INPUT          ( volatile uint32_t  *) (IO_BASE + 0x0020)
 #define IO_OUT(reg, value) *((volatile uint32_t  *) (reg)) = (value)
 #define IO_IN(reg)         *((volatile uint32_t  *) reg)
+// dma stuff
+#define DMA_SRC             ( volatile uint32_t  *) (IO_BASE + 0x002C)
+#define DMA_DST             ( volatile uint32_t  *) (IO_BASE + 0x0030)
+#define DMA_LEN             ( volatile uint32_t  *) (IO_BASE + 0x0034)
+#define DMA_CTRL            ( volatile uint32_t  *) (IO_BASE + 0x0038)
+#define DMA_MEMCPY          (1 << 0)
+#define DMA_MEMSET          (1 << 1)
 
 #define GPIO_INPUT_PIN  0
 #define GPIO_OUTPUT_PIN 1
@@ -37,6 +44,14 @@
 #define BOLD      "\x1B[1m"
 #define BLINK     "\x1B[5m"
 #define BLINK_OFF "\x1B[25m"
+
+// dma stuff
+void dma_action(uint32_t src, uint32_t dst, uint32_t len, uint32_t ctrl) {
+  *( (volatile uint32_t*) DMA_SRC  ) = src;
+  *( (volatile uint32_t*) DMA_DST  ) = dst;
+  *( (volatile uint32_t*) DMA_LEN  ) = len;
+  *( (volatile uint32_t*) DMA_CTRL ) = ctrl;
+}
 
 void set_reg(volatile uint32_t *p, int gpio, int bit) {
     if (bit) {
@@ -185,3 +200,4 @@ void draw_bresenham(volatile Pixel *fb, int x0, int y0, int x1, int y1, uint32_t
     if (e2 <= dx) { err += dx; y0 += sy; } /* e_xy+e_y < 0 */
   }
 }
+

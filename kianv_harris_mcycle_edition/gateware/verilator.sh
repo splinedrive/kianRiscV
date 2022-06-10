@@ -5,6 +5,7 @@ tx_uart.v
 spi_nor_flash.v
 qqspi.v
 cache/cache.v
+simple_dma/simple_dma.v
 kianv_harris_edition/kianv_harris_mc_edition.v
 kianv_harris_edition/control_unit.v
 kianv_harris_edition/datapath_unit.v

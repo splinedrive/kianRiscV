@@ -12,6 +12,7 @@ VERILOG_FILES := top.v \
 								 dual_port_ram.v \
 								 video_fb.v \
 								 cache/cache.v \
+								 simple_dma/simple_dma.v \
 								 oled_sdd1331.v \
 								 gpio_ctrl.v \
 								 qqspi.v \

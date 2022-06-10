@@ -13,7 +13,7 @@ typedef struct {
   int color;
 } pixel;
 
-#define N 80
+#define N 10
 
 pixel pixels[N];
 #define SIZEOF(arr) sizeof(arr) / sizeof(*arr)
@@ -49,7 +49,7 @@ void move_pixels() {
 
         *x += *xdelta;
         *y += *ydelta;
-#if BOUNCE 
+#if BOUNCE
       }
     }
 #endif

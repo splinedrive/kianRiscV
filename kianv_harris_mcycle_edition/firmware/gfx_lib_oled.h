@@ -148,9 +148,9 @@ void oled_show_fb(uint16_t *framebuffer) {
   oled_show_fb_8or16(framebuffer, 0);
 }
 
-/* 
- * copied from 
- * https://github.com/peterhinch/micropython-nano-gui/blob/master/drivers/ssd1331/ssd1331.py 
+/*
+ * copied from
+ * https://github.com/peterhinch/micropython-nano-gui/blob/master/drivers/ssd1331/ssd1331.py
  * */
 char oled_8bit_init_seq[] = {
   0xae,       //   display off (sleep mode)
@@ -241,9 +241,13 @@ void fb_draw_bresenham(uint16_t *fb, int x0, int y0, int x1, int y1, short color
 }
 
 void fill_oled(uint16_t *framebuffer, int rgb) {
+#ifndef DMA
   for (int i = 0; i < (VRES*HRES); i++) {
     framebuffer[i] = rgb;
   }
+#else
+  dma_action((uint32_t) framebuffer, rgb, VRES*HRES, DMA_MEMSET);
+#endif
 }
 
 point mirror_x_axis(point *p) {

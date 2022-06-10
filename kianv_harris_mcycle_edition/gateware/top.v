@@ -79,13 +79,51 @@ module top
     wire [31: 0] pc;
     wire [ 5: 0] ctrl_state;
 
-    wire mem_ready;
-    wire mem_valid;
+    wire cpu_mem_ready;
+    wire cpu_mem_valid;
 
-    wire [ 3: 0] mem_wstrb;
-    wire [31: 0] mem_addr;
-    wire [31: 0] mem_wdata;
-    wire [31: 0] mem_rdata;
+    wire [ 3: 0] cpu_mem_wstrb;
+    wire [31: 0] cpu_mem_addr;
+    wire [31: 0] cpu_mem_wdata;
+    wire [31: 0] cpu_mem_rdata;
+
+`ifdef DMA_CONTROLLER
+    // dma interface
+    wire  [31: 0] dma_addr;
+    wire  [ 3: 0] dma_wstrb;
+    wire  [31: 0] dma_wdata;
+    wire  [31: 0] dma_rdata;
+    wire  [31: 0] simple_dma_mem_rdata;
+    wire          simple_dma_ready;
+    wire          dma_valid;
+    wire          dma_ready;
+    wire          dma_active;
+`endif
+
+    // mux memory bus
+    wire mux_mem_ready;
+    wire mux_mem_valid;
+    wire [ 3: 0] mux_mem_wstrb;
+    wire [31: 0] mux_mem_addr;
+    wire [31: 0] mux_mem_wdata;
+
+`ifdef DMA_CONTROLLER
+    reg dma_active_d;
+    always @(posedge clk)  dma_active_d <= !resetn ? 0 : dma_active;
+
+    assign mux_mem_valid = dma_active_d ? dma_valid : cpu_mem_valid;
+    assign mux_mem_wstrb = dma_active_d ? dma_wstrb : cpu_mem_wstrb;
+    assign mux_mem_addr  = dma_active_d ? dma_addr  : cpu_mem_addr;
+    assign mux_mem_wdata = dma_active_d ? dma_wdata : cpu_mem_wdata;
+    assign cpu_mem_ready = dma_active_d ? 1'b 0 : (mux_mem_ready || simple_dma_ready);
+    assign dma_ready     = dma_active_d ? mux_mem_ready : 1'b 0;
+`else
+    assign mux_mem_valid =  cpu_mem_valid;
+    assign mux_mem_wstrb =  cpu_mem_wstrb;
+    assign mux_mem_addr  =  cpu_mem_addr;
+    assign mux_mem_wdata =  cpu_mem_wdata;
+    assign cpu_mem_ready =  mux_mem_ready;
+`endif
 
     // bram wiring
     wire [31:0] bram_rdata;
@@ -122,10 +160,10 @@ module top
 
 `ifdef IOMEM_INTERFACING
     // iomemory interface
-    assign iomem_valid = mem_valid;// && (mem_addr[31:24] > 8'h 01);
-    assign iomem_wstrb = mem_wstrb;
-    assign iomem_addr  = mem_addr;
-    assign iomem_wdata = mem_wdata;
+    assign iomem_valid = mux_mem_valid;// && (mem_addr[31:24] > 8'h 01);
+    assign iomem_wstrb = mux_mem_wstrb;
+    assign iomem_addr  = mux_mem_addr;
+    assign iomem_wdata = mux_mem_wdata;
 `endif
 
 `ifdef CSR
@@ -136,10 +174,10 @@ module top
 
     // RISC-V is byte-addressable, alignment memory devices word organized
     // memory interface
-    wire wr                       = |mem_wstrb;
-    wire [29:0] word_aligned_addr = {mem_addr[31:2]};
+    wire wr                       = |mux_mem_wstrb;
+    wire [29:0] word_aligned_addr = {mux_mem_addr[31:2]};
 
-    assign mem_ready   = bram_ready
+    assign mux_mem_ready   = bram_ready
 `ifdef UART_TX
            || uart_tx_ready || uart_rdy_ready
 `endif
@@ -157,7 +195,7 @@ module top
 `endif
            ;
 
-    assign mem_rdata   =
+    assign cpu_mem_rdata   =
            bram_ready            ? bram_rdata           :
 `ifndef BRAM_FIRMWARE
            spi_nor_mem_ready     ? spi_nor_mem_data     :
@@ -174,24 +212,27 @@ module top
 `ifdef UART_TX
            uart_rdy_ready        ? ~0                   :
 `endif
+`ifdef DMA_CONTROLLER
+           simple_dma_ready      ? simple_dma_mem_rdata :
+`endif
            32'h 0000_0000;
 
 `ifdef CSR
     // cpu_freq
-    assign system_cpu_freq_valid   = !system_cpu_freq_ready && mem_valid && (mem_addr == `CPU_FREQ_REG_ADDR) && !wr;
+    assign system_cpu_freq_valid   = !system_cpu_freq_ready && mux_mem_valid && (mux_mem_addr == `CPU_FREQ_REG_ADDR) && !wr;
     always @(posedge clk) system_cpu_freq_ready <= !resetn ? 1'b 0 : system_cpu_freq_valid;
 `endif
 
 `ifdef PSRAM_MEMORY_32MB
     // SPI nor flash
-    wire mem_psram_pmod_valid = !mem_psram_pmod_ready && mem_valid &&
-         (mem_addr >= `PSRAM_MEM_ADDR_START && mem_addr < `PSRAM_MEM_ADDR_END);
+    wire mem_psram_pmod_valid = !mem_psram_pmod_ready && mux_mem_valid &&
+         (mux_mem_addr >= `PSRAM_MEM_ADDR_START && mux_mem_addr < `PSRAM_MEM_ADDR_END);
 `ifdef PSRAM_CACHE
     // cache interface
     wire   [BLOCK_ADDRESS_LEN -1: 0] cblock_addr = word_aligned_addr;
-    wire   [DATA_LEN          -1: 0] cwdata      = mem_wdata;
+    wire   [DATA_LEN          -1: 0] cwdata      = mux_mem_wdata;
     wire   [DATA_LEN          -1: 0] crdata;
-    wire   [BYTES_PER_BLOCK   -1: 0] cwstrb      = mem_wstrb;
+    wire   [BYTES_PER_BLOCK   -1: 0] cwstrb      = mux_mem_wstrb;
     wire                             cvalid      = mem_psram_pmod_valid;
     wire                             cready;
 
@@ -229,9 +270,9 @@ module top
 `else
     // mem interface
     wire   [BLOCK_ADDRESS_LEN -1: 0] maddr   = word_aligned_addr;
-    wire   [BYTES_PER_BLOCK   -1: 0] mwstrb  = mem_wstrb;
+    wire   [BYTES_PER_BLOCK   -1: 0] mwstrb  = mux_mem_wstrb;
     wire   [DATA_LEN          -1: 0] mrdata;
-    wire   [DATA_LEN          -1: 0] mwdata  = mem_wdata;
+    wire   [DATA_LEN          -1: 0] mwdata  = mux_mem_wdata;
     wire                             mvalid  = mem_psram_pmod_valid;
     wire                             mready;
 `endif
@@ -293,8 +334,8 @@ module top
 
 `ifndef BRAM_FIRMWARE
     // SPI nor flash
-    assign spi_nor_mem_valid = !spi_nor_mem_ready && mem_valid &&
-           (mem_addr >= `SPI_NOR_MEM_ADDR_START && mem_addr < `SPI_NOR_MEM_ADDR_END) && !wr;
+    assign spi_nor_mem_valid = !spi_nor_mem_ready && mux_mem_valid &&
+           (mux_mem_addr >= `SPI_NOR_MEM_ADDR_START && mux_mem_addr < `SPI_NOR_MEM_ADDR_END) && !wr;
 
 `ifdef SIM
     wire [21:0] spi_offset = `SPI_MEMORY_OFFSET>>2;
@@ -325,10 +366,10 @@ module top
 
 `ifdef UART_TX
     // UART
-    assign uart_tx_valid     = !uart_rdy_ready && mem_valid && (mem_addr == `UART_TX_ADDR) && wr;
+    assign uart_tx_valid     = !uart_rdy_ready && mux_mem_valid && (mux_mem_addr == `UART_TX_ADDR) && wr;
 
     /* uart ready dummy */
-    always @(posedge clk) uart_rdy_ready <= !resetn ? 1'b 0 : (mem_valid && (mem_addr == `UART_TX_ADDR) && !wr);
+    always @(posedge clk) uart_rdy_ready <= !resetn ? 1'b 0 : (mux_mem_valid && (mux_mem_addr == `UART_TX_ADDR) && !wr);
 
     tx_uart
         #(
@@ -340,14 +381,14 @@ module top
             .clk     ( clk                                   ),
             .resetn  ( resetn                                ),
             .valid   ( uart_tx_valid                         ),
-            .tx_data ( mem_wdata[7:0]                        ),
+            .tx_data ( mux_mem_wdata[7:0]                    ),
             .tx_out  ( uart_tx                               ),
             .ready   ( uart_tx_ready                         )
         );
 `endif
 
     // BRAM
-    assign bram_valid      = !bram_ready && mem_valid && (mem_addr < (`BRAM_WORDS << 2));
+    assign bram_valid      = !bram_ready && mux_mem_valid && (mux_mem_addr < (`BRAM_WORDS << 2));
     always @(posedge clk) bram_ready <= !resetn ? 0 : bram_valid;
 
     bram
@@ -361,10 +402,32 @@ module top
             .clk   ( clk                                     ),
             .wr    ( wr & bram_valid                         ),
             .addr  ( word_aligned_addr[BRAM_ADDR_WIDTH -1:0] ),
-            .wdata ( mem_wdata                               ),
+            .wdata ( mux_mem_wdata                           ),
             .rdata ( bram_rdata                              ),
-            .wmask ( mem_wstrb                               )
+            .wmask ( mux_mem_wstrb                           )
         );
+
+`ifdef DMA_CONTROLLER
+    simple_dma simple_dma_I
+               (
+                   .clk          ( clk                  ),
+                   .resetn       ( resetn               ),
+                   .wstrb        ( cpu_mem_wstrb        ),
+                   .addr         ( cpu_mem_addr         ),
+                   .wdata        ( cpu_mem_wdata        ),
+                   .rdata        ( simple_dma_mem_rdata ),
+                   .valid        ( cpu_mem_valid        ),
+                   .ready        ( simple_dma_ready     ),
+
+                   .dma_addr     ( dma_addr             ),
+                   .dma_wdata    ( dma_wdata            ),
+                   .dma_rdata    ( cpu_mem_rdata        ),
+                   .dma_wstrb    ( dma_wstrb            ),
+                   .dma_valid    ( dma_valid            ),
+                   .dma_ready    ( dma_ready            ),
+                   .dma_active   ( dma_active           )
+               );
+`endif
 
     // kianv riscv rv32im
     kianv_harris_mc_edition
@@ -379,12 +442,12 @@ module top
             .clk       ( clk                                 ),
 `endif
             .resetn    ( resetn                              ),
-            .mem_ready ( mem_ready                           ),
-            .mem_valid ( mem_valid                           ),
-            .mem_wstrb ( mem_wstrb                           ),
-            .mem_addr  ( mem_addr                            ),
-            .mem_wdata ( mem_wdata                           ),
-            .mem_rdata ( mem_rdata                           ),
+            .mem_ready ( cpu_mem_ready                       ),
+            .mem_valid ( cpu_mem_valid                       ),
+            .mem_wstrb ( cpu_mem_wstrb                       ),
+            .mem_addr  ( cpu_mem_addr                        ),
+            .mem_wdata ( cpu_mem_wdata                       ),
+            .mem_rdata ( cpu_mem_rdata                       ),
 
             .PC        ( PC                                  )
         );

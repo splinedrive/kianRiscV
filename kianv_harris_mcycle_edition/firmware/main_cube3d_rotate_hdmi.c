@@ -1,6 +1,7 @@
 // kian riscv house rotation demo, author Hirosh Dabui
 /* fast sin/cosine by https://www.atwillys.de/content/cc/sine-lookup-for-embedded-in-c/ */
 
+#define DMA
 #include <stdint.h>
 #include <math.h>
 #include "stdlib.c"
@@ -133,6 +134,13 @@ void main() {
     if (s >= 10) delta_scale = -delta_scale;
     if (s <= 0) delta_scale = -delta_scale;
     s += delta_scale;
+
+    /*
+    *( (volatile uint32_t*) DMA_SRC  ) = framebuffer;
+    *( (volatile uint32_t*) DMA_DST  ) = 0;
+    *( (volatile uint32_t*) DMA_LEN  ) = 80*60;
+    *( (volatile uint32_t*) DMA_CTRL ) = 2;
+    */
 
     fill_oled(framebuffer, 0x000000);
     IO_OUT(GPIO_OUTPUT, 0);
