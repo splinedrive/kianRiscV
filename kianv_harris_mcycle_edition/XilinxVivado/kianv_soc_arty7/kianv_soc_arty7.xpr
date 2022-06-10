@@ -112,6 +112,14 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
+      <File Path="$PPRDIR/../../projects/kian_mc_harris/simple_dma/simple_dma.v">
+        <FileInfo>
+          <Attr Name="IsGlobalInclude" Val="1"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
       <File Path="$PPRDIR/../../projects/kian_mc_harris/oled_sdd1331.v">
         <FileInfo>
           <Attr Name="IsGlobalInclude" Val="1"/>
