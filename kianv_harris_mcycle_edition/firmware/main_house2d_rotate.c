@@ -1,6 +1,7 @@
 // kian riscv house rotation demo, author Hirosh Dabui
 /* fast sin/cosine by https://www.atwillys.de/content/cc/sine-lookup-for-embedded-in-c/ */
 
+#define DMA
 #include <stdint.h>
 #include <math.h>
 #include <fenv.h>
@@ -260,13 +261,14 @@ point mirror_y_axis(point *p) {
 }
 
 void main() {
+  init_oled1331();
   fill_oled(framebuffer, 0x0000);
 
   int angle = 0;
-  int delta_angle = 4; /* speedup rotation, - for left rotation */
+  int delta_angle = 1; /* speedup rotation, - for left rotation */
 
   float s = 1;
-  float delta_scale = 0.8; /* speedup scale */
+  float delta_scale = 0.2; /* speedup scale */
   for (;;) {
     for (int i = 0; i < (sizeof(vector_model) / sizeof(vector_model[0])) - 1; i = i + 2) {
       point p0 = vector_model[i];

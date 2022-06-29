@@ -122,6 +122,7 @@ void main() {
     angle += delta_angle;
 
     if (angle >= 359) angle = 0;
+    if (angle < 0) angle = 359;
     if (s >= 10) delta_scale = -delta_scale;
     if (s <= 0) delta_scale = -delta_scale;
     s += delta_scale;
