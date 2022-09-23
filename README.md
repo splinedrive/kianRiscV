@@ -108,7 +108,7 @@ Supported **fpgas**:
 * icebreaker ice40
 * colorlighi5, colorlighti9 ecp5
 * icefun ice40
-* digilent arty7, nexys a7 and nexys video
+* digilent arty7, nexys a7 nexys video and genesys2
 
 ## Synthesis of SOC
 You should study `defines.vh` file you can choose the sytemfrequency,
@@ -168,7 +168,7 @@ Firmware:\
 cd ./firmware\
 flash with\
 ./flash_firmware.sh \
-ulx3s|ice|colori5|arty7|nexysa7|nexysa_video|stick <*.ld> <*.c>
+ulx3s|ice|colori5|arty7|nexysa7|nexysa_video|genesys2|stick <*.ld> <*.c>
 
 spi_nor2bram_fun.ld # boot from spi-nor icefun and copy code to bram\
 spi_nor2bram.ld # boot from spi-nor icebreaker and copy to bram\

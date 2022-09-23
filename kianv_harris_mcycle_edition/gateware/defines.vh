@@ -105,12 +105,25 @@
 //`define OLED_SD1331
 `define GPIO
 `define DMA_CONTROLLER
-
 `elsif NEXYS_VIDEO
 `define RV32M
 `define CSR
 //`define CYCLE_BASED_SHIFTER
 
+`define FAKE_MULTIPLIER
+`define DDR_HDMI_TRANSFER 1'b 1
+`define SPI_NOR_PRESCALER_ENABLE
+`define SPI_NOR_PRESCALER_DIVIDER 7
+`define UART_TX
+//`define OLED_SD1331
+`define HDMI_VIDEO_FB
+`define GPIO
+`define DMA_CONTROLLER
+
+`elsif GENESYS2
+`define RV32M
+`define CSR
+//`define CYCLE_BASED_SHIFTER
 `define FAKE_MULTIPLIER
 `define DDR_HDMI_TRANSFER 1'b 1
 `define SPI_NOR_PRESCALER_ENABLE
@@ -192,6 +205,9 @@
 `define SYSTEM_CLK        130_000_000
 `elsif NEXYS_VIDEO
 `define SYSTEM_CLK        180_000_000
+`elsif GENESYS2
+//`define SYSTEM_CLK        150_000_000
+`define SYSTEM_CLK        200_000_000
 `elsif WUKONG
 `define SYSTEM_CLK        175_000_000
 `endif
@@ -220,6 +236,7 @@
 
 // offset for simulation only
 `define SPI_NOR_MEM_ADDR_START    32'h 20_000_000
+
 `ifdef KROETE
 `define SPI_MEMORY_OFFSET         (135*1024)
 `define SPI_NOR_MEM_ADDR_END      ((`SPI_NOR_MEM_ADDR_START) + (1024*256))
@@ -237,6 +254,9 @@
 `elsif NEXYS_VIDEO
 `define SPI_MEMORY_OFFSET         (1024*1024*10)
 `define SPI_NOR_MEM_ADDR_END      ((`SPI_NOR_MEM_ADDR_START) + (32*1024*1024))
+`elsif GENESYS2
+`define SPI_MEMORY_OFFSET         (1024*1024*28)
+`define SPI_NOR_MEM_ADDR_END      ((`SPI_NOR_MEM_ADDR_START) + (32*1024*1024))
 `endif
 
 `else /* 1M */
@@ -247,6 +267,7 @@
 // PSRAM
 `ifdef ECP5
 //`define PSRAM_CACHE
+  //
 `define CACHE_LINES (64)
 `define PSRAM_MEM_ADDR_START      32'h 40_000_000
 `define PSRAM_MEM_ADDR_END        ((`PSRAM_MEM_ADDR_START) + (32*1024*1024))
@@ -262,8 +283,8 @@
 `define SPRAM_MEM_ADDR_END        ((`SPRAM_MEM_ADDR_START) + (`SPRAM_SIZE))
 `endif
 
-//`define BRAM_FIRMWARE
-//`undef BRAM_FIRMWARE
+`define BRAM_FIRMWARE
+`undef BRAM_FIRMWARE
 
 `ifdef BRAM_FIRMWARE
 
@@ -271,13 +292,14 @@
 `define FIRMWARE_BRAM     "./firmware/firmware.hex"
 `define FIRMWARE_SPI      ""
 //`define BRAM_WORDS        (1024*2)
-//`define BRAM_WORDS        ('h10_000)
-`define BRAM_WORDS        (1024)
+`define BRAM_WORDS        ('h10_000)
+//`define BRAM_WORDS        (1024)
 `else
 
 `define RESET_ADDR        (`SPI_NOR_MEM_ADDR_START + `SPI_MEMORY_OFFSET)
 `define FIRMWARE_BRAM     ""
 `define FIRMWARE_SPI      "./firmware/firmware.hex"
+// word = 32 bits
 `ifdef ECP5
 `define BRAM_WORDS        (1024*16)
 `elsif ARTIX7
