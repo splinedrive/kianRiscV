@@ -34,7 +34,7 @@ const int VRENDER = 60;
 //const int HRENDER = 10;
 ////const int VRENDER = 10;
 
-static int bench_run = 0;
+static int bench_run = 1;
 
 int __errno; // needed when compiling to hex, not needed otherwise.
 
@@ -78,8 +78,8 @@ static inline void stats_begin_frame() {
   asm volatile("rdinstreth %0" : "=r"(tmph1));
   asm volatile("rdinstret %0" : "=r"(tmpl1));
 
-  uint64_t instret_start = ((uint64_t)(tmph0) << 32) + tmpl0;
-  uint64_t cycles_start = ((uint64_t)(tmph1) << 32) + tmpl1;
+  cycles_start = ((uint64_t)(tmph0) << 32) + tmpl0;
+  instret_start = ((uint64_t)(tmph1) << 32) + tmpl1;
 }
 /*
 static inline stats_begin_frame() {
@@ -560,7 +560,6 @@ void main() {
   for (;;) {
     //    short *p = FRAMEBUFFER;
     //  fill_oled(0);
-    bench_run = 0;
     init_scene();
     render(fb, spheres, nb_spheres, lights, nb_lights);
     //    print_str("done=======================");
