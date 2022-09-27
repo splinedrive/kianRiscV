@@ -2,134 +2,57 @@
 /* Displays on the small OLED display and/or HDMI                  */
 /* Bruno Levy, 2020                                                */
 /* Original tinyraytracer: https://github.com/ssloy/tinyraytracer  */
-// adusted for kianv rv32im , Hirosh Dabui 2022
+/* adapted for kianv riscv soc Hirosh Dabui, 2021 */
 
+#include "stdlib.c"
+#include <fenv.h>
 #include <math.h>
 #include <stdint.h>
-#include <stdlib.h>
+//#include "perf.h"
 
-#include "io.h"
-#include "perf.h"
+uint32_t get_cpu_freq();
 
-/*******************************************************************/
+void usleep(uint32_t us);
+
+void msleep(uint32_t ms);
+
+void sleep(uint32_t sec);
+
+// typedef uint32_t Pixel;
+
+// const int HRES = 640;
+// const int VRES = 480;
+
+// const int HRENDER = 640;
+// const int VRENDER = 480;
+
+// const int HRES = 128;
+// const int VRES = 128;
+
+const int HRENDER = 120;
+const int VRENDER = 60;
+//const int HRENDER = 10;
+////const int VRENDER = 10;
+
+static int bench_run = 0;
+
+int __errno; // needed when compiling to hex, not needed otherwise.
 
 typedef int BOOL;
 
 static inline float max(float x, float y) { return x > y ? x : y; }
 static inline float min(float x, float y) { return x < y ? x : y; }
 
-/*******************************************************************/
+typedef struct {
+  float x, y, z;
+} vec3;
+typedef struct {
+  float x, y, z, w;
+} vec4;
 
-// If you want to adapt tinyraytracer to your own platform, there are
-// mostly two macros and two functions to write:
-//   graphics_width
-//   graphics_height
-//   graphics_init()
-//   graphics_set_pixel()
-//
-// You can also write the following functions (or leave them empty if
-// you do not need them):
-//   graphics_terminate()
-//   stats_begin_frame()
-//   stats_begin_pixel()
-//   stats_end_pixel()
-//   stats_end_frame()
+static uint64_t instret_start;
+static uint64_t cycles_start;
 
-// Size of the screen
-// Replace with your own variables or values
-
-// Benchmark
-// - graphics deactivated (else UART waiting loop gives
-//   different results according to CPU freq / UART baud rate
-//   ratio).
-// - smaller image size (for faster run in simulation)
-
-static int graphics_width = 120;
-static int graphics_height = 60;
-
-static int bench_run = 0;
-
-// Two pixels per character using UTF8 character set
-// (comment-out if terminal does not support it)
-#define graphics_double_lines
-
-// Replace with your own stuff to initialize graphics
-static inline void graphics_init() {
-  printf("\033[48;5;16m" // set background color black
-         "\033[H"        // home
-         "\033[2J");     // clear screen
-}
-
-// Replace with your own stuff to terminate graphics or leave empty
-// Here I send <ctrl><D> to the UART, to exit the simulation in Verilator,
-// it is captured by special code in RTL/DEVICES/uart.v
-static inline void graphics_terminate() {
-  printf("\033[48;5;16m" // set background color black
-         "\033[38;5;15m" // set foreground color white
-  );
-}
-
-// Replace with your own code.
-void graphics_set_pixel(int x, int y, float r, float g, float b) {
-  r = max(0.0f, min(1.0f, r));
-  g = max(0.0f, min(1.0f, g));
-  b = max(0.0f, min(1.0f, b));
-  uint8_t R = (uint8_t)(255.0f * r);
-  uint8_t G = (uint8_t)(255.0f * g);
-  uint8_t B = (uint8_t)(255.0f * b);
-  // graphics output deactivated for bench run
-  if (bench_run) {
-    if (y & 1) {
-      if (x == graphics_width - 1) {
-        printf("%d", y / 2);
-      }
-    }
-    return;
-  }
-#ifdef graphics_double_lines
-  static uint8_t prev_R = 0;
-  static uint8_t prev_G = 0;
-  static uint8_t prev_B = 0;
-  if (y & 1) {
-    if ((R == prev_R) && (G == prev_G) && (B == prev_B)) {
-      printf("\033[48;2;%d;%d;%dm ", (int)R, (int)G, (int)B);
-    } else {
-      printf("\033[48;2;%d;%d;%dm", (int)prev_R, (int)prev_G, (int)prev_B);
-      printf("\033[38;2;%d;%d;%dm", (int)R, (int)G, (int)B);
-      // https://www.w3.org/TR/xml-entity-names/025.html
-      // https://onlineunicodetools.com/convert-unicode-to-utf8
-      printf("\xE2\x96\x83");
-    }
-    if (x == graphics_width - 1) {
-      printf("\033[38;2;0;0;0m");
-      printf("\033[48;2;0;0;0m\n");
-    }
-  } else {
-    prev_R = R;
-    prev_G = G;
-    prev_B = B;
-  }
-#else
-  printf("\033[48;2;%d;%d;%dm ", (int)R, (int)G, (int)B);
-  if (x == graphics_width - 1) {
-    printf("\033[48;2;0;0;0m\n");
-  }
-#endif
-}
-
-// Begins statistics collection for current pixel
-// Leave emtpy if not needed.
-// There are these two levels because on some
-// femtorv32 cores (quark, tachyon), the clock tick counter does not
-// have sufficient bits and will wrap during the time taken by
-// rendering a frame (up to several minutes).
-static inline stats_begin_pixel() {}
-
-// Ends statistics collection for current pixel
-// Leave emtpy if not needed.
-static inline stats_end_pixel() {}
-
-// Print "fixed point" number (integer/1000)
 static void printk(uint64_t kx) {
   int intpart = (int)(kx / 1000);
   int fracpart = (int)(kx % 1000);
@@ -143,46 +66,87 @@ static void printk(uint64_t kx) {
   printf("%d", fracpart);
 }
 
-static uint64_t instret_start;
-static uint64_t cycles_start;
+static inline void stats_begin_frame() {
+  volatile uint32_t tmph0;
+  volatile uint32_t tmpl0;
+  volatile uint32_t tmph1;
+  volatile uint32_t tmpl1;
 
-// Begins statistics collection for current frame.
-// Leave emtpy if not needed.
-static inline stats_begin_frame() {
-  instret_start = rdinstret();
-  cycles_start = rdcycle();
+  asm volatile("rdcycleh %0" : "=r"(tmph0));
+  asm volatile("rdcycle  %0" : "=r"(tmpl0));
+
+  asm volatile("rdinstreth %0" : "=r"(tmph1));
+  asm volatile("rdinstret %0" : "=r"(tmpl1));
+
+  uint64_t instret_start = ((uint64_t)(tmph0) << 32) + tmpl0;
+  uint64_t cycles_start = ((uint64_t)(tmph1) << 32) + tmpl1;
 }
+/*
+static inline stats_begin_frame() {
+    instret_start = rdinstret();
+    cycles_start  = rdcycle();
+}
+*/
 
 // Ends statistics collection for current frame
 // and displays result.
 // Leave emtpy if not needed.
-static inline stats_end_frame() {
-  graphics_terminate();
-  uint64_t instret = rdinstret() - instret_start;
-  uint64_t cycles = rdcycle() - cycles_start;
+
+static inline void stats_end_frame() {
+  //   graphics_terminate();
+  volatile uint32_t tmph0;
+  volatile uint32_t tmpl0;
+  volatile uint32_t tmph1;
+  volatile uint32_t tmpl1;
+
+  asm volatile("rdcycleh %0" : "=r"(tmph0));
+  asm volatile("rdcycle  %0" : "=r"(tmpl0));
+
+  asm volatile("rdinstreth %0" : "=r"(tmph1));
+  asm volatile("rdinstret %0" : "=r"(tmpl1));
+
+  uint64_t cycles = ((uint64_t)(tmph0) << 32) + tmpl0;
+  uint64_t instret = ((uint64_t)(tmph1) << 32) + tmpl1;
+  cycles -= cycles_start;
+  instret -= instret_start;
+
+  // uint64_t instret = rdinstret() - instret_start;
+  //  uint64_t cycles = rdcycle()    - cycles_start ;
   uint64_t kCPI = cycles * 1000 / instret;
-  uint64_t pixels = graphics_width * graphics_height;
+  uint64_t pixels = HRENDER * VRENDER;
   uint64_t kRAYSTONES = (pixels * 1000000000) / cycles;
-  printf("\n%dx%d      %s     ", graphics_width, graphics_height,
+  printf("\n%dx%d      %s     ", VRENDER, HRENDER,
          bench_run ? "no gfx output (measurement is accurate)"
                    : "gfx output (measurement is NOT accurate)");
   printf("CPI=");
   printk(kCPI);
+  //  printf(kCPI;
   printf("     ");
-  printf("RAYSTONES=");
+  printf("kRAYSTONES=");
+  // printf(kRAYSTONES);
   printk(kRAYSTONES);
   printf("\n");
 }
-
-// Normally you will not need to modify anything beyond that point.
-/*******************************************************************/
-
-typedef struct {
-  float x, y, z;
-} vec3;
-typedef struct {
-  float x, y, z, w;
-} vec4;
+/*
+static inline stats_end_frame() {
+   graphics_terminate();
+   uint64_t instret = rdinstret() - instret_start;
+   uint64_t cycles = rdcycle()    - cycles_start ;
+   uint64_t kCPI       = cycles*1000/instret;
+   uint64_t pixels     = graphics_width * graphics_height;
+   uint64_t kRAYSTONES = (pixels*1000000000)/cycles;
+   printf(
+       "\n%dx%d      %s     ",
+       graphics_width,graphics_height,
+       bench_run ?
+           "no gfx output (measurement is accurate)" :
+           "gfx output (measurement is NOT accurate)"
+   );
+   printf("CPI="); printf("%d", kCPI); printf("     ");
+   printf("RAYSTONES="); printf("%d\n", kRAYSTONES);
+   printf("\n");
+}
+*/
 
 static inline vec3 make_vec3(float x, float y, float z) {
   vec3 V;
@@ -202,27 +166,21 @@ static inline vec4 make_vec4(float x, float y, float z, float w) {
 }
 
 static inline vec3 vec3_neg(vec3 V) { return make_vec3(-V.x, -V.y, -V.z); }
-
 static inline vec3 vec3_add(vec3 U, vec3 V) {
   return make_vec3(U.x + V.x, U.y + V.y, U.z + V.z);
 }
-
 static inline vec3 vec3_sub(vec3 U, vec3 V) {
   return make_vec3(U.x - V.x, U.y - V.y, U.z - V.z);
 }
-
 static inline float vec3_dot(vec3 U, vec3 V) {
   return U.x * V.x + U.y * V.y + U.z * V.z;
 }
-
 static inline vec3 vec3_scale(float s, vec3 U) {
   return make_vec3(s * U.x, s * U.y, s * U.z);
 }
-
 static inline float vec3_length(vec3 U) {
   return sqrtf(U.x * U.x + U.y * U.y + U.z * U.z);
 }
-
 static inline vec3 vec3_normalize(vec3 U) {
   return vec3_scale(1.0f / vec3_length(U), U);
 }
@@ -305,21 +263,24 @@ vec3 reflect(vec3 I, vec3 N) {
   return vec3_sub(I, vec3_scale(2.f * vec3_dot(I, N), N));
 }
 
-vec3 refract(vec3 I, vec3 N, float eta_t, float eta_i /* =1.f */) {
-  // Snell's law
+vec3 refract(vec3 I, vec3 N, float eta_t,
+             float eta_i /* =1.f */) { // Snell's law
   float cosi = -max(-1.f, min(1.f, vec3_dot(I, N)));
-  // if the ray comes from the inside the object, swap the air and the media
   if (cosi < 0)
-    return refract(I, vec3_neg(N), eta_i, eta_t);
+    return refract(I, vec3_neg(N), eta_i,
+                   eta_t); // if the ray comes from the inside the object, swap
+                           // the air and the media
   float eta = eta_i / eta_t;
   float k = 1 - eta * eta * (1 - cosi * cosi);
-  // k<0 = total reflection, no ray to refract.
-  // I refract it anyways, this has no physical meaning
   return k < 0 ? make_vec3(1, 0, 0)
                : vec3_add(vec3_scale(eta, I),
                           vec3_scale((eta * cosi - sqrtf(k)), N));
+  // k<0 = total reflection, no ray to refract. I refract it anyways, this has
+  // no physical meaning
 }
 
+BOOL scene_intersect(vec3 orig, vec3 dir, Sphere *spheres, int nb_spheres,
+                     vec3 *hit, vec3 *N, Material *material) RV32_FASTCODE;
 BOOL scene_intersect(vec3 orig, vec3 dir, Sphere *spheres, int nb_spheres,
                      vec3 *hit, vec3 *N, Material *material) {
   float spheres_dist = 1e30;
@@ -352,9 +313,33 @@ BOOL scene_intersect(vec3 orig, vec3 dir, Sphere *spheres, int nb_spheres,
   return min(spheres_dist, checkerboard_dist) < 1000;
 }
 
+/* It crashes when I call powf(), because it probably underflows, and I do not
+ * know how to disable floating point exceptions. */
+float my_pow(float x, float y) RV32_FASTCODE;
+float my_pow(float x, float y) {
+  float alu_rslt = x;
+  int Y = (int)y;
+  while (Y > 2) {
+    Y /= 2;
+    alu_rslt *= alu_rslt;
+    if (alu_rslt < 1e-100 || alu_rslt > 1e100) {
+      return alu_rslt;
+    }
+  }
+  while (Y > 1) {
+    Y--;
+    alu_rslt *= x;
+    if (alu_rslt < 1e-100 || alu_rslt > 1e100) {
+      return alu_rslt;
+    }
+  }
+  return alu_rslt;
+}
+
 vec3 cast_ray(vec3 orig, vec3 dir, Sphere *spheres, int nb_spheres,
-              Light *lights, int nb_lights, int depth /* =0 */
-) {
+              Light *lights, int nb_lights, int depth /* =0 */) RV32_FASTCODE;
+vec3 cast_ray(vec3 orig, vec3 dir, Sphere *spheres, int nb_spheres,
+              Light *lights, int nb_lights, int depth /* =0 */) {
   vec3 point, N;
   Material material = make_Material_default();
   if (depth > 2 ||
@@ -367,7 +352,6 @@ vec3 cast_ray(vec3 orig, vec3 dir, Sphere *spheres, int nb_spheres,
   vec3 reflect_dir = vec3_normalize(reflect(dir, N));
   vec3 refract_dir =
       vec3_normalize(refract(dir, N, material.refractive_index, 1));
-
   // offset the original point to avoid occlusion by the object itself
   vec3 reflect_orig = vec3_dot(reflect_dir, N) < 0
                           ? vec3_sub(point, vec3_scale(1e-3, N))
@@ -393,7 +377,7 @@ vec3 cast_ray(vec3 orig, vec3 dir, Sphere *spheres, int nb_spheres,
     Material tmpmaterial;
     if (scene_intersect(shadow_orig, light_dir, spheres, nb_spheres, &shadow_pt,
                         &shadow_N, &tmpmaterial) &&
-        (vec3_length(vec3_sub(shadow_pt, shadow_orig)) < light_distance))
+        vec3_length(vec3_sub(shadow_pt, shadow_orig)) < light_distance)
       continue;
 
     diffuse_light_intensity +=
@@ -403,49 +387,125 @@ vec3 cast_ray(vec3 orig, vec3 dir, Sphere *spheres, int nb_spheres,
         max(0.f, vec3_dot(vec3_neg(reflect(vec3_neg(light_dir), N)), dir));
     float def = material.specular_exponent;
     if (abc > 0.0f && def > 0.0f) {
-      specular_light_intensity += powf(abc, def) * lights[i].intensity;
+      specular_light_intensity += my_pow(abc, def) * lights[i].intensity;
     }
   }
-  vec3 result = vec3_scale(diffuse_light_intensity * material.albedo.x,
-                           material.diffuse_color);
-  result =
-      vec3_add(result, vec3_scale(specular_light_intensity * material.albedo.y,
-                                  make_vec3(1, 1, 1)));
-  result = vec3_add(result, vec3_scale(material.albedo.z, reflect_color));
-  result = vec3_add(result, vec3_scale(material.albedo.w, refract_color));
-  return result;
+  vec3 alu_rslt = vec3_scale(diffuse_light_intensity * material.albedo.x,
+                             material.diffuse_color);
+  alu_rslt = vec3_add(alu_rslt,
+                      vec3_scale(specular_light_intensity * material.albedo.y,
+                                 make_vec3(1, 1, 1)));
+  alu_rslt = vec3_add(alu_rslt, vec3_scale(material.albedo.z, reflect_color));
+  alu_rslt = vec3_add(alu_rslt, vec3_scale(material.albedo.w, refract_color));
+  return alu_rslt;
 }
 
-static inline void render_pixel(int i, int j, Sphere *spheres, int nb_spheres,
-                                Light *lights, int nb_lights) {
+const uint8_t dither[4][4] = {
+    {0, 8, 2, 10}, {12, 4, 14, 6}, {3, 11, 1, 9}, {15, 7, 13, 5}};
+
+/* adapted from
+ * https://github.com/BrunoLevy/learn-fpga/blob/master/FemtoRV/FIRMWARE/LiteX/TinyRaytracer/tinyraytracer.c
+ */
+static void set_pixel(volatile Pixel *fb, int x, int y, float r, float g,
+                      float b) {
+  r = max(0.0f, min(1.0f, r));
+  g = max(0.0f, min(1.0f, g));
+  b = max(0.0f, min(1.0f, b));
+
+  uint8_t R = (uint8_t)(255.0f * r);
+  uint8_t G = (uint8_t)(255.0f * g);
+  uint8_t B = (uint8_t)(255.0f * b);
+
+  // oled_setpixel_RGB(x,y,R,G,B);
+
+  // if(tty_output_active) {
+  // See: https://stackoverflow.com/questions/4842424/
+  //          list-of-ansi-color-escape-sequences
+  if (!bench_run) {
+    printf("\033[48;2;%d;%d;%dm ", R, G, B);
+    if (x == HRENDER - 1) {
+      printf("\033[48;2;0;0;0m");
+      printf("\n");
+    }
+  }
+  // }
+}
+
+void show_csr_timer_cnt() {
+  volatile uint32_t tmph0;
+  volatile uint32_t tmpl0;
+  volatile uint32_t tmph1;
+  volatile uint32_t tmpl1;
+
+  asm volatile("rdcycleh %0" : "=r"(tmph0));
+  asm volatile("rdcycle  %0" : "=r"(tmpl0));
+
+  asm volatile("rdinstreth %0" : "=r"(tmph1));
+  asm volatile("rdinstret %0" : "=r"(tmpl1));
+
+  uint64_t rdcycles = ((uint64_t)(tmph0) << 32) + tmpl0;
+  uint64_t rdinstret = ((uint64_t)(tmph1) << 32) + tmpl1;
+
+  putchar(10);
+  print_str("rdcycle       :");
+  print_dec64(rdcycles);
+  putchar(10);
+  print_str("rdinstret     :");
+  print_dec64(rdinstret);
+  putchar(10);
+  putchar(10);
+}
+
+void render(volatile Pixel *fb, Sphere *spheres, int nb_spheres, Light *lights,
+            int nb_lights) RV32_FASTCODE;
+void render(volatile Pixel *fb, Sphere *spheres, int nb_spheres, Light *lights,
+            int nb_lights) {
+  // static uint32_t toggle = 0x01;
   const float fov = M_PI / 3.;
-  stats_begin_pixel();
-  float dir_x = (i + 0.5) - graphics_width / 2.;
-  float dir_y = -(j + 0.5) + graphics_height / 2.; // this flips the image.
-  float dir_z = -graphics_height / (2. * tan(fov / 2.));
-  vec3 C = cast_ray(make_vec3(0, 0, 0),
-                    vec3_normalize(make_vec3(dir_x, dir_y, dir_z)), spheres,
-                    nb_spheres, lights, nb_lights, 0);
-  graphics_set_pixel(i, j, C.x, C.y, C.z);
-  stats_end_pixel();
-}
-
-void render(Sphere *spheres, int nb_spheres, Light *lights, int nb_lights) {
+  // volatile uint32_t tmph0;
+  // volatile uint32_t tmpl0;
+  // volatile uint32_t tmph1;
+  // volatile uint32_t tmpl1;
   stats_begin_frame();
-#ifdef graphics_double_lines
-  for (int j = 0; j < graphics_height; j += 2) {
-    for (int i = 0; i < graphics_width; i++) {
-      render_pixel(i, j, spheres, nb_spheres, lights, nb_lights);
-      render_pixel(i, j + 1, spheres, nb_spheres, lights, nb_lights);
+  for (int j = 0; j < VRENDER; j++) { // actual rendering loop
+    //    print_str("Y:");
+    //   print_dec(j);
+    //  putchar(10);
+    //  show_csr_timer_cnt();
+    /*
+       asm volatile ("rdcycleh %0" : "=r"(tmph0));
+       asm volatile ("rdcycle  %0" : "=r"(tmpl0));
+       uint64_t rdcycles_t0    = ((uint64_t)(tmph0)<<32) + tmpl0;
+       */
+
+    //    *((volatile uint32_t*) VIDEOENABLE) = toggle ? 0x01 : 0x00;
+    for (int i = 0; i < HRENDER; i++) {
+      float dir_x = (i + 0.5) - HRENDER / 2.;
+      float dir_y =
+          -(j + 0.5) + VRENDER / 2.; // this flips the image at the same time
+      float dir_z = -VRENDER / (2. * tan(fov / 2.));
+      vec3 C = cast_ray(make_vec3(0, 0, 0),
+                        vec3_normalize(make_vec3(dir_x, dir_y, dir_z)), spheres,
+                        nb_spheres, lights, nb_lights, 0);
+      set_pixel(fb, i, j, C.x, C.y, C.z);
+      // stats_end_pixel();
     }
+    //   toggle = toggle ^ 0x01;
+
+    /*
+       asm volatile ("rdcycleh %0" : "=r"(tmph1));
+       asm volatile ("rdcycle  %0" : "=r"(tmpl1));
+       uint64_t rdcycles_t1    = ((uint64_t)(tmph1)<<32) + tmpl1;
+       uint64_t rdcycles_diff  = rdcycles_t1 - rdcycles_t0;
+
+       int seconds = ((float) rdcycles_diff)*(1.0f/45000000.0f) / 60.0f;
+       int minutes = seconds / 60;
+       int hours =   minutes / 60;
+       print_str("seconds:");
+       print_dec((uint32_t) seconds);
+       putchar(10);
+       */
   }
-#else
-  for (int j = 0; j < graphics_height; j++) {
-    for (int i = 0; i < graphics_width; i++) {
-      render_pixel(i, j, spheres, nb_spheres, lights, nb_lights);
-    }
-  }
-#endif
   stats_end_frame();
 }
 
@@ -475,24 +535,38 @@ void init_scene() {
   lights[2] = make_Light(make_vec3(30, 20, 30), 1.7);
 }
 
-int main() {
-  init_scene();
+void fill_oled(int rgb) {
+  for (int y = 0; y < 64; y++) {
+    for (int x = 0; x < 96; x++) {
+      *((volatile uint32_t *)VIDEO) =
+          (((uint32_t)rgb & 0xffff) << 16Ul) | ((x & 0xff) << 8) | (y & 0xff);
+    }
+  }
+}
 
-  graphics_init();
-  IO_OUT(IO_LEDS, 5);
-  bench_run = 1;
-  graphics_width = 40;
-  graphics_height = 20;
-  printf("Running without graphic output (for accurate measurement)...\n");
-  render(spheres, nb_spheres, lights, nb_lights);
-  IO_OUT(IO_LEDS, 10);
+#define FRAMEBUFFER (volatile short *)0x10000000
+volatile short *fb = FRAMEBUFFER;
+void main() {
+  //*((volatile uint32_t*) VIDEOENABLE) = 0x0;
 
-  bench_run = 0;
-  graphics_width = 120;
-  graphics_height = 60;
-  render(spheres, nb_spheres, lights, nb_lights);
-  IO_OUT(IO_LEDS, 15);
-  graphics_terminate();
+  /*
+     volatile long *p = FRAMEBUFFER;
+     for (int i = 0; i < 640*480/2; i++) {
+   *p = 0;
+   p++;
+   }
+   */
 
-  return 0;
+  for (;;) {
+    //    short *p = FRAMEBUFFER;
+    //  fill_oled(0);
+    bench_run = 0;
+    init_scene();
+    render(fb, spheres, nb_spheres, lights, nb_lights);
+    //    print_str("done=======================");
+    //   putchar(10);
+    //  show_csr_timer_cnt();
+    wait_cycles(40000000 * 5);
+    //*((volatile uint32_t*) VIDEOENABLE) = 0x1;
+  }
 }
