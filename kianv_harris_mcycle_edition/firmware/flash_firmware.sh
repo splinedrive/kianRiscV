@@ -2,7 +2,7 @@
 FIRMWARE=firmware.bin
 
 usage () {
-  echo "ico|ulx3s|ice|fun|breakout|colori5|arty7|nexysa7|nexys_video|genesys2|stick <*.ld> <*.c> [-Ox]"
+  echo "ico|ulx3s|ice|fun|breakout|colori5|arty7|nexysa7|nexys_video|genesys2|stick|cmoda7_35t <*.ld> <*.c> [-Ox]"
   echo "Default OPT_LEVEL is -Os, you can choose -O0, -O1, -O2, -O3"
 }
 
@@ -41,6 +41,8 @@ elif [ "$1" = "nexys_video" ]; then
   openFPGALoader -v -f -o $((10*1024*1024)) --board=nexysVideo -r $FIRMWARE
 elif [ "$1" = "genesys2" ]; then
   openFPGALoader -v -f -o $((28*1024*1024)) --board=genesys2 -r $FIRMWARE
+elif [ "$1" = "cmoda7_35t" ]; then
+  openFPGALoader -v -f -o $((3*1024*1024)) --board=cmoda7_35t -r $FIRMWARE
 else
   usage
 fi

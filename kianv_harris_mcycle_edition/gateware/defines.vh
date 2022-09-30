@@ -120,6 +120,37 @@
 `define GPIO
 `define DMA_CONTROLLER
 
+`elsif CMODA7
+`define RV32M
+`define CSR
+
+`define FAKE_MULTIPLIER
+`define SPI_NOR_PRESCALER_ENABLE
+`define SPI_NOR_PRESCALER_DIVIDER 7
+//`define OLED_SD1331
+`define HDMI_VIDEO_FB
+`define DDR_HDMI_TRANSFER 1'b 0
+`define GPIO
+`define UART_TX
+`define SPI_NOR_PRESCALER_ENABLE
+`define SPI_NOR_PRESCALER_DIVIDER 7
+`define DMA_CONTROLLER
+
+`elsif NEXYS_VIDEO
+`define RV32M
+`define CSR
+//`define CYCLE_BASED_SHIFTER
+
+`define FAKE_MULTIPLIER
+`define DDR_HDMI_TRANSFER 1'b 1
+`define SPI_NOR_PRESCALER_ENABLE
+`define SPI_NOR_PRESCALER_DIVIDER 7
+`define UART_TX
+//`define OLED_SD1331
+`define HDMI_VIDEO_FB
+`define GPIO
+`define DMA_CONTROLLER
+
 `elsif GENESYS2
 `define RV32M
 `define CSR
@@ -208,6 +239,8 @@
 `elsif GENESYS2
 //`define SYSTEM_CLK        150_000_000
 `define SYSTEM_CLK        200_000_000
+`elsif CMODA7
+`define SYSTEM_CLK        107_142_860
 `elsif WUKONG
 `define SYSTEM_CLK        175_000_000
 `endif
@@ -257,6 +290,9 @@
 `elsif GENESYS2
 `define SPI_MEMORY_OFFSET         (1024*1024*28)
 `define SPI_NOR_MEM_ADDR_END      ((`SPI_NOR_MEM_ADDR_START) + (32*1024*1024))
+`elsif CMODA7
+`define SPI_MEMORY_OFFSET         ('h300000)
+`define SPI_NOR_MEM_ADDR_END      ((`SPI_NOR_MEM_ADDR_START) + (4*1024*1024))
 `endif
 
 `else /* 1M */
