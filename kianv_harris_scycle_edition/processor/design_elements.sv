@@ -1,5 +1,5 @@
 /*
- *  kianv harris single cycle RISC-V rv32i
+ *  kianv single cycle RISC-V
  *
  *  copyright (c) 2022 hirosh dabui <hirosh@dabui.de>
  *

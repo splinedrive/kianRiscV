@@ -1,5 +1,5 @@
 /*
- *  kianv harris single cycle RISC-V rv32i
+ *  kianv harris single cycle RISC-V rv32im
  *
  *  copyright (c) 2022 hirosh dabui <hirosh@dabui.de>
  *
@@ -112,6 +112,7 @@ module kianv_harris_sc_edition #(
       .CsrOp      (CsrOp),
       .Immb10     (immb10),
       .ICycleInc  (ICycleInc),
+      .PCUpdate   (PCUpdate),
       .MemWrite   (MemWrite),
       .AluResult  (AluResult),
       .WriteData  (WriteData),

@@ -1,5 +1,5 @@
 /*
- *  kianv harris single cycle RISC-V rv32i
+ *  kianv single cycle RISC-V
  *
  *  copyright (c) 2022 hirosh dabui <hirosh@dabui.de>
  *
@@ -44,6 +44,7 @@ module datapath_unit #(
 
     output wire logic Immb10,
     input  wire logic ICycleInc,
+    input  wire logic PCUpdate,
 
     // dmem
     input wire logic MemWrite,
@@ -60,7 +61,7 @@ module datapath_unit #(
   dff #(32, RESET_ADDR) PC_I (
       resetn,
       clk,
-      1'b1,
+      PCUpdate,
       PCNext,
       PC
   );

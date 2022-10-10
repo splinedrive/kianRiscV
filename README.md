@@ -11,7 +11,6 @@ was a good experience to think in **logical design**.
 
 <img src="./certificates.png" width="80%" height="80%"/>
 
-
 CPU
 ===
 The processor supports `RV32IM` instruction set
@@ -219,4 +218,23 @@ Check the XilinxVivado folder and
 ./build.sh
 ```
 
+Kian RiscV Single Cycle CPU
+===========================
+Check the new single cycle CPU with CPI=1 and 
+prepared for a KINTEX-7. You can also run smaller FPGAs with
+less firmware. Firmware can build with standard BRAM linker script
+and reset address 0. Raytracer is still their as hex got from 
+https://github.com/WyattAutomation/Simple-Raytracer-in-C.git. 
+I have provided a 80MHz bitstream file with firmware for genesys2.
+The CPU operates with 80MHz => 80 MIPS and 3000000 Baud uart!
+### Simulation
+```bash
+cd kianv_harris_scycle_edition/processor/
+make verilator && ./obj/Vtop
+```
+or 
+```bash
+cd kianv_harris_scycle_edition/processor/
+make isim && ./a.out
+```
 Hirosh

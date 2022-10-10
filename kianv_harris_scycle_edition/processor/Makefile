@@ -20,6 +20,7 @@ VERILOG_FILES := $(TOP) \
 								 alu_decoder.sv \
 								 dmem32.sv \
 								 imem32.sv \
+								 tx_uart.sv \
 								 pseudo_havard.sv 
 #								 unittest.sv
 TOP_LEVEL=$(basename $(top_level))

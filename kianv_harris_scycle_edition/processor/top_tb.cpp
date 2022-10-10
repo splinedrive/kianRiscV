@@ -27,6 +27,7 @@ void tick() {
     m_trace->dump(sim_time++);
 }
 
+/*
 void reset() {
   dut->resetn = 0;
   dut->eval();
@@ -35,6 +36,7 @@ void reset() {
   tick();
   dut->resetn = 1;
 }
+*/
 
 int main(int argc, char **argv, char **env) {
   Verilated::traceEverOn(true);
@@ -45,7 +47,7 @@ int main(int argc, char **argv, char **env) {
   if (dump)
     m_trace->open("waveform_verilator.vcd");
 
-  reset();
+  //reset();
 
   while (sim_time < MAX_SIM_TIME) {
     for (;;) {

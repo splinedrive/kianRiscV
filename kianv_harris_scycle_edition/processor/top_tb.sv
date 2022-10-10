@@ -1,5 +1,5 @@
 /*
- *  kianv harris single cycle RISC-V rv32i
+ *  kianv harris single cycle RISC-V rv32im
  *
  *  copyright (c) 2022 hirosh dabui <hirosh@dabui.de>
  *
@@ -24,7 +24,7 @@ module top_tb;
   localparam DISABLE_WAVE = 0;
   localparam DUMP_REGFILE = 1;
 
-  logic resetn;
+  //logic resetn;
 
   logic clk_1x_s = 1'b0;
 
@@ -33,8 +33,8 @@ module top_tb;
   logic clk;
   assign clk = clk_1x_s;
   top top_i (
-      .clk   (clk),
-      .resetn(resetn)
+      .clk   (clk)//,
+//      .resetn(resetn)
   );
 
   initial begin
@@ -47,9 +47,9 @@ module top_tb;
     end            
     end
     $dumpon;
-    #000 resetn = 1'b0;
+//    #000 resetn = 1'b0;
     //repeat (2) @(posedge clk);
-    #100 resetn = 1'b1;
+ //   #100 resetn = 1'b1;
  //   repeat (1000) @(posedge clk);
 //    $finish;
   end
