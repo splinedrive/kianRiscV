@@ -103,7 +103,7 @@ module main_decoder (
     ResultSrc = RESULT_SRC_ALURESULT;
     RegWrite = 1'b0;
     MemWrite = 1'b0;
-    PCTargetSrc = PCSRC_TARGET_PC_SRC;  // PC += imm
+    PCTargetSrc = PCSRC_TARGET_SRCA_SRC;  // PC += imm
     ICycleInc = 1'b1;
 
     case (1'b1)
@@ -128,17 +128,17 @@ module main_decoder (
         Jump = 1'b1;
         ResultSrc = RESULT_SRC_PCPLUS4;  // rd = PC + 4
         RegWrite = 1'b1;
-        PCTargetSrc = PCSRC_TARGET_SRCA_SRC;  // PC += imm
+        PCTargetSrc = PCSRC_TARGET_PC_SRC;  // PC += imm
       end
       is_jalr: begin
         Jump = 1'b1;
+        AluSrcA = ALU_SRCA_RD1;
         ResultSrc = RESULT_SRC_PCPLUS4;  // rd = PC + 4
         RegWrite = 1'b1;
-        PCTargetSrc = PCSRC_TARGET_PC_SRC;  // PC += (imm << 12)
       end
       is_branch: begin
         Branch = 1'b1;
-        PCTargetSrc = PCSRC_TARGET_SRCA_SRC;  // PC += imm
+        PCTargetSrc = PCSRC_TARGET_PC_SRC;  // PC += imm
       end
       is_lui: begin
         AluSrcA   = ALU_SRCA_RD1;

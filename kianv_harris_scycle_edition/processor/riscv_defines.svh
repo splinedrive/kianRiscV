@@ -1,5 +1,5 @@
 /*
- *  kianv harris single cycle RISC-V rv32i
+ *  kianv harris multicycle RISC-V rv32im
  *
  *  copyright (c) 2022 hirosh dabui <hirosh@dabui.de>
  *
@@ -39,8 +39,8 @@ typedef enum logic [1:0] {
 } ResultSrc_t;
 
 typedef enum logic [0:0] {
-  PCSRC_TARGET_PC_SRC,   // PC += imm
-  PCSRC_TARGET_SRCA_SRC  // PC += (imm << 12)
+  PCSRC_TARGET_SRCA_SRC,  // PC += (imm << 12)
+  PCSRC_TARGET_PC_SRC   // PC += imm
 } PCTargetSrc_t;
 
 // PCNext
