@@ -237,4 +237,11 @@ or
 cd kianv_harris_scycle_edition/processor/
 make isim && ./a.out
 ```
+Kian RiscV 5-staged Pipelined CPU
+==================================
+This is a 5-staged pipelined cpu and is the base of my future work.
+The cpu is rv32i complaint and tested with the riscv testsuite. In future I will share
+an advanced soc from it: interrupts, sdram/ddr, caches, branch predition,
+linux bootable.
+
 Hirosh
