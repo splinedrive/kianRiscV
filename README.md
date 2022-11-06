@@ -237,6 +237,8 @@ or
 cd kianv_harris_scycle_edition/processor/
 make isim && ./a.out
 ```
+<img src="./single_cycle.png" width="80%" height="80%"/>
+
 Kian RiscV 5-staged Pipelined CPU
 ==================================
 This is a 5-staged pipelined cpu and is the base of my future work.
