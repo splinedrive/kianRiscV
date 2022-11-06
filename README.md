@@ -243,5 +243,6 @@ This is a 5-staged pipelined cpu and is the base of my future work.
 The cpu is rv32i complaint and tested with the riscv testsuite. In future I will share
 an advanced soc from it: interrupts, sdram/ddr, caches, branch predition,
 linux bootable.
+<img src="./5pipelined.png" width="80%" height="80%"/>
 
 Hirosh
