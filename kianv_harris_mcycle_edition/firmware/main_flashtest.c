@@ -40,7 +40,7 @@ void print_str(char *p) {
 }
 void print_str_ln(char *p) {
   print_str(p);
-  print_chr(10);
+  print_char(13);
 }
 
 void print_dec(unsigned int val) {
@@ -82,12 +82,12 @@ void main() {
       print_hex((unsigned int) p, 8);
       print_chr(':');
       print_hex((unsigned int) *p, 8);
-      print_chr(10);
+      print_char(13);
       p++;
     }
 
     print_str("=================================");
-    print_chr(10);
+    print_char(13);
 
   }
 

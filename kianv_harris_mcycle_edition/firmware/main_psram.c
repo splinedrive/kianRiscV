@@ -20,7 +20,7 @@ void main()
     q = (volatile datum *) (0x40000000 + OFFSET);
     for (int i = 0; i < NR; i++) {
       print_hex(*q, 8);
-      putchar(10);
+      putchar(13);
       msleep(200);
       q++;
     }
@@ -28,10 +28,10 @@ void main()
     q = (volatile datum *) (0x40000000 + OFFSET);
     for (int i = 0; i < NR; i++) {
       print_hex(*q, 8);
-      putchar(10);
+      putchar(13);
       msleep(200);
       q++;
     }
-    for (;;);
+//    for (;;);
   }
   }

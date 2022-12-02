@@ -145,7 +145,7 @@ void main() {
     //fill_oled(0);
     //i = i + 64;
     //print_dec(i);
-    //putchar(10);
+    //putchar(13);
     //fill_oled(0xff);
 
     /* fill rect

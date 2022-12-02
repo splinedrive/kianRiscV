@@ -113,14 +113,14 @@ void show_csr_timer_cnt() {
   uint32_t cycles    = ((uint64_t)(tmph0)<<32) + tmpl0;
   uint32_t rdinstret = ((uint64_t)(tmph1)<<32) + tmpl1;
 
-  putchar(10);
+  putchar(13);
   print_str("rdcycle       :");
   print_dec64(cycles);
-  putchar(10);
+  putchar(13);
   print_str("rdinstret     :");
   print_dec64(rdinstret);
-  putchar(10);
-  putchar(10);
+  putchar(13);
+  putchar(13);
 
 }
 
@@ -132,22 +132,22 @@ void main() {
   asm volatile ("time %0" : "=r"(tmp));
   print_str("rdcycle:");
   print_dec(tmp);
-  putchar(10);
+  putchar(13);
 
   asm volatile ("rdcycleh %0" : "=r"(tmp));
   print_str("rdcycleh:");
   print_dec(tmp);
-  putchar(10);
+  putchar(13);
 
   asm volatile ("rdinstret %0" : "=r"(tmp));
   print_str("rdinstret:");
   print_dec(tmp);
-  putchar(10);
+  putchar(13);
 
   asm volatile ("rdinstreth %0" : "=r"(tmp));
   print_str("rdinstreth:");
   print_dec(tmp);
-  putchar(10);
+  putchar(13);
   */
   }
 }

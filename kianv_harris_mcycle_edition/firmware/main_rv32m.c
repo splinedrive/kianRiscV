@@ -18,7 +18,7 @@ void print_str(char *p) {
 }
 void print_str_ln(char *p) {
   print_str(p);
-  print_chr(10);
+  print_char(13);
 }
 
 void print_dec(unsigned int val) {
@@ -80,7 +80,7 @@ void main() {
       print_dec(i);
       print_chr('=');
       print_dec(square/i);
-      print_chr(10);
+      print_char(13);
     }
 
     for (unsigned int i = 1<<16; i >= 1; i--) {
@@ -95,7 +95,7 @@ void main() {
       print_dec(i);
       print_chr('=');
       print_dec(square/i);
-      print_chr(10);
+      print_char(13);
     }
   }
 }

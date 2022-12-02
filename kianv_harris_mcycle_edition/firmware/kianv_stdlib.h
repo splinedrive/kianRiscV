@@ -192,24 +192,30 @@ void putchar(char c) {
   while (!*((volatile uint32_t*) UART_READY))
     ;
   *((volatile uint32_t*) UART_TX) = c;
+   if (c == 13) {
+    *((volatile uint32_t*) UART_TX) = 10;
+  }
 }
 
 void print_chr(char ch) {
-  while (!*((volatile uint32_t*) UART_READY))
-    ;
-  *((volatile uint32_t*) UART_TX) = ch;
+  putchar(ch);
+}
+
+void print_char(char ch) {
+  print_chr(ch);
 }
 
 void print_str(char *p) {
   while (*p != 0) {
     while (!*((volatile uint32_t*) UART_READY))
       ;
-    *((volatile uint32_t*) UART_TX) = *(p++);
+    putchar(*(p++));
   }
 }
+
 void print_str_ln(char *p) {
   print_str(p);
-  print_chr(10);
+  print_char(13);
 }
 
 void print_dec(unsigned int val) {

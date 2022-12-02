@@ -302,14 +302,14 @@ void show_csr_timer_cnt() {
   uint64_t rdcycles    = ((uint64_t)(tmph0)<<32) + tmpl0;
   uint64_t rdinstret = ((uint64_t)(tmph1)<<32) + tmpl1;
 
-  putchar(10);
+  putchar(13);
   print_str("rdcycle       :");
   print_dec64(rdcycles);
-  putchar(10);
+  putchar(13);
   print_str("rdinstret     :");
   print_dec64(rdinstret);
-  putchar(10);
-  putchar(10);
+  putchar(13);
+  putchar(13);
 }
 
 void render(volatile Pixel *fb, Sphere* spheres, int nb_spheres, Light* lights, int nb_lights) RV32_FASTCODE;
@@ -324,7 +324,7 @@ void render(volatile Pixel *fb, Sphere* spheres, int nb_spheres, Light* lights, 
     /*
     print_str("Y:");
     print_dec(j);
-    putchar(10);
+    putchar(13);
     show_csr_timer_cnt();
     */
     /*
@@ -354,7 +354,7 @@ void render(volatile Pixel *fb, Sphere* spheres, int nb_spheres, Light* lights, 
     int hours =   minutes / 60;
     print_str("seconds:");
     print_dec((uint32_t) seconds);
-    putchar(10);
+    putchar(13);
 */
   }
 }
@@ -403,7 +403,7 @@ void main() {
     init_scene();
     render(fb, spheres, nb_spheres, lights, nb_lights);
     print_str("done=======================");
-    putchar(10);
+    putchar(13);
     show_csr_timer_cnt();
     sleep(1);
   //*((volatile uint32_t*) VIDEOENABLE) = 0x1;

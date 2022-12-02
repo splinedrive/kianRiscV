@@ -127,6 +127,8 @@ void putchar(char c) {
 
 void print_chr(char ch) {
   *((volatile uint32_t*) UART_TX) = ch;
+  if (ch == 13)
+    *((volatile uint32_t*) UART_TX) = 13;
 }
 
 void print_str(char *p) {
@@ -136,7 +138,7 @@ void print_str(char *p) {
 }
 void print_str_ln(char *p) {
   print_str(p);
-  print_chr(10);
+  print_chr(13);
 }
 
 void print_dec(unsigned int val) {

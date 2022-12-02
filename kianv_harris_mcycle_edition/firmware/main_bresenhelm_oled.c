@@ -143,7 +143,7 @@ void main() {
     //fill_oled(i);
     //i = i + 64;
     //print_dec(i);
-    //putchar(10);
+    //putchar(13);
 
   }
 }

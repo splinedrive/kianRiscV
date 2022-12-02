@@ -194,6 +194,11 @@ external uart hw. Check for ttyUSB devices and try
 stty -F /dev/ttyUSBx 11520 raw\
 cat /dev/ttyUSBx
 ```
+latest fw version needs no raw mode anymore!
+```bash
+stty -F /dev/ttyUSBx 11520 \
+cat /dev/ttyUSBx
+```
 
 to get output like pi.c, main_prime.c, main_rv32m.c, main_rv32m_printf.c, ....
 

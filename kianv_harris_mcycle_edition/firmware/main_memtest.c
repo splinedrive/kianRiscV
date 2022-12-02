@@ -38,7 +38,7 @@ void print_str(char *p) {
 }
 void print_str_ln(char *p) {
   print_str(p);
-  print_chr(10);
+  print_char(13);
 }
 
 void print_dec(unsigned int val) {
@@ -164,13 +164,13 @@ void main() {
     }
 #endif
 
-    print_chr(10);
+    print_char(13);
     print_str(GRN);
     print_str(BLINK);
     print_str(BOLD);
     print_str("Memory test iteration: ");
     print_dec(iter);
-    print_chr(10);
+    print_char(13);
     print_str(RESET);
     print_str(BLINK_OFF);
     print_str_ln("=========================================");
@@ -179,14 +179,14 @@ void main() {
     print_str(WHT);
     print_str("0x");
     print_hex((unsigned int) sizeof(datum), 8);
-    print_chr(10);
+    print_char(13);
     print_str(GRN);
     print_str("Size of memory to test: ");
     print_str(WHT);
     print_str("0x");
     print_hex((unsigned int) SIZE, 8);
-    print_chr(10);
-    print_chr(10);
+    print_char(13);
+    print_char(13);
 
     datum pattern = 1;
     datum antipattern = ~1;
@@ -203,17 +203,17 @@ void main() {
     p = (volatile datum*) BASE;
     for (int i = 0; i < SIZE; i++, pattern++) {
 //      print_hex((unsigned int) p, 8);
- //     print_chr(10);
+ //     print_char(13);
       if (*p != pattern) {
         print_str(RED);
         print_str("Error pattern in:");
-        print_chr(10);
+        print_char(13);
         print_hex((unsigned int) pattern, 8);
-        print_chr(10);
+        print_char(13);
         print_hex((unsigned int) p, 8);
-        print_chr(10);
+        print_char(13);
         print_hex((unsigned int) *p, 8);
-        print_chr(10);
+        print_char(13);
       }
       antipattern = ~pattern;
       *p = antipattern;
@@ -230,13 +230,13 @@ void main() {
       if (*p != antipattern) {
         print_str(RED);
         print_str("Error antipattern in:");
-        print_chr(10);
+        print_char(13);
         print_hex((unsigned int) antipattern, 8);
-        print_chr(10);
+        print_char(13);
         print_hex((unsigned int) p, 8);
-        print_chr(10);
+        print_char(13);
         print_hex((unsigned int) *p, 8);
-        print_chr(10);
+        print_char(13);
       }
       *p = 0x00;
       p++;

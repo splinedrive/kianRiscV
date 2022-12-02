@@ -54,7 +54,7 @@ void print_str(char *p) {
 }
 void print_str_ln(char *p) {
   print_str(p);
-  print_chr(10);
+  print_char(13);
 }
 
 void print_dec(unsigned int val) {
