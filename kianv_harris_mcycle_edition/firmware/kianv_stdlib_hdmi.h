@@ -122,24 +122,38 @@ uint64_t seconds() {
 }
 
 void putchar(char c) {
+  while (!*((volatile uint32_t*) UART_READY))
+    ;
   *((volatile uint32_t*) UART_TX) = c;
+   if (c == 13) {
+  while (!*((volatile uint32_t*) UART_READY))
+    ;
+    *((volatile uint32_t*) UART_TX) = 10;
+  }
 }
 
 void print_chr(char ch) {
-  *((volatile uint32_t*) UART_TX) = ch;
-  if (ch == 13)
-    *((volatile uint32_t*) UART_TX) = 13;
+  putchar(ch);
+}
+
+void print_char(char ch) {
+  print_chr(ch);
 }
 
 void print_str(char *p) {
   while (*p != 0) {
-    *((volatile uint32_t*) UART_TX) = *(p++);
+    while (!*((volatile uint32_t*) UART_READY))
+      ;
+    putchar(*(p++));
   }
 }
+
 void print_str_ln(char *p) {
   print_str(p);
-  print_chr(13);
+  print_char(13);
 }
+
+
 
 void print_dec(unsigned int val) {
   char buffer[10];
