@@ -16,8 +16,8 @@
  *  or in connection with the use or performance of this software.
  *
  */
-`timescale 1 ns/100 ps
 `default_nettype none
+`timescale 1 ns/100 ps
 `include "riscv_defines.vh"
 
 module main_fsm(
@@ -238,6 +238,7 @@ module main_fsm(
             S4  : begin
                 // mem wb
                 // rd <- Data
+                mem_valid     = 1'b 1;
                 ResultSrc = `RESULT_DATA;
                 RegWrite  = 1'b 1;
             end
@@ -260,6 +261,7 @@ module main_fsm(
             S7  : begin
                 // alu wb
                 // rd <- ALUOut
+                mem_valid     = 1'b 1;
                 ResultSrc = `RESULT_ALUOUT;
                 RegWrite  = 1'b 1;
             end
@@ -328,6 +330,7 @@ module main_fsm(
             S15  : begin
                 // multiplier wb
                 // rd <- MULOut
+                mem_valid     = 1'b 1;
                 ResultSrc = `RESULT_MULOUT;
                 RegWrite  = 1'b 1;
             end
@@ -343,6 +346,7 @@ module main_fsm(
             S17  : begin
                 // system wb
                 // rd <- RESULT_CSR
+                mem_valid     = 1'b 1;
                 ResultSrc = `RESULT_CSROUT;
                 RegWrite  = 1'b 1;
             end
