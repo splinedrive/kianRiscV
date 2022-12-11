@@ -294,7 +294,7 @@ module main_fsm(
                 ResultSrc = `RESULT_ALUOUT;
                 Branch    = 1'b 1;
                 alu_valid = 1'b 1;
-                mem_valid <= Zero;
+                mem_valid = Zero;
             end
             S11  : begin
                 // jalr itype

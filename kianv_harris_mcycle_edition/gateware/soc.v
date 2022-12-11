@@ -322,7 +322,7 @@ module soc
             clk
         );
     //localparam cnt_msb = $clog2(`SYSTEM_CLK);
-    localparam cnt_msb = 24;
+    localparam cnt_msb = 23;
     wire [cnt_msb -1: 0] cnt;
     counter #(cnt_msb) led_cnt_I (resetn, clk, 1'b 1, cnt);
     wire   led_msb = cnt[cnt_msb -1];
