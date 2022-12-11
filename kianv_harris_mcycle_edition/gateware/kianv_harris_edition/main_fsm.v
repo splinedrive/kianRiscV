@@ -25,6 +25,7 @@ module main_fsm(
         input  wire resetn,
         input  wire [ 6: 0] op,
         input  wire [ 0: 0] funct7b1,
+        input  wire Zero,
         output reg AdrSrc,
         output reg IRWrite,
         output reg  [`SRCA_WIDTH     -1: 0] ALUSrcA,
@@ -293,6 +294,7 @@ module main_fsm(
                 ResultSrc = `RESULT_ALUOUT;
                 Branch    = 1'b 1;
                 alu_valid = 1'b 1;
+                mem_valid <= Zero;
             end
             S11  : begin
                 // jalr itype

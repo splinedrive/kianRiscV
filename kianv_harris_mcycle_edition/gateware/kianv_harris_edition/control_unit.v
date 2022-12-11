@@ -16,98 +16,119 @@
  *  or in connection with the use or performance of this software.
  *
  */
-`timescale 1 ns/100 ps
-`default_nettype none
+`default_nettype none `timescale 1 ns / 100 ps
 
 `include "riscv_defines.vh"
-module control_unit
-    (
-        input  wire clk,
-        input  wire resetn,
-        input  wire [ 6: 0] op,
-        input  wire [ 2: 0] funct3,
-        input  wire [ 0: 0] funct7b5,
-        input  wire [ 0: 0] funct7b1,
-        input  wire [ 0: 0] immb10,
-        input  wire         Zero,
-        output wire [`RESULT_WIDTH   -1: 0] ResultSrc,
-        output wire [`ALU_CTRL_WIDTH -1: 0] ALUControl,
-        output wire [`SRCA_WIDTH     -1: 0] ALUSrcA,
-        output wire [`SRCB_WIDTH     -1: 0] ALUSrcB,
-        output wire [                 2: 0] ImmSrc,
-        output wire [`STORE_OP_WIDTH -1: 0] STOREop,
-        output wire [`LOAD_OP_WIDTH  -1: 0] LOADop,
-        output wire [`MUL_OP_WIDTH   -1: 0] MULop,
-        output wire [`DIV_OP_WIDTH   -1: 0] DIVop,
-        output wire [`CSR_OP_WIDTH   -1: 0] CSRop,
-        output wire RegWrite,
-        output wire PCWrite,
-        output wire AdrSrc,
-        output wire MemWrite,
-        output wire IRWrite,
-        output wire ALUOutWrite,
+module control_unit (
+    input  wire                        clk,
+    input  wire                        resetn,
+    input  wire [                 6:0] op,
+    input  wire [                 2:0] funct3,
+    input  wire [                 0:0] funct7b5,
+    input  wire [                 0:0] funct7b1,
+    input  wire [                 0:0] immb10,
+    input  wire                        Zero,
+    output wire [`RESULT_WIDTH   -1:0] ResultSrc,
+    output wire [`ALU_CTRL_WIDTH -1:0] ALUControl,
+    output wire [`SRCA_WIDTH     -1:0] ALUSrcA,
+    output wire [`SRCB_WIDTH     -1:0] ALUSrcB,
+    output wire [                 2:0] ImmSrc,
+    output wire [`STORE_OP_WIDTH -1:0] STOREop,
+    output wire [`LOAD_OP_WIDTH  -1:0] LOADop,
+    output wire [`MUL_OP_WIDTH   -1:0] MULop,
+    output wire [`DIV_OP_WIDTH   -1:0] DIVop,
+    output wire [`CSR_OP_WIDTH   -1:0] CSRop,
+    output wire                        RegWrite,
+    output wire                        PCWrite,
+    output wire                        AdrSrc,
+    output wire                        MemWrite,
+    output wire                        IRWrite,
+    output wire                        ALUOutWrite,
 
-        output         wire        mem_valid,
-        input          wire        mem_ready,
+    output wire mem_valid,
+    input  wire mem_ready,
 
-        output         wire        alu_valid,
-        input          wire        alu_ready,
+    output wire alu_valid,
+    input  wire alu_ready,
 
-        output         wire        mul_valid,
-        input          wire        mul_ready,
+    output wire mul_valid,
+    input  wire mul_ready,
 
-        output         wire        div_valid,
-        input          wire        div_ready
-    );
+    output wire div_valid,
+    input  wire div_ready
+);
 
-    wire [`ALU_OP_WIDTH   -1: 0]   ALUOp;
-    wire PCUpdate;
-    wire Branch;
-    wire mul_ext_ready;
-    wire mul_ext_valid;
+  wire [`ALU_OP_WIDTH   -1:0] ALUOp;
+  wire PCUpdate;
+  wire Branch;
+  wire mul_ext_ready;
+  wire mul_ext_valid;
 
-    wire   taken_branch = !Zero;
-    assign PCWrite = Branch & taken_branch | PCUpdate;
+  wire taken_branch = !Zero;
+  assign PCWrite = Branch & taken_branch | PCUpdate;
 
-    assign mul_ext_ready = mul_ready | div_ready;
+  assign mul_ext_ready = mul_ready | div_ready;
 
-    main_fsm main_fsm_I
-             (
-                 .clk            ( clk            ),
-                 .resetn         ( resetn         ),
-                 .op             ( op             ),
-                 .funct7b1       ( funct7b1       ),
-                 .AdrSrc         ( AdrSrc         ),
-                 .IRWrite        ( IRWrite        ),
-                 .ALUSrcA        ( ALUSrcA        ),
-                 .ALUSrcB        ( ALUSrcB        ),
-                 .ALUOp          ( ALUOp          ),
-                 .ResultSrc      ( ResultSrc      ),
-                 .ImmSrc         ( ImmSrc         ),
-                 .PCUpdate       ( PCUpdate       ),
-                 .Branch         ( Branch         ),
-                 .RegWrite       ( RegWrite       ),
-                 .ALUOutWrite    ( ALUOutWrite    ),
-                 .MemWrite       ( MemWrite       ),
-                 .mem_valid      ( mem_valid      ),
-                 .mem_ready      ( mem_ready      ),
+  main_fsm main_fsm_I (
+      .clk        (clk),
+      .resetn     (resetn),
+      .op         (op),
+      .funct7b1   (funct7b1),
+      .Zero       (Zero),
+      .AdrSrc     (AdrSrc),
+      .IRWrite    (IRWrite),
+      .ALUSrcA    (ALUSrcA),
+      .ALUSrcB    (ALUSrcB),
+      .ALUOp      (ALUOp),
+      .ResultSrc  (ResultSrc),
+      .ImmSrc     (ImmSrc),
+      .PCUpdate   (PCUpdate),
+      .Branch     (Branch),
+      .RegWrite   (RegWrite),
+      .ALUOutWrite(ALUOutWrite),
+      .MemWrite   (MemWrite),
+      .mem_valid  (mem_valid),
+      .mem_ready  (mem_ready),
 
-                 .alu_valid      ( alu_valid      ),
-                 .alu_ready      ( alu_ready      ),
+      .alu_valid(alu_valid),
+      .alu_ready(alu_ready),
 
-                 .mul_ext_valid  ( mul_ext_valid  ),
-                 .mul_ext_ready  ( mul_ext_ready  )
-             );
+      .mul_ext_valid(mul_ext_valid),
+      .mul_ext_ready(mul_ext_ready)
+  );
 
-    load_decoder  load_decoder_I  (funct3, LOADop  );
-    store_decoder store_decoder_I (funct3, STOREop );
+  load_decoder load_decoder_I (
+      funct3,
+      LOADop
+  );
+  store_decoder store_decoder_I (
+      funct3,
+      STOREop
+  );
 `ifdef CSR
-    csr_decoder   csr_decoder_I   (funct3, CSRop   );
+  csr_decoder csr_decoder_I (
+      funct3,
+      CSRop
+  );
 `endif
-    alu_decoder   alu_decoder_I   (immb10, op[5], funct3, funct7b5, ALUOp, ALUControl);
+  alu_decoder alu_decoder_I (
+      immb10,
+      op[5],
+      funct3,
+      funct7b5,
+      ALUOp,
+      ALUControl
+  );
 
 `ifdef RV32M
-    multiplier_extension_decoder mul_ext_de_I (funct3, MULop, DIVop, mul_ext_valid, mul_valid, div_valid);
+  multiplier_extension_decoder mul_ext_de_I (
+      funct3,
+      MULop,
+      DIVop,
+      mul_ext_valid,
+      mul_valid,
+      div_valid
+  );
 `endif
 
 endmodule
