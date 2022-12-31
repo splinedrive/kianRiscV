@@ -1,6 +1,6 @@
 Micropython on ulx3s
 ================================
-You want to run micropython on a colorlight FGPA?
+You want to run micropython on a ulx3s FGPA?
 Just flash these images to run kianriscv soc with sdram support!
 Baudrate is 1000000
 
