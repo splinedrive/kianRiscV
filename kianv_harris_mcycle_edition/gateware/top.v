@@ -309,24 +309,23 @@ module top
         )
         qqspi_i
         (
-            .addr        ( {2'b 00, maddr[22:0]}                               ),
-            .wdata       ( mwdata                                              ),
-            .rdata       ( mrdata                                              ),
-            .wstrb       ( mwstrb                                              ),
-            .ready       ( mready                                              ),
-            .valid       ( mvalid                                              ),
+            .addr         ( {2'b 00, maddr[22:0]}                               ),
+            .wdata        ( mwdata                                              ),
+            .rdata        ( mrdata                                              ),
+            .wstrb        ( mwstrb                                              ),
+            .ready        ( mready                                              ),
+            .valid        ( mvalid                                              ),
 
-            .ss          ( psram_ss                                            ),
-            .sclk        ( psram_sclk                                          ),
-            .mosi        ( psram_mosi                                          ),
-            .miso        ( psram_miso                                          ),
-            .sio2        ( psram_sio2                                          ),
-            .sio3        ( psram_sio3                                          ),
-            .cs          ( psram_cs                                            ),
+            .cen          ( psram_ss                                            ),
+            .sclk         ( psram_sclk                                          ),
+            .sio0_si_mosi ( psram_mosi                                          ),
+            .sio1_so_miso ( psram_miso                                          ),
+            .sio2         ( psram_sio2                                          ),
+            .sio3         ( psram_sio3                                          ),
+            .cs           ( psram_cs                                            ),
 
-            .state       (                                                     ),
-            .clk         ( clk                                                 ),
-            .resetn      ( resetn                                              )
+            .clk          ( clk                                                 ),
+            .resetn       ( resetn                                              )
 
         );
 `endif
