@@ -22,12 +22,11 @@
 */
 // added wmask, sync-comb fsm, spi flash support, cen polarity, faster during
 // write operations: sb, sh behaves likes 8Mx32 memory
-
 `default_nettype none `timescale 1 ns / 100 ps
 module qqspi #(
     parameter [0:0] QUAD_MODE = 1'b1,
     parameter [0:0] CEN_NPOL = 0,
-    parameter [0:0] PSRAM_SPIFLASH = 1'b0
+    parameter [0:0] PSRAM_SPIFLASH = 1'b1
 ) (
     input wire [22:0] addr,  // 8Mx32
     output reg [31:0] rdata,
@@ -63,7 +62,7 @@ module qqspi #(
   assign read = ~write;
 
   wire [3:0] sio;
-  assign sio = {sio3, sio2, sio1_so_miso, sio0_si_mosi};
+  assign {sio3, sio2, sio1_so_miso, sio0_si_mosi} = sio;
 
   genvar i;
   generate
