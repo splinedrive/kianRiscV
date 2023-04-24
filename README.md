@@ -13,7 +13,7 @@ was a good experience to think in **logical design**.
 
 Linux SOC
 =========
-under linux_socs
+[Linux SOC](https://github.com/splinedrive/kianRiscV/blob/master/linux_socs/kianv_harris_mcycle_edition/README.md)
 
 CPU
 ===
