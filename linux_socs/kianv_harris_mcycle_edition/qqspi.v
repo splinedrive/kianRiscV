@@ -1,4 +1,4 @@
-*
+/*
  *  kianv harris RISCV project
  *
  *  copyright (c) 2022 hirosh dabui <hirosh@dabui.de>
