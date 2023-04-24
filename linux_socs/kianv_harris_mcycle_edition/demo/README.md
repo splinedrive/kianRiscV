@@ -6,6 +6,7 @@ To flash the system, call
 ./flash.sh <soc_variant>
 
 soc_12f_70mhz.bit
+soc_25f_70mhz.bit
 soc_45f_70mhz.bit
 soc_85f_70mhz.bit
 
