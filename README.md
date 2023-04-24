@@ -14,8 +14,8 @@ was a good experience to think in **logical design**.
 Linux SOC
 =========
 With the KianV RISC-V Linux, you can boot Linux. Yes, you read that right. Booting Linux is fun.
-[Linux SOC](https://github.com/splinedrive/kianRiscV/blob/master/linux_socs/kianv_harris_mcycle_edition/README.md)
-[Kian Linux Soc](https://twitter.com/i/status/1649359364010983424)
+Go to [implementation](https://github.com/splinedrive/kianRiscV/blob/master/linux_socs/kianv_harris_mcycle_edition/README.md)
+[Check video from Kian Linux Soc in action](https://twitter.com/i/status/1649359364010983424)
 
 CPU
 ===
