@@ -11,6 +11,10 @@ was a good experience to think in **logical design**.
 
 <img src="./certificates.png" width="80%" height="80%"/>
 
+Linux SOC
+=========
+under linux_socs
+
 CPU
 ===
 The processor supports `RV32IM` instruction set
