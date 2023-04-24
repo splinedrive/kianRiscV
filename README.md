@@ -16,10 +16,8 @@ Linux SOC
 With the KianV RISC-V Linux, you can boot Linux. Yes, you read that right. Booting Linux is fun.
 [Linux SOC](https://github.com/splinedrive/kianRiscV/blob/master/linux_socs/kianv_harris_mcycle_edition/README.md)
 <blockquote class="twitter-video">
-  <p lang="en" dir="ltr">Tweet text goes here</p>
-  <a href="https://twitter.com/i/status/1649359364010983424">Linux SOC</a>
+<a href="https://twitter.com/i/status/1649359364010983424">Linux SOC</a>
 </blockquote>
-<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
 
 
 CPU
