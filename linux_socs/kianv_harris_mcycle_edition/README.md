@@ -55,6 +55,11 @@ Regym's patch was the starting point, and he was the first to have an !mmu SoC.
 However, I couldn't benefit from it because I didn't understand it. The
 understanding came with the emulator.
 
+Furthermore, I would like to express my sincere gratitude to my chat friend
+darkriscv for his patience and the evening chats we've had.
+
+check his repo out: https://github.com/darklife/darkriscv
+
 Resources I have used:
 
 - https://github.com/smunaut/iCE40linux
