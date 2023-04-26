@@ -228,8 +228,8 @@ module soc (
     wire mem_sdram_valid;
     wire mem_sdram_ready;
 
-    assign mem_sdram_valid = !mem_sdram_ready && cpu_mem_valid &&
-           (cpu_mem_addr >= `SDRAM_MEM_ADDR_START && cpu_mem_addr < `SDRAM_MEM_ADDR_END);
+    wire is_sdram = (cpu_mem_addr >= `SDRAM_MEM_ADDR_START && cpu_mem_addr < `SDRAM_MEM_ADDR_END);
+    assign mem_sdram_valid = !mem_sdram_ready && cpu_mem_valid && is_sdram;
 
     mt48lc16m16a2_ctrl #(
                            .SDRAM_CLK_FREQ(`SYSTEM_CLK_MHZ / 1_000_000)
@@ -320,7 +320,7 @@ module soc (
     wire unmatched_io = !(cpu_mem_addr == `UART_LSR_ADDR || cpu_mem_addr == `UART_TX_ADDR || cpu_mem_addr == `UART_RX_ADDR || clint_valid);
     wire is_bram = (cpu_mem_addr[31]);
 
-    wire access_fault = cpu_mem_valid & (unmatched_io || !is_bram);
+    wire access_fault = cpu_mem_valid & (unmatched_io || !is_bram || !is_sdram);
 
     reg io_ready;
     reg [31:0] io_rdata;
