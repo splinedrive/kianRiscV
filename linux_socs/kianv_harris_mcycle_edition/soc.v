@@ -258,7 +258,8 @@ module soc (
     /////////////////////////////////////////////////////////////////////////////
 
     // BRAM
-    assign bram_valid = !bram_ready && cpu_mem_valid && (cpu_mem_addr < (`BRAM_WORDS << 2));
+    wire is_bram = (cpu_mem_addr < (`BRAM_WORDS << 2));
+    assign bram_valid = !bram_ready && cpu_mem_valid && is_bram;
     always @(posedge clk) bram_ready <= !resetn ? 0 : bram_valid;
 
     bram #(
@@ -318,9 +319,8 @@ module soc (
     /////////////////////////////////////////////////////////////////////////////
     wire is_io = (cpu_mem_addr >= 32'h10_000_000 && cpu_mem_addr <= 32'h12_000_000);
     wire unmatched_io = !(cpu_mem_addr == `UART_LSR_ADDR || cpu_mem_addr == `UART_TX_ADDR || cpu_mem_addr == `UART_RX_ADDR || clint_valid);
-    wire is_bram = (cpu_mem_addr[31]);
 
-    wire access_fault = cpu_mem_valid & (unmatched_io || !is_bram || !is_sdram);
+    wire access_fault = cpu_mem_valid & (!is_io || !is_bram || !is_sdram);
 
     reg io_ready;
     reg [31:0] io_rdata;
