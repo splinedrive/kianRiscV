@@ -14,11 +14,12 @@ was a good experience to think in **logical design**.
 Linux SOC
 =========
 ```
-
+       _                   __ _
   /\ /(_) __ _ _ __/\   /\/ /(_)_ __  _   ___  __
  / //_/ |/ _` | '_ \ \ / / / | | '_ \| | | \ \/ /
-/ __ \| | (_| | | | \ V / /__| | | | | |_| |>  < 
+/ __ \| | (_| | | | \ V / /__| | | | | |_| |>  <
 \/  \/|_|\__,_|_| |_|\_/\____/_|_| |_|\__,_/_/\_\
+
 ```
                                                  
 With the KianV RISC-V Linux, you can boot Linux. Yes, you read that right. Booting Linux is fun.
