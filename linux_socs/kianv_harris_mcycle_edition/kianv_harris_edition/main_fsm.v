@@ -253,7 +253,6 @@ module main_fsm (
                 else if (is_mret) next_state = S30; /* fixme exception != machine mode */
                 else if (is_ecall) next_state = S34;
                 else if (is_ebreak) next_state = S39; // fixme;
-                else if (op == 0) next_state = S0; // fixme
                 else next_state = S40; // illegal;
             end
             S2:  // memaddr

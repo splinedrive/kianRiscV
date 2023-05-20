@@ -128,8 +128,6 @@ module soc (
     assign spi_nor_mem_valid = !spi_nor_mem_ready && cpu_mem_valid &&
            (cpu_mem_addr >= `SPI_NOR_MEM_ADDR_START && cpu_mem_addr < `SPI_NOR_MEM_ADDR_END) && !wr;
 
-    wire spi_state;
-
     qqspi #(
               .QUAD_MODE(`QUAD_SPI_FLASH_MODE),
               .CEN_NPOL(1'b0),
