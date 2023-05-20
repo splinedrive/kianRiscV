@@ -294,7 +294,6 @@ module mt48lc16m16a2_ctrl #(
         dqm_nxt          = 2'b00;
         dout_nxt[31:16]  = sdram_dq;
         wait_states_nxt  = TRP;
-        update_ready_nxt = 1'b1;
         ret_state_nxt    = IDLE;
         state_nxt        = WAIT_STATE;
       end
@@ -319,7 +318,6 @@ module mt48lc16m16a2_ctrl #(
         dq_nxt           = din[31:16];
         oe_nxt           = 1'b1;
         wait_states_nxt  = TRP;
-        update_ready_nxt = 1'b1;
         ret_state_nxt    = IDLE;
         state_nxt        = WAIT_STATE;
       end
