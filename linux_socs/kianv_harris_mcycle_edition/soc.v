@@ -76,7 +76,7 @@ module soc (
 
     always @(posedge clk) begin
         if (!locked) rst_cnt <= 0;
-        else if (!resetn) rst_cnt <= rst_cnt + 1;
+        else rst_cnt <= rst_cnt + !resetn;
     end
 
 
@@ -258,7 +258,7 @@ module soc (
     // BRAM
     wire is_bram = (cpu_mem_addr < (`BRAM_WORDS << 2));
     assign bram_valid = !bram_ready && cpu_mem_valid && is_bram;
-    always @(posedge clk) bram_ready <= !resetn ? 0 : bram_valid;
+    always @(posedge clk) bram_ready <= !resetn ? 1'b0 : bram_valid;
 
     bram #(
              .WIDTH        (BRAM_ADDR_WIDTH),
