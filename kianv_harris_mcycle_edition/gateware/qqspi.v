@@ -149,7 +149,6 @@ module qqspi #(
     is_quad_next = is_quad;
     xfer_cycles_next = xfer_cycles;
     ready_next = ready;
-    sio_out_next = sio_out_next;
     rdata_next = rdata;
     xfer_cycles_next = xfer_cycles;
 
