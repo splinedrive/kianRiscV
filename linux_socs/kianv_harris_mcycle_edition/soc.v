@@ -52,7 +52,7 @@ module soc (
             );
     assign flash_clk = flash_sclk;
 
-    assign led       = PC[8-:8];
+    assign led       = PC[0+:8];
 
     wire locked;
     pll #(
