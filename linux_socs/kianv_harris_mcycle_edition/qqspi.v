@@ -115,7 +115,7 @@ module qqspi #(
     if (!resetn) begin
       cs <= 2'b00;
       ce <= 1'b1;
-      sclk <= 1'b1;
+      sclk <= 1'b0;
       sio_oe <= 4'b1111;
       sio_out <= 4'b0000;
       spi_buf <= 0;
