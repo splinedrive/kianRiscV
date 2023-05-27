@@ -55,6 +55,21 @@ Regym's patch was the starting point, and he was the first to have an !mmu SoC.
 However, I couldn't benefit from it because I didn't understand it. The
 understanding came with the emulator.
 
+he following FPGA boards are currently supported: 
+iceSugarPro and ulx3s. If the ulx3s does not work, 
+change qspi to spi in the define header to 1'b0. 
+Generally speaking, if something does not work, 
+reduce the system clock in the define header to a different clock frequency.
+
+I have also managed to run the design on Colorlight i5, i9, and the icoboard.
+Support for these boards will follow. Additionally, I have implemented a simple
+SPI controller that was able to mount NOR flash via JFFS2 and VFAT SDCard,
+allowing operations to be performed on it.
+I'm not checking it in because I want to keep the design simple. My goal will
+be a different SoC (System on Chip). This SoC is only for learning purposes and
+is relatively easy to read and well-organized. One can buy the book 'Digital Design and Computer
+Architecture' by Harris and understand my design well with it.
+
 Furthermore, I would like to express my sincere gratitude to my chat friend
 darkriscv for his patience and the evening chats we've had.
 
