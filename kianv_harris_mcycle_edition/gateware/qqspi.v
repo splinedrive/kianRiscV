@@ -62,7 +62,6 @@ module qqspi #(
   assign read = ~write;
 
   wire [3:0] sio;
-  assign {sio3, sio2, sio1_so_miso, sio0_si_mosi} = sio;
 
   genvar i;
   generate
@@ -71,6 +70,7 @@ module qqspi #(
     end
   endgenerate
 
+  assign {sio3, sio2, sio1_so_miso, sio0_si_mosi} = sio;
   assign sio_in = {sio3, sio2, sio1_so_miso, sio0_si_mosi};
 
   localparam [2:0] S0_IDLE = 3'd0;
@@ -115,8 +115,8 @@ module qqspi #(
     if (!resetn) begin
       cs <= 2'b00;
       ce <= 1'b1;
-      sclk <= 1'b1;
-      sio_oe <= 4'b1111;
+      sclk <= 1'b0;
+      sio_oe <= 4'b0000;
       sio_out <= 4'b0000;
       spi_buf <= 0;
       is_quad <= 0;
@@ -167,6 +167,8 @@ module qqspi #(
     end else begin
       case (state)
         S0_IDLE: begin
+          sio_oe_next  = 4'b0001;
+          is_quad_next = 0;
           if (valid && !ready) begin
             next_state = S1_SELECT_DEVICE;
             xfer_cycles_next = 0;
@@ -179,7 +181,6 @@ module qqspi #(
         end
 
         S1_SELECT_DEVICE: begin
-          sio_oe_next = 4'b0001;
           cs_next[1:0] = addr[22:21];
           ce_next = 1'b0;
           next_state = S2_CMD;
@@ -193,7 +194,6 @@ module qqspi #(
           end
 
           xfer_cycles_next = 8;
-          is_quad_next = 0;
           next_state = S4_ADDR;
         end
 
@@ -204,7 +204,7 @@ module qqspi #(
             spi_buf_next[31:8] = {{addr[21:0], write ? byte_offset : 2'b00}};
           end
 
-          sio_oe_next = 4'b1111;
+          sio_oe_next = QUAD_MODE ? 4'b1111 : 4'b0001;
           xfer_cycles_next = 24;
 
           is_quad_next = QUAD_MODE;
@@ -222,10 +222,10 @@ module qqspi #(
           is_quad_next = QUAD_MODE;
 
           if (write) begin
-            sio_oe_next  = 4'b1111;
+            sio_oe_next  = QUAD_MODE ? 4'b1111 : 4'b0001;
             spi_buf_next = wr_buffer;
           end else begin
-            sio_oe_next = 4'b0000;
+            sio_oe_next = QUAD_MODE ? 4'b0000 : 4'b0001;
           end
 
           xfer_cycles_next = write ? wr_cycles : 32;
