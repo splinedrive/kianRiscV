@@ -396,7 +396,7 @@ wire [31:0] div_rslt_next = div_rslt << 1;
 /* verilator lint_off WIDTH */
 wire [31:0] rem_rslt_next = (rem_rslt << 1) | div_rslt[31];
 /* verilator lint_on WIDTH */
-wire [31:0] rem_rslt_sub_divident = rem_rslt_next - rs2_div_abs;
+wire [32:0] rem_rslt_sub_divident = rem_rslt_next - rs2_div_abs;
 
 always @(posedge clk) begin
     if (!resetn) begin
@@ -423,7 +423,7 @@ always @(posedge clk) begin
 
             div_state[DIV_CALC_BIT]: begin
                 div_bit <= div_bit + 1'b1;
-                if (rem_rslt_sub_divident[31]) begin
+                if (rem_rslt_sub_divident[32]) begin
                     rem_rslt <= rem_rslt_next;
                     /* verilator lint_off WIDTH */
                     div_rslt <= div_rslt_next | 1'b0;
@@ -441,7 +441,7 @@ always @(posedge clk) begin
             end
 
             div_state[DIV_VALID_BIT]: begin
-                div_rslt <= ((rs1_signed_div | rs2_signed_div) & (rs1_reg_file[31] ^ rs2_reg_file[31])) ? ~div_rslt + 1 : div_rslt;
+                div_rslt <= ((rs1_signed_div | rs2_signed_div) & ((rs1_reg_file[31] ^ rs2_reg_file[31]) & |rs2_reg_file)) ? ~div_rslt + 1 : div_rslt;
                 rem_rslt <= (rs1_signed_div & rs1_reg_file[31]) ? ~rem_rslt + 1 : rem_rslt;
                 div_ready <= 1'b1;
                 div_state <= DIV_IDLE;
