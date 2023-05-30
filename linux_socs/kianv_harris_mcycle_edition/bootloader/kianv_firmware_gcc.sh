@@ -9,14 +9,14 @@ then
 fi
 FILEwoSUFFIX=`echo $FILE | cut -d '.' -f1`
 rm -f firmware.elf
-RVGCC_LIB="/opt/riscv32im/riscv32-unknown-elf/lib/libc.a /opt/riscv32im/riscv32-unknown-elf/lib/libm.a /opt/riscv32im/lib/gcc/riscv32-unknown-elf/last/libgcc.a"
 RVCPPFLAGS="-fno-exceptions -fno-enforce-eh-specs "
-RVLDFLAGS="-m elf32lriscv -b elf32-littleriscv --no-relax "
-RVCFLAGS="-fno-pic -march=rv32ima -mabi=ilp32  -fno-stack-protector -w -Wl,--no-relax -ffreestanding -Wl,--strip-debug,-Map=firmware.map,-nostartfiles"
-/opt/riscv32im/bin/riscv32-unknown-elf-as crt0.S -o crt0.o
-/opt/riscv32im/bin/riscv32-unknown-elf-gcc -S -fverbose-asm  $OPT_LEVEL $RVCFLAGS -I$INCLUDE_DIR $FILE $RVGCC_LIB $START_FILE -c
-/opt/riscv32im/bin/riscv32-unknown-elf-as -alhnd "$FILEwoSUFFIX.s"  > "$FILEwoSUFFIX.lst"
-/opt/riscv32im/bin/riscv32-unknown-elf-gcc  $OPT_LEVEL $RVCFLAGS -I$INCLUDE_DIR $FILE $RVGCC_LIB $START_FILE -c
-/opt/riscv32im/bin/riscv32-unknown-elf-ld $RVLDFLAGS -T$LDS_FILE -o firmware.elf $FILEwoSUFFIX.o $RVGCC_LIB
-/opt/riscv32im/bin/riscv32-unknown-elf-objcopy -O binary firmware.elf firmware.bin
-/opt/riscv32im/bin/riscv32-unknown-elf-objdump -d -M no-aliases ./firmware.elf
+RVLDFLAGS="-Wl,-melf32lriscv -Wl,-belf32-littleriscv -Wl,--no-relax"
+RVCFLAGS="-fno-pic -march=rv32ima -mabi=ilp32  -fno-stack-protector -w -Wl,--no-relax -ffreestanding -Wl,--strip-debug,-Map=firmware.map -nostartfiles"
+riscv32-unknown-elf-as crt0.S -o crt0.o
+riscv32-unknown-elf-gcc -S -fverbose-asm  $OPT_LEVEL $RVCFLAGS -I$INCLUDE_DIR $FILE $START_FILE -c
+riscv32-unknown-elf-as -alhnd "$FILEwoSUFFIX.s"  > "$FILEwoSUFFIX.lst"
+riscv32-unknown-elf-gcc  $OPT_LEVEL $RVCFLAGS -I$INCLUDE_DIR $FILE $START_FILE -c
+riscv32-unknown-elf-gcc $OPT_LEVEL $RVCFLAGS $RVLDFLAGS -T$LDS_FILE -o firmware.elf crt0.o $FILEwoSUFFIX.o -lc -lm -lgcc
+riscv32-unknown-elf-objcopy -O binary firmware.elf firmware.bin
+riscv32-unknown-elf-objdump -d -M no-aliases ./firmware.elf
+
