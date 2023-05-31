@@ -127,7 +127,7 @@ project!\
 
 ## Todo
 Maybe gpio controller, fpu, uart rx and interrupt. But I want to leave this implementation like it is to have something simple.
-But my goal is to implement a riscv with pipelining, cash, standard interface and more features to have a linux capable cpu.
+But my goal is to implement a riscv with pipelining, cache, standard interface and more features to have a linux capable cpu.
 
 Have fun!
 
