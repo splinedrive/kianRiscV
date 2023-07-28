@@ -233,6 +233,7 @@ module csr_exception_handler #(
         exception_next_pc_nxt = exception_next_pc;
         exception_select_nxt = 1'b0;
         privilege_mode_nxt = privilege_mode;
+        temp_mstatus = 0;
 
         // fixme if (we & !rdonly)
         wdata_nxt = is_csr_clear ? rdata & ~wdata : is_csr_set ? rdata | wdata : wdata;

@@ -327,6 +327,7 @@ module soc (
     always @(*) begin
         io_rdata = 0;
         io_ready = 1'b0;
+        byteswaiting = 1'b0;
         if (is_io) begin
             if (uart_lsr_rdy) begin
                 byteswaiting = {1'b0, !uart_tx_busy, !uart_tx_busy, 1'b0, 3'b0, !(&rx_uart_data)};
