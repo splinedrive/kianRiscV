@@ -56,7 +56,7 @@ However, I couldn't benefit from it because I didn't understand it. The
 understanding came with the emulator.
 
 he following FPGA boards are currently supported: 
-iceSugarPro and ulx3s. If the ulx3s does not work, 
+tangNano20K, iceSugarPro and ulx3s. If the ulx3s does not work, 
 change qspi to spi in the define header to 1'b0. 
 Generally speaking, if something does not work, 
 reduce the system clock in the define header to a different clock frequency.
