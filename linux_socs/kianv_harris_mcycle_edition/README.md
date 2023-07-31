@@ -20,6 +20,9 @@
  It's much better if you develop a CPU system yourself, then you can feel and
  understand it.
 
+ [Visit TangNano20K branch KianV RISC-V Linux SoC](https://github.com/splinedrive/kianRiscV/tree/tangnano20k_ulinux_soc)
+
+
 <figure>
 <img src="./kianv_mc_rv32ima_cpu.png" width="80%" height="80%"
 alt="Harris MultiCycle RISC-V rv32ima"
