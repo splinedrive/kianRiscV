@@ -25,7 +25,7 @@
 #define DTB_IMAGE (SPI_ADDR_BASE + 1024 * 1024 * 7)
 #define BINARY_SRC (SPI_ADDR_BASE + 1024 * 1024 * 2)
 #define SDRAM_START (0x80000000)
-#define SDRAM_END (0x80000000 + 1024 * 1024 * 32)
+#define SDRAM_END (0x80000000 + 1024 * 1024 * 8)
 #define DTB_TARGET (SDRAM_END - 2048)
 
 uint32_t crc32_table[256];

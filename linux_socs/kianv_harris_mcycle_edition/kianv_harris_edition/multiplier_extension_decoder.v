@@ -19,25 +19,25 @@
 `default_nettype none `timescale 1 ns / 100 ps
 `include "riscv_defines.vh"
 module multiplier_extension_decoder (
-        input  wire [               2:0] funct3,
-        output wire [`MUL_OP_WIDTH -1:0] MULop,
-        output wire [`DIV_OP_WIDTH -1:0] DIVop,
-        input  wire                      mul_ext_valid,
-        output wire                      mul_valid,
-        output wire                      div_valid
-    );
+    input  wire [               2:0] funct3,
+    output wire [`MUL_OP_WIDTH -1:0] MULop,
+    output wire [`DIV_OP_WIDTH -1:0] DIVop,
+    input  wire                      mul_ext_valid,
+    output wire                      mul_valid,
+    output wire                      div_valid
+);
 
-    multiplier_decoder multiplier_I (
-                           funct3,
-                           MULop,
-                           mul_ext_valid,
-                           mul_valid
-                       );
-    divider_decoder divider_decoder_I (
-                        funct3,
-                        DIVop,
-                        mul_ext_valid,
-                        div_valid
-                    );
+  multiplier_decoder multiplier_I (
+      funct3,
+      MULop,
+      mul_ext_valid,
+      mul_valid
+  );
+  divider_decoder divider_decoder_I (
+      funct3,
+      DIVop,
+      mul_ext_valid,
+      div_valid
+  );
 
 endmodule

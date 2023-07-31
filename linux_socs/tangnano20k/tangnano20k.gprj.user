@@ -1,0 +1,24 @@
+<?xml version="1" encoding="UTF-8"?>
+<!DOCTYPE ProjectUserData>
+<UserConfig>
+    <Version>1.0</Version>
+    <FlowState>
+        <Process ID="Synthesis" State="2"/>
+        <Process ID="Pnr" State="2"/>
+        <Process ID="Gao" State="2"/>
+        <Process ID="Rtl_Gao" State="2"/>
+    </FlowState>
+    <ResultFileList>
+        <ResultFile ResultFileType="RES.netlist" ResultFilePath="impl/gwsynthesis/tangnano20k.vg"/>
+        <ResultFile ResultFileType="RES.pnr.bitstream" ResultFilePath="impl/pnr/tangnano20k.fs"/>
+        <ResultFile ResultFileType="RES.pnr.pin.rpt" ResultFilePath="impl/pnr/tangnano20k.pin.html"/>
+        <ResultFile ResultFileType="RES.pnr.posp.bin" ResultFilePath="impl/pnr/tangnano20k.db"/>
+        <ResultFile ResultFileType="RES.pnr.pwr.rpt" ResultFilePath="impl/pnr/tangnano20k.power.html"/>
+        <ResultFile ResultFileType="RES.pnr.report" ResultFilePath="impl/pnr/tangnano20k.rpt.html"/>
+        <ResultFile ResultFileType="RES.pnr.timing.paths" ResultFilePath="impl/pnr/tangnano20k.timing_paths"/>
+        <ResultFile ResultFileType="RES.pnr.timing.rpt" ResultFilePath="impl/pnr/tangnano20k.tr.html"/>
+        <ResultFile ResultFileType="RES.syn.report" ResultFilePath="impl/gwsynthesis/tangnano20k_syn.rpt.html"/>
+        <ResultFile ResultFileType="RES.syn.resource" ResultFilePath="impl/gwsynthesis/tangnano20k_syn_rsc.xml"/>
+    </ResultFileList>
+    <Ui>000000ff00000001fd0000000200000000000001ef000002acfc0200000001fc0000003c000002ac0000009601000015fa000000010200000003fb00000030004600700067006100500072006f006a006500630074002e00500061006e0065006c002e00440065007300690067006e0100000000ffffffff0000006600fffffffb00000032004600700067006100500072006f006a006500630074002e00500061006e0065006c002e00500072006f00630065007300730100000000ffffffff0000006200fffffffb00000036004600700067006100500072006f006a006500630074002e00500061006e0065006c002e0048006900650072006100720063006800790100000000ffffffff0000008000ffffff0000000300000736000000f4fc0100000001fc0000000000000736000000a800fffffffa000000010100000002fb00000032004600700067006100500072006f006a006500630074002e00500061006e0065006c002e00470065006e006500720061006c0100000000ffffffff0000004d00fffffffb0000002e004600700067006100500072006f006a006500630074002e00500061006e0065006c002e004900730073007500650100000000ffffffff000000a800ffffff00000541000002ac00000004000000040000000800000008fc000000010000000200000004000000220043006f00720065002e0054006f006f006c006200610072002e00460069006c00650100000000ffffffff0000000000000000000000220043006f00720065002e0054006f006f006c006200610072002e004500640069007401000000caffffffff0000000000000000000000240043006f00720065002e0054006f006f006c006200610072002e0054006f006f006c007301000001c1ffffffff0000000000000000ffffffff01000002a8ffffffff0000000000000000</Ui>
+</UserConfig>

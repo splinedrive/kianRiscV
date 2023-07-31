@@ -19,34 +19,34 @@
 `default_nettype none `timescale 1 ns / 100 ps
 `include "riscv_defines.vh"
 module divider_decoder (
-        input  wire [               2:0] funct3,
-        output reg  [`DIV_OP_WIDTH -1:0] DIVop,
-        input  wire                      mul_ext_valid,
-        output wire                      div_valid
-    );
+    input  wire [               2:0] funct3,
+    output reg  [`DIV_OP_WIDTH -1:0] DIVop,
+    input  wire                      mul_ext_valid,
+    output wire                      div_valid
+);
 
-    wire is_div = funct3 == 3'b100;
-    wire is_divu = funct3 == 3'b101;
-    wire is_rem = funct3 == 3'b110;
-    wire is_remu = funct3 == 3'b111;
-    reg                              valid;
+  wire is_div = funct3 == 3'b100;
+  wire is_divu = funct3 == 3'b101;
+  wire is_rem = funct3 == 3'b110;
+  wire is_remu = funct3 == 3'b111;
+  reg                              valid;
 
-    assign div_valid = valid & mul_ext_valid;
+  assign div_valid = valid & mul_ext_valid;
 
-    always @(*) begin
-        valid = 1'b1;
-        case (1'b1)
-            is_div:  DIVop = `DIV_OP_DIV;
-            is_divu: DIVop = `DIV_OP_DIVU;
-            is_rem:  DIVop = `DIV_OP_REM;
-            is_remu: DIVop = `DIV_OP_REMU;
-            default: begin
-                /* verilator lint_off WIDTH */
-                DIVop = 'hxx;
-                /* verilator lint_on WIDTH */
-                valid = 1'b0;
-            end
-        endcase
-    end
+  always @(*) begin
+    valid = 1'b1;
+    case (1'b1)
+      is_div:  DIVop = `DIV_OP_DIV;
+      is_divu: DIVop = `DIV_OP_DIVU;
+      is_rem:  DIVop = `DIV_OP_REM;
+      is_remu: DIVop = `DIV_OP_REMU;
+      default: begin
+        /* verilator lint_off WIDTH */
+        DIVop = 'hxx;
+        /* verilator lint_on WIDTH */
+        valid = 1'b0;
+      end
+    endcase
+  end
 
 endmodule

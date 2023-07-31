@@ -1,270 +1,102 @@
-[![Kianv Soc](kianv_soc.png)](./kianv_soc.mp4)
-# kianv RISC-V Harris MultiCycle Edition (SOC)
-RISC-V is an open standard instruction set architecture (ISA) according to
-the principles of reduced instruction set computer (RISC) principles.
-Afterward when I sucessfully completed my **HarveyMuddX-ENGR85B** Exam certificate.
-I learned howto design a RISC-V CPU **hierarchical**.
-Last year I have sucessfully completed an exam in **Building a RISC-V CPU Core**
-and finalized my previous RISC-V soc [kianv simple edition](https://github.com/splinedrive/kianRiscV/tree/master/archive/simple).
-But was a hack and got much experience. The code was created by try and error without simulation and
-was a good experience to think in **logical design**.
+ Here is an RV32IMA RISC-V processor that can boot and run uLinux, 
+ initially for the ULX3S 85F. The thing can be easily ported to other platforms. 
+ The images for the operating system can be found under the demo directory with instructions.
 
-<img src="./certificates.png" width="80%" height="80%"/>
+ I started with logic design in 2020. I got an Orange Crab and ran Litex Linux
+ on it. I was speechless. I didn't really know what an FPGA was yet. I had done
+ some logic design in my studies and a lot of electrical engineering, computer
+ architecture, etc., but I never really had an interest in FPGAs because I
+ focused on software modules in my studies. In 2021, I started with my first
+ CPU, which I learned through my edX course: Building a RISC-V Core, followed by
+ courses from Harris, Computer Architecture, and Digital Design. I have done
+ many designs in my spare time in the evenings. Actually, I am an embedded
+ software developer and develop kernel drivers and many other low-level
+ programs. The idea of booting Linux was actually born from the beginning, as I
+ love Linux and am a big Unix admirer. My idols are Ken Thompson and Seymour
+ Cray, among many others. I also spend a lot of time with computer history
+ because I find the machines very fascinating. In the end, my hobby is the
+ fulfillment of my childhood, as I always wanted to know how such a machine
+ works. I always read articles in magazines, but that was too abstract for me.
+ It's much better if you develop a CPU system yourself, then you can feel and
+ understand it.
 
-Linux SOC
-=========
-```
-       _                   __ _
-  /\ /(_) __ _ _ __/\   /\/ /(_)_ __  _   ___  __
- / //_/ |/ _` | '_ \ \ / / / | | '_ \| | | \ \/ /
-/ __ \| | (_| | | | \ V / /__| | | | | |_| |>  <
-\/  \/|_|\__,_|_| |_|\_/\____/_|_| |_|\__,_/_/\_\
-
-```
-                                                 
-With the KianV RISC-V Linux, you can boot Linux. Yes, you read that right. Booting Linux is fun.
-Go to [implementation](https://github.com/splinedrive/kianRiscV/blob/master/linux_socs/kianv_harris_mcycle_edition/README.md) or
-[check a video from Kian Linux Soc in action](https://twitter.com/i/status/1649359364010983424)
-
-CPU
-===
-The processor supports `RV32IM` instruction set
-
-* `RV`: RISC-V
-* `32`: 32-Bit registers, 3-address instructions
-* `I` : integer instructions
-* `M` : multiply/divide/modulo instructions
-
-and passes the RISC-V [unit tests for RISC-V processors](https://github.com/riscv-software-src/riscv-tests).
-The cpu is implemented with strong hierarchical method design rules I have learned from **Computer
-Architecture RISC-V Edition**, Harris, Harris. As you can see here (taken from my exam documents):
 <figure>
-<img src="./mc_harris_riscv.png" width="80%" height="80%"
-alt="Harris MultiCycle RISC-V"
-<figcaption>Harris MultiCycle RISC-V Architecture</figcaption>
+<img src="./kianv_mc_rv32ima_cpu.png" width="80%" height="80%"
+alt="Harris MultiCycle RISC-V rv32ima"
+<figcaption>KianV Multicycle rv32ima CPU</figcaption>
+</figure>
+<figure>
+<img src="./tangnano20k_linux.png" width="80%" height="80%"
+alt="Harris MultiCycle RISC-V rv32ima"
+<figcaption>KianV Multicycle rv32ima CPU</figcaption>
+</figure>
+<figure>
+<img src="./kianv_nommu_linux_soc.jpeg" width="80%" height="80%"
+alt="KianV !MMU linux soc"
 </figure>
 
-Verilog Implementation
-======================
-My architecture will presented by following verilog files:
 
-* kianv_harris_mc_edition.v
-  * control_unit.v
-    * alu_decoder.v
-    * csr_decoder.v
-    * divider_decoder.v
-    * load_decoder.v
-    * main_fsm.v
-    * multiplier_decoder.v
-    * multiplier_extension_decoder.v
-    * store_decoder.v
-  * datapath_unit.v
-    * alu.v
-    * csr_unit.v
-    * design_elements.v
-    * divider.v
-    * extend.v
-    * load_alignment.v
-    * multiplier.v
-    * register_file.v
-    * store_alignment.v
+Last year in the fall, I completed my 5-stage pipeline CPU and wanted to create
+a Linux-capable system from it. However, I abandoned the project because I
+lacked the knowledge of what is needed for Linux. I had worked with other
+designs, such as PSRAM and SDRAM, and implemented them. Then I got MicroPython
+running on my SoC at the time. There, I learned how to interactively communicate
+with the CPU via UART. This laid the foundation for a Linux system. I then
+started studying ice40linux and expanded it with PSRAM and an AXI Light Burst
+interface. That was a good learning experience.
 
-Register Transfer Logik (RTL)
-=============================
-Some examples of CPU components shown in RTL of the top layer of the cpu,
-control unit, data unit and the main finite state machine (FSM) here:
+Then I read a book about operating systems and memory concepts. I then worked
+with xv6 as an operating system in QEMU and learned about privilege modes. I
+began creating an emulator based on QEMU, ultraembedded, minirv32im, etc., from
+scratch and only then understood what !mmu Linux is. I always wanted a proper
+Linux system. However, I recognized the potential in it, as the privilege
+concepts don't differ semantically, except that the supervisor mode is not used,
+and it only makes sense with an MMU. After my emulator booted !mmu
+Linux, I was very happy and started to expand my old multicycle CPU to
+!mmu. I succeeded in doing so. I was able to use my buildroot from
+minirv32 without any modifications. Through minirv32, I learned about
+the relevant hardware addresses and dtb handling.
+Regym's patch was the starting point, and he was the first to have an !mmu SoC.
+However, I couldn't benefit from it because I didn't understand it. The
+understanding came with the emulator.
 
-# Top CPU Layer
-The top layer of the CPU consist only from a control unit and data unit.
-<figure>
-<img src="./kianv_harris_mc_edition.png" width="80%" height="80%"
-alt="top layer kianv riscv cpu">
-<figcaption>Top Layer from Kianv RISC-V CPU</figcaption>
-</figure>
+he following FPGA boards are currently supported: 
+tangNano20K, iceSugarPro and ulx3s. If the ulx3s does not work, 
+change qspi to spi in the define header to 1'b0. 
+Generally speaking, if something does not work, 
+reduce the system clock in the define header to a different clock frequency.
 
-# Control Unit
-The control unit controls the complete data flow of the CPU and
-consits of a main FSM and many decoders.
-<figure>
-<img src="./control_unit.png" width="80%" height="80%"
-<figcaption>ControlUnit</figcaption>
-</figure>
+I have also managed to run the design on Colorlight i5, i9, and the icoboard.
+Support for these boards will follow. Additionally, I have implemented a simple
+SPI controller that was able to mount NOR flash via JFFS2 and VFAT SDCard,
+allowing operations to be performed on it.
+I'm not checking it in because I want to keep the design simple. My goal will
+be a different SoC (System on Chip). This SoC is only for learning purposes and
+is relatively easy to read and well-organized. One can buy the book 'Digital Design and Computer
+Architecture' by Harris and understand my design well with it.
 
-# Main FSM
-The most important unit is the main FSM and is a part of the control unit.
-It controls the sequence of `fetch`, `decode`, `execution` and `write back`.
-<figure>
-<img src="./main_fsm.png" width="80%" height="80%"
-<figcaption>Main FSM</figcaption>
-</figure>
+Furthermore, I would like to express my sincere gratitude to my chat friend
+darkriscv for his patience and the evening chats we've had.
 
-# Data Unit
-The data unit consits of units are perform operations on data and store elements,
-<figure>
-<img src="./data_unit.png" width="80%" height="80%"
-<figcaption>DataUnit</figcaption>
-</figure>
+check his repo out: https://github.com/darklife/darkriscv
 
-# FPGA-Soc Implementation
-The soc has some controllers implemented:
+Resources I have used:
 
-* nor spi controller
-* oled spi controller
-* psram qspi controller
-* direct map cache controller
-* hdmi framebuffer controller, vga controller
-* tx uart controller up to 3MBaud
-* spram controller (ice40up)
+- https://github.com/smunaut/iCE40linux
+- https://github.com/splinedrive/iCE40linux
+- https://www.five-embeddev.com/riscv-isa-manual/latest/machine.html
+- https://courses.cs.duke.edu/fall22/compsci510/schedule.html
+- https://github.com/jameslzhu/riscv-card
+- https://danielmangum.com/posts/risc-v-bytes-qemu-gdb/
+- https://www.qemu.org/docs/master/system/target-riscv.html
+- https://riscv.org/technical/specifications/
+- https://starfivetech.com/uploads/sifive-interrupt-cookbook-v1p2.pdf
+- https://github.com/ultraembedded/exactstep
+- https://github.com/qemu
+- https://github.com/pulp-platform/clint
+- https://gitlab.com/x653/xv6-riscv-fpga
+- https://github.com/regymm/quasiSoC
+- https://pdos.csail.mit.edu/6.S081/2020/xv6/book-riscv-rev1.pdf
+- https://github.com/cnlohr/mini-rv32ima
 
-Supported **fpgas**:
-
-* ulx3s ecp5
-* icebreaker ice40
-* colorlighi5, colorlighti9 ecp5
-* icefun ice40
-* digilent arty7, nexys a7 nexys video, CmodA7-35t and genesys2
-
-## Synthesis of SOC
-You should study `defines.vh` file you can choose the sytemfrequency,
-hdmi or oled on ulx3s, psram with/without cache, cachesize, ...
-
-Please use [oss-cad-suite](https://github.com/YosysHQ/oss-cad-suite-build) to have all
-tools for synthesis.
-
-```bash
-cd gateware
-./build_ulx3s.sh    # build ulx3s and flash design
-./build_ice.sh      # build icebreaker and flash design
-./build_colori9.sh  # build colorlighti9 and flash design
-./build_colori5.sh  # build build_colori5 and flash design
-./build_fun.sh      # build icefun and flash design
-```
-
-## Simulation of whole SOC
-```bash
-./sim.sh # for iverilog simulation
-./verilator.sh # for verilator simulation
-```
-## Simulation of CPU only
-```bash
-cd kianv_harris_mcycle_edition
-./sim.sh # for iverilog simulation
-```
-### Unittest of CPU
-This will test all supported instructions of a `RV32IM` user mode CPU.
-Took the **picorv32** test cases and adjusted them for my testbench.
-```bash
-cd kianv_harris_mcycle_edition
-cd firmware
-. ./start_test.sh
-```
-
-## Toolchain
-
-Build [RISC-V GNU toolchain](https://github.com/riscv/riscv-gnu-toolchain)
-Invoke the build_toolchain.sh script to have a riscv toolchain for rv32im
-and will build under /opt/riscv32im
-```bash
-cd ./kianv_harris_mcycle_edition/firmware/
-./build_toolchain.sh
-```
-
-Or use another toolchain
-and adjust:\
-```bash
-./firmware/kianv_firmware_bram_gcc.sh
-./firmware/kianv_firmware_gcc.sh
-```
-## Trying Firmware
-The firmware will flashed on nor memory!
-Firmware:\
-```bash
-cd ./firmware\
-flash with\
-./flash_firmware.sh \
-ulx3s|ice|colori5|arty7|nexysa7|nexysa_video|genesys2|cmoda7_35t| stick <*.ld> <*.c>
-
-spi_nor2bram_fun.ld # boot from spi-nor icefun and copy code to bram\
-spi_nor2bram.ld # boot from spi-nor icebreaker and copy to bram\
-spi_nor2bram_colori5.ld # boot from spi-nor colorlighti5 also ulx3s and copy to bram\
-spi_nor2spram.ld # boot from spi-nor icebreaker and copy to spram\
-spi_nor2sram.ld # boot from spi-nor and copy to sram icoboard\
-spi_nor_fun.ld # boot and execute instructions only from spi-nor on icefun\
-spi_nor.ld # boot and execute instructions only from spi-nor all boards, excluded icefun
-spi_nor2spram.d # boot from spi and copy to spram (only icebreaker, ice40up)
-spi_nor2psram.d # boot from spi and copy to psram
-spi_nor_ice40hx1k.ld # boot and execute instructions only from spi-nor, e.g. icestick
-```
-Try for icestick all mandel, raytracer, main_seed.c oled or uart demos.
-Firmware is very restricted, will hang currently if you use hw registers they are not implemented.
-icestick could be configured as soc with oled xor uart.
-icestick is configured as rv32i and needs rv32i toolchain which will selected in flash_firmware. 
-```
- ./flash_firmware.sh stick spi_nor_ice40hx1k.ld main_raytrace.c -Ofast # would flash firmware for icestick and uses the rv32i firmware
-```
-## Preparing Uart
-some programs are using external uart hw, check pcfs but icebreaker, breakout and ulx3s don't need
-external uart hw. Check for ttyUSB devices and try
-```bash
-stty -F /dev/ttyUSBx 11520 raw\
-cat /dev/ttyUSBx
-```
-latest fw version needs no raw mode anymore!
-```bash
-stty -F /dev/ttyUSBx 11520 \
-cat /dev/ttyUSBx
-```
-
-to get output like pi.c, main_prime.c, main_rv32m.c, main_rv32m_printf.c, ....
-
-
-## GPIO interface
-Added a generic purpose io interface for each soc. You can drive the IOs from firmwarespace. The firmware folder
-provides an i2c and spi lib.
-There are some bitbang examples like to drive via i2c a liquidchrystal or an oled sdd1306 display.
-The highlight is the spi bitbanging example to read, write files from fat16/32 sd card...The driver
-is from ultraembedded I stripped down to an one file implementation.
-Check the .pcf or .lcf files to remap or to expand the ios to 32 with current implementation.
-
-## DMA Controller
-KianRiscV has an optional DMA-Controller to speedup memset, memcopy wordwise!
-
-## PMODs
-* PSRAM 32MByte: https://machdyne.com/product/qqspi-psram32/
-
-## Xilinx
-Check the XilinxVivado folder and
-```bash
-./build.sh
-```
-
-Kian RiscV Single Cycle CPU
-===========================
-Check the new single cycle CPU with CPI=1 and 
-prepared for a KINTEX-7. You can also run smaller FPGAs with
-less firmware. Firmware can build with standard BRAM linker script
-and reset address 0. Raytracer is still their as hex got from 
-https://github.com/WyattAutomation/Simple-Raytracer-in-C.git. 
-I have provided a 80MHz bitstream file with firmware for genesys2.
-The CPU operates with 80MHz => 80 MIPS and 3000000 Baud uart!
-### Simulation
-```bash
-cd kianv_harris_scycle_edition/processor/
-make verilator && ./obj/Vtop
-```
-or 
-```bash
-cd kianv_harris_scycle_edition/processor/
-make isim && ./a.out
-```
-<img src="./single_cycle.png" width="80%" height="80%"/>
-
-Kian RiscV 5-staged Pipelined CPU
-==================================
-This is a 5-staged pipelined cpu and is the base of my future work.
-The cpu is rv32i complaint and tested with the riscv testsuite. In future I will share
-an advanced soc from it: interrupts, sdram/ddr, caches, branch predition,
-linux bootable.
-<img src="./5pipelined.png" width="80%" height="80%"/>
-
-Hirosh
+and many more!

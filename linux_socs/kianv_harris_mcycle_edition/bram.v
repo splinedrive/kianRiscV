@@ -18,27 +18,27 @@
  */
 `default_nettype none `timescale 1 ns / 100 ps
 module bram #(
-        parameter integer WIDTH = 8,
-        parameter INIT_FILE = "",
-        parameter SHOW_FIRMWARE = 0
-    ) (
-        input wire clk,
-        input wire [WIDTH -1:0] addr,
-        input wire [31:0] wdata,
-        output reg [31:0] rdata,
-        input wire [3:0] wmask
-    );
-    reg [31:0] mem[0:(1<<WIDTH) -1];
+    parameter integer WIDTH = 8,
+    parameter INIT_FILE = "",
+    parameter SHOW_FIRMWARE = 0
+) (
+    input wire clk,
+    input wire [WIDTH -1:0] addr,
+    input wire [31:0] wdata,
+    output reg [31:0] rdata,
+    input wire [3:0] wmask
+);
+  reg [31:0] mem[0:(1<<WIDTH) -1];
 
-    integer i;
-    always @(posedge clk) begin
+  integer i;
+  always @(posedge clk) begin
 
-        for (i = 0; i < 4; i = i + 1) begin
-            if (wmask[i]) mem[addr][8*i +: 8] <= wdata[8*i +: 8];
-        end
-
-        rdata <= mem[addr];
-
+    for (i = 0; i < 4; i = i + 1) begin
+      if (wmask[i]) mem[addr][8*i+:8] <= wdata[8*i+:8];
     end
+
+    rdata <= mem[addr];
+
+  end
 
 endmodule

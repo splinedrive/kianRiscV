@@ -17,38 +17,28 @@
  *
  */
 `default_nettype none `timescale 1 ns / 100 ps
-
 module register_file #(
-        parameter REGISTER_DEPTH = 32,  // rv32e = 16; rv32i = 32
-        parameter STACKADDR = 32'hffff_ffff
-    ) (
-        input  wire        clk,
-        input  wire        we,
-        input  wire [ 4:0] A1,
-        input  wire [ 4:0] A2,
-        input  wire [ 4:0] A3,
-        input  wire [31:0] wd,
-        output wire [31:0] rd1,
-        output wire [31:0] rd2
-    );
-    reg [31:0] bank0[0:REGISTER_DEPTH -1];
-    integer i;
+    parameter REGISTER_DEPTH = 32,
+    parameter REGISTER_WIDTH = 32,
+    parameter STACKADDR = 32'hffff_ffff
+) (
+    input  wire                      clk,
+    input  wire                      we,
+    input  wire [               4:0] A1,
+    input  wire [               4:0] A2,
+    input  wire [               4:0] A3,
+    input  wire [REGISTER_WIDTH-1:0] wd,
+    output wire [REGISTER_WIDTH-1:0] rd1,
+    output wire [REGISTER_WIDTH-1:0] rd2
+);
+  reg [REGISTER_WIDTH -1:0] bank0[0:REGISTER_DEPTH -1];
 
-    localparam X2 = 2;
-    initial begin
-        bank0[10] = 'h00;  // hartid
-        bank0[11] = 32'h80_000_000 + ((1024*1024*32)-2048);// 32'h81fffa00;  // dtb
+  always @(posedge clk) begin
+    if (we && A3 != 0) begin
+      bank0[A3] <= wd;
     end
+  end
 
-
-    always @(posedge clk) begin
-
-        if (we && A3 != 0) begin
-            bank0[A3] <= wd;
-        end
-    end
-
-    assign rd1 = A1 != 0 ? bank0[A1] : 32'b0;
-    assign rd2 = A2 != 0 ? bank0[A2] : 32'b0;
-
+  assign rd1 = A1 != 0 ? bank0[A1] : 0;
+  assign rd2 = A2 != 0 ? bank0[A2] : 0;
 endmodule

@@ -12,7 +12,7 @@
 
 	memory@80000000 {
 		device_type = "memory";
-		reg = <0x00 0x80000000 0x00 0x1fff800>;
+		reg = <0x00 0x80000000 0x00 0x800000>;
 	};
 
 	cpus {
@@ -21,7 +21,7 @@
 		timebase-frequency = <1000000>;
 
 		cpu@0 {
-			clock-frequency = <7000000>;
+			clock-frequency = <3600000>;
 			phandle = <0x01>;
 			device_type = "cpu";
 			reg = <0x00>;
