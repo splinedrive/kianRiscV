@@ -4,7 +4,7 @@
     <Version>1.0</Version>
     <FlowState>
         <Process ID="Synthesis" State="2"/>
-        <Process ID="Pnr" State="2"/>
+        <Process ID="Pnr" State="1"/>
         <Process ID="Gao" State="2"/>
         <Process ID="Rtl_Gao" State="2"/>
     </FlowState>
