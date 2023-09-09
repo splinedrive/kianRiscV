@@ -21,7 +21,7 @@
 		timebase-frequency = <1000000>;
 
 		cpu@0 {
-			clock-frequency = <7000000>;
+			clock-frequency = <70000000>;
 			phandle = <0x01>;
 			device_type = "cpu";
 			reg = <0x00>;
