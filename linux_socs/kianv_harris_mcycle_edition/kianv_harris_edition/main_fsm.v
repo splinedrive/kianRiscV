@@ -56,8 +56,8 @@ module main_fsm (
         output reg                         amo_set_load_reserved_state,
         output reg                         amo_intermediate_data,
         output reg                         amo_intermediate_addr,
-        output reg                         AMOWb_en,
-        output reg                         amo_alu_op,
+        output reg                         select_ALUResult,
+        output reg                         select_amo_temp,
         input  wire                        amo_load_reserved_state,
 
         // Exception Handler
@@ -368,13 +368,13 @@ module main_fsm (
         RegWrite                    = 1'b0;
         MemWrite                    = 1'b0;
         CSRvalid                    = 1'b0;
-        AMOWb_en                    = 1'b0;
+        select_ALUResult                    = 1'b0;
 
         amo_tmp_write               = 1'b0;
         amo_set_load_reserved_state = 1'b0;
         amo_intermediate_data       = 1'b0;
         amo_intermediate_addr       = 1'b0;
-        amo_alu_op                  = 1'b0;
+        select_amo_temp                  = 1'b0;
         Aluout_or_amo_rd_wr_mux     = 1'b0;
 
         mem_valid                   = 1'b0;
@@ -609,11 +609,11 @@ module main_fsm (
             S26: begin
                 // alu exec amo
                 ALUOp = `ALU_OP_AMO;
-                amo_alu_op = 1'b0;
-                ALUSrcA = `SRCA_AMO_TEMP_DATA;
-                ALUSrcB = is_amoswap_w ? `SRCB_CONST_0 : `SRCB_RD2_BUF;
+                select_amo_temp = 1'b0;
+                ALUSrcA = is_amoswap_w ? `SRCA_CONST_0 : `SRCA_AMO_TEMP_DATA;
+                ALUSrcB = `SRCB_RD2_BUF;
                 ResultSrc = `RESULT_ALURESULT;
-                AMOWb_en = 1'b1;
+                select_ALUResult = 1'b1;
                 amo_tmp_write = 1'b1;
             end
             S27: begin
@@ -625,7 +625,7 @@ module main_fsm (
             S28: begin
                 // mem write
                 MemWrite = 1'b1;
-                amo_alu_op = !is_amoswap_w;
+                select_amo_temp = 1'b1;
                 ResultSrc = `RESULT_AMO_TEMP_ADDR;
                 AdrSrc    = `ADDR_RESULT;
                 mem_valid = 1'b1;

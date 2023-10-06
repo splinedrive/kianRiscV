@@ -54,7 +54,7 @@ module soc (
   wire locked;
   Gowin_rPLL pll_I0 (
       .clkout(clk),  //output clkout
-      .lock(locked),  //output lock
+//      .lock(locked),  //output lock
       .clkin(clk_osc)  //input clkin
   );
 
@@ -70,8 +70,9 @@ module soc (
   wire resetn = &rst_cnt;
 
   always @(posedge clk) begin
-    if (!locked) rst_cnt <= 0;
-    else if (!resetn) rst_cnt <= rst_cnt + 1;
+ //   if (!locked) rst_cnt <= 0;
+  //  else if (!resetn) rst_cnt <= rst_cnt + 1;
+      if (!resetn) rst_cnt <= rst_cnt + 1;
   end
 
 
@@ -112,8 +113,6 @@ module soc (
   // memory interface
   wire wr = |cpu_mem_wstrb;
   wire rd = ~wr;
-
-  wire                      [29:0] word_aligned_addr = {cpu_mem_addr[31:2]};
 
   // cpu_freq
   assign system_cpu_freq_valid   = !system_cpu_freq_ready && cpu_mem_valid && (cpu_mem_addr == `CPU_FREQ_REG_ADDR) && !wr;

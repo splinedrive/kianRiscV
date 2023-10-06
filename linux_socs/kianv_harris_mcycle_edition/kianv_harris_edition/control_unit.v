@@ -58,8 +58,8 @@ module control_unit (
     output wire                        amo_intermediate_data,
     output wire                        amo_intermediate_addr,
     input  wire                        amo_load_reserved_state,
-    output wire                        AMOWb_en,
-    output wire                        amo_alu_op,
+    output wire                        select_ALUResult,
+    output wire                        select_amo_temp,
 
     // Exception Handler
     output wire exception_event,
@@ -132,8 +132,8 @@ module control_unit (
       .amo_intermediate_data      (amo_intermediate_data),
       .amo_intermediate_addr      (amo_intermediate_addr),
       .amo_load_reserved_state    (amo_load_reserved_state),
-      .AMOWb_en                   (AMOWb_en),
-      .amo_alu_op                 (amo_alu_op),
+      .select_ALUResult                   (select_ALUResult),
+      .select_amo_temp                 (select_amo_temp),
       .MemWrite                   (MemWrite),
       .unaligned_access_load      (unaligned_access_load),
       .unaligned_access_store     (unaligned_access_store),

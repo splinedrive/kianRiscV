@@ -90,8 +90,8 @@ module kianv_harris_mc_edition #(
   wire amo_intermediate_addr;
   wire amo_load_reserved_state;
   wire Aluout_or_amo_rd_wr_mux;
-  wire AMOWb_en;
-  wire amo_alu_op;
+  wire select_ALUResult;
+  wire select_amo_temp;
 
   // Exception Handler
   wire exception_event;
@@ -152,8 +152,8 @@ module kianv_harris_mc_edition #(
       .amo_intermediate_addr      (amo_intermediate_addr),
       .amo_load_reserved_state    (amo_load_reserved_state),
       .Aluout_or_amo_rd_wr_mux    (Aluout_or_amo_rd_wr_mux),
-      .AMOWb_en                   (AMOWb_en),
-      .amo_alu_op                 (amo_alu_op),
+      .select_ALUResult                   (select_ALUResult),
+      .select_amo_temp                 (select_amo_temp),
 
       .exception_event (exception_event),
       .cause           (cause),
@@ -219,8 +219,8 @@ module kianv_harris_mc_edition #(
       .amo_intermediate_addr      (amo_intermediate_addr),
       .amo_load_reserved_state    (amo_load_reserved_state),
       .Aluout_or_amo_rd_wr_mux    (Aluout_or_amo_rd_wr_mux),
-      .AMOWb_en                   (AMOWb_en),
-      .amo_alu_op                 (amo_alu_op),
+      .select_ALUResult                   (select_ALUResult),
+      .select_amo_temp                 (select_amo_temp),
 
       // Exception
       .exception_event (exception_event),
