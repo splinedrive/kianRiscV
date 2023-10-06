@@ -46,20 +46,20 @@ module control_unit (
         output wire                        PCWrite,
         output wire                        AdrSrc,
         output wire                        MemWrite,
-        input wire                         unaligned_access_load,
-        input wire                         unaligned_access_store,
-        input wire                         access_fault,
+        input  wire                        unaligned_access_load,
+        input  wire                        unaligned_access_store,
+        input  wire                        access_fault,
         output wire                        fetched_instr,
         output wire                        incr_inst_retired,
         output wire                        ALUOutWrite,
-        output wire                        amo_tmp_write,
-        output wire                        Aluout_or_amo_rd_wr_mux,
-        output wire                        amo_set_load_reserved_state,
-        output wire                        amo_intermediate_data,
-        output wire                        amo_intermediate_addr,
-        input  wire                        amo_load_reserved_state,
-        output wire                        AMOWb_en,
-        output wire                        amo_alu_op,
+        output wire                        amo_temp_write_operation,
+        output wire                        muxed_Aluout_or_amo_rd_wr,
+        output wire                        amo_set_reserved_state_load,
+        output wire                        amo_buffered_data,
+        output wire                        amo_buffered_address,
+        input  wire                        amo_reserved_state_load,
+        output wire                        select_ALUResult,
+        output wire                        select_amo_temp,
 
         // Exception Handler
         output wire exception_event,
@@ -95,8 +95,8 @@ module control_unit (
 
     assign mul_ext_ready = mul_ready | div_ready;
 
-    wire amo_load;
-    wire amo_store_op;
+    wire amo_data_load;
+    wire amo_operation_store;
 
     wire CSRvalid;
     main_fsm main_fsm_I (
@@ -124,16 +124,16 @@ module control_unit (
                  .RegWrite         (RegWrite),
                  .ALUOutWrite      (ALUOutWrite),
 
-                 .amo_tmp_write              (amo_tmp_write),
-                 .amo_load                   (amo_load),
-                 .amo_store_op               (amo_store_op),
-                 .Aluout_or_amo_rd_wr_mux    (Aluout_or_amo_rd_wr_mux),
-                 .amo_set_load_reserved_state(amo_set_load_reserved_state),
-                 .amo_intermediate_data      (amo_intermediate_data),
-                 .amo_intermediate_addr      (amo_intermediate_addr),
-                 .amo_load_reserved_state    (amo_load_reserved_state),
-                 .AMOWb_en                   (AMOWb_en),
-                 .amo_alu_op                 (amo_alu_op),
+                 .amo_temp_write_operation   (amo_temp_write_operation),
+                 .amo_data_load              (amo_data_load),
+                 .amo_operation_store        (amo_operation_store),
+                 .muxed_Aluout_or_amo_rd_wr  (muxed_Aluout_or_amo_rd_wr),
+                 .amo_set_reserved_state_load(amo_set_reserved_state_load),
+                 .amo_buffered_data          (amo_buffered_data),
+                 .amo_buffered_address       (amo_buffered_address),
+                 .amo_reserved_state_load    (amo_reserved_state_load),
+                 .select_ALUResult           (select_ALUResult),
+                 .select_amo_temp            (select_amo_temp),
                  .MemWrite                   (MemWrite),
                  .unaligned_access_load      (unaligned_access_load),
                  .unaligned_access_store     (unaligned_access_store),
@@ -146,9 +146,9 @@ module control_unit (
                  .wfi_event       (wfi_event),
                  .privilege_mode  (privilege_mode),
                  .csr_access_fault(csr_access_fault),
-                 .mstatus (mstatus),
-                 .mie     (mie    ),
-                 .mip     (mip    ),
+                 .mstatus         (mstatus),
+                 .mie             (mie),
+                 .mip             (mip),
 
                  .mem_valid(mem_valid),
                  .mem_ready(mem_ready),
@@ -159,12 +159,12 @@ module control_unit (
 
     load_decoder load_decoder_I (
                      funct3,
-                     amo_load,
+                     amo_data_load,
                      LOADop
                  );
     store_decoder store_decoder_I (
                       funct3,
-                      amo_store_op,
+                      amo_operation_store,
                       STOREop
                   );
 

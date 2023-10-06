@@ -22,7 +22,7 @@
 module load_decoder
     (
         input  wire [ 2: 0] funct3,
-        input wire amo_load,
+        input wire amo_data_load,
         output reg  [`LOAD_OP_WIDTH -1: 0] LOADop
     );
     wire is_lb      = funct3 == 3'b 000;
@@ -32,7 +32,7 @@ module load_decoder
     wire is_lhu     = funct3 == 3'b 101;
 
     always @(*) begin
-        if (!amo_load) begin
+        if (!amo_data_load) begin
             case (1'b1)
                 is_lb  : LOADop = `LOAD_OP_LB;
                 is_lh  : LOADop = `LOAD_OP_LH;

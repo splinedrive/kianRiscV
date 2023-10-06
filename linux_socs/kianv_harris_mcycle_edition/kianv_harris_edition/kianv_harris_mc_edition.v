@@ -84,14 +84,14 @@ module kianv_harris_mc_edition #(
     assign Rs2    = Instr[24:20];
     assign Rd     = Instr[11:7];
 
-    wire amo_tmp_write;
-    wire amo_set_load_reserved_state;
-    wire amo_intermediate_data;
-    wire amo_intermediate_addr;
-    wire amo_load_reserved_state;
-    wire Aluout_or_amo_rd_wr_mux;
-    wire AMOWb_en;
-    wire amo_alu_op;
+    wire amo_temp_write_operation;
+    wire amo_set_reserved_state_load;
+    wire amo_buffered_data;
+    wire amo_buffered_address;
+    wire amo_reserved_state_load;
+    wire muxed_Aluout_or_amo_rd_wr;
+    wire select_ALUResult;
+    wire select_amo_temp;
 
     // Exception Handler
     wire exception_event;
@@ -106,39 +106,39 @@ module kianv_harris_mc_edition #(
     wire [31:0] mip;
 
     control_unit control_unit_I (
-                     .clk              (clk),
-                     .resetn           (resetn),
-                     .op               (op),
-                     .funct3           (funct3),
-                     .funct7           (funct7),
-                     .immb10           (immb10),
-                     .Zero             (Zero),
-                     .Rs1              (Rs1),
-                     .Rs2              (Rs2),
-                     .Rd               (Rd),
-                     .ResultSrc        (ResultSrc),
-                     .ALUControl       (ALUControl),
-                     .ALUSrcA          (ALUSrcA),
-                     .ALUSrcB          (ALUSrcB),
-                     .ImmSrc           (ImmSrc),
-                     .STOREop          (STOREop),
-                     .LOADop           (LOADop),
-                     .CSRop            (CSRop),
-                     .CSRwe            (CSRwe),
-                     .CSRre            (CSRre),
-                     .RegWrite         (RegWrite),
-                     .PCWrite          (PCWrite),
-                     .AdrSrc           (AdrSrc),
-                     .MemWrite         (MemWrite),
-                     .fetched_instr    (fetched_instr),
-                     .incr_inst_retired(incr_inst_retired),
-                     .ALUOutWrite      (ALUOutWrite),
-                     .mem_valid        (mem_valid),
-                     .mem_ready        (mem_ready),
-                     .MULop            (MULop),
-                     .unaligned_access_load  (unaligned_access_load),
-                     .unaligned_access_store (unaligned_access_store),
-                     .access_fault (access_fault),
+                     .clk                   (clk),
+                     .resetn                (resetn),
+                     .op                    (op),
+                     .funct3                (funct3),
+                     .funct7                (funct7),
+                     .immb10                (immb10),
+                     .Zero                  (Zero),
+                     .Rs1                   (Rs1),
+                     .Rs2                   (Rs2),
+                     .Rd                    (Rd),
+                     .ResultSrc             (ResultSrc),
+                     .ALUControl            (ALUControl),
+                     .ALUSrcA               (ALUSrcA),
+                     .ALUSrcB               (ALUSrcB),
+                     .ImmSrc                (ImmSrc),
+                     .STOREop               (STOREop),
+                     .LOADop                (LOADop),
+                     .CSRop                 (CSRop),
+                     .CSRwe                 (CSRwe),
+                     .CSRre                 (CSRre),
+                     .RegWrite              (RegWrite),
+                     .PCWrite               (PCWrite),
+                     .AdrSrc                (AdrSrc),
+                     .MemWrite              (MemWrite),
+                     .fetched_instr         (fetched_instr),
+                     .incr_inst_retired     (incr_inst_retired),
+                     .ALUOutWrite           (ALUOutWrite),
+                     .mem_valid             (mem_valid),
+                     .mem_ready             (mem_ready),
+                     .MULop                 (MULop),
+                     .unaligned_access_load (unaligned_access_load),
+                     .unaligned_access_store(unaligned_access_store),
+                     .access_fault          (access_fault),
 
                      .mul_valid                  (mul_valid),
                      .mul_ready                  (mul_ready),
@@ -146,25 +146,25 @@ module kianv_harris_mc_edition #(
                      .div_valid                  (div_valid),
                      .div_ready                  (div_ready),
                      // AMO
-                     .amo_tmp_write              (amo_tmp_write),
-                     .amo_set_load_reserved_state(amo_set_load_reserved_state),
-                     .amo_intermediate_data      (amo_intermediate_data),
-                     .amo_intermediate_addr      (amo_intermediate_addr),
-                     .amo_load_reserved_state    (amo_load_reserved_state),
-                     .Aluout_or_amo_rd_wr_mux    (Aluout_or_amo_rd_wr_mux),
-                     .AMOWb_en                   (AMOWb_en),
-                     .amo_alu_op                 (amo_alu_op),
+                     .amo_temp_write_operation   (amo_temp_write_operation),
+                     .amo_set_reserved_state_load(amo_set_reserved_state_load),
+                     .amo_buffered_data          (amo_buffered_data),
+                     .amo_buffered_address       (amo_buffered_address),
+                     .amo_reserved_state_load    (amo_reserved_state_load),
+                     .muxed_Aluout_or_amo_rd_wr  (muxed_Aluout_or_amo_rd_wr),
+                     .select_ALUResult           (select_ALUResult),
+                     .select_amo_temp            (select_amo_temp),
 
-                     .exception_event            (exception_event),
-                     .cause                      (cause),
-                     .badaddr                    (badaddr),
-                     .mret                       (mret),
-                     .wfi_event                  (wfi_event),
-                     .privilege_mode             (privilege_mode),
-                     .csr_access_fault           (csr_access_fault),
-                     .mstatus (mstatus),
-                     .mie     (mie    ),
-                     .mip     (mip    )
+                     .exception_event (exception_event),
+                     .cause           (cause),
+                     .badaddr         (badaddr),
+                     .mret            (mret),
+                     .wfi_event       (wfi_event),
+                     .privilege_mode  (privilege_mode),
+                     .csr_access_fault(csr_access_fault),
+                     .mstatus         (mstatus),
+                     .mie             (mie),
+                     .mip             (mip)
                  );
 
     datapath_unit #(
@@ -198,11 +198,11 @@ module kianv_harris_mc_edition #(
                       .Instr            (Instr),
 
                       .mem_wstrb(mem_wstrb),
-                      .mem_addr (mem_addr),
+                      .mem_addr(mem_addr),
                       .mem_wdata(mem_wdata),
                       .mem_rdata(mem_rdata),
-                      .unaligned_access_load  (unaligned_access_load),
-                      .unaligned_access_store (unaligned_access_store),
+                      .unaligned_access_load(unaligned_access_load),
+                      .unaligned_access_store(unaligned_access_store),
 
                       .MULop      (MULop),
                       .mul_valid  (mul_valid),
@@ -213,14 +213,14 @@ module kianv_harris_mc_edition #(
                       .ProgCounter(PC),
 
                       // AMO
-                      .amo_tmp_write              (amo_tmp_write),
-                      .amo_set_load_reserved_state(amo_set_load_reserved_state),
-                      .amo_intermediate_data      (amo_intermediate_data),
-                      .amo_intermediate_addr      (amo_intermediate_addr),
-                      .amo_load_reserved_state    (amo_load_reserved_state),
-                      .Aluout_or_amo_rd_wr_mux    (Aluout_or_amo_rd_wr_mux),
-                      .AMOWb_en                   (AMOWb_en),
-                      .amo_alu_op                 (amo_alu_op),
+                      .amo_temp_write_operation   (amo_temp_write_operation),
+                      .amo_set_reserved_state_load(amo_set_reserved_state_load),
+                      .amo_buffered_data          (amo_buffered_data),
+                      .amo_buffered_address       (amo_buffered_address),
+                      .amo_reserved_state_load    (amo_reserved_state_load),
+                      .muxed_Aluout_or_amo_rd_wr  (muxed_Aluout_or_amo_rd_wr),
+                      .select_ALUResult           (select_ALUResult),
+                      .select_amo_temp            (select_amo_temp),
 
                       // Exception
                       .exception_event (exception_event),
@@ -230,10 +230,10 @@ module kianv_harris_mc_edition #(
                       .wfi_event       (wfi_event),
                       .privilege_mode  (privilege_mode),
                       .csr_access_fault(csr_access_fault),
-                      .mie     (mie    ),
-                      .mip     (mip    ),
-                      .mstatus (mstatus),
-                      .IRQ3                       (IRQ3),
-                      .IRQ7                       (IRQ7)
+                      .mie             (mie),
+                      .mip             (mip),
+                      .mstatus         (mstatus),
+                      .IRQ3            (IRQ3),
+                      .IRQ7            (IRQ7)
                   );
 endmodule

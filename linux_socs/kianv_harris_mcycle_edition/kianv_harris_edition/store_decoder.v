@@ -22,7 +22,7 @@
 module store_decoder
     (
         input  wire [ 2: 0] funct3,
-        input wire amo_store_op,
+        input wire amo_operation_store,
         output reg  [`STORE_OP_WIDTH -1: 0] STOREop
     );
     wire is_sb      = funct3[1:0] == 2'b 00;
@@ -30,7 +30,7 @@ module store_decoder
     wire is_sw      = funct3[1:0] == 2'b 10;
 
     always @(*) begin
-        if (!amo_store_op) begin
+        if (!amo_operation_store) begin
             case (1'b1)
                 is_sb : STOREop = `STORE_OP_SB;
                 is_sh : STOREop = `STORE_OP_SH;
@@ -44,5 +44,4 @@ module store_decoder
             STOREop = `STORE_OP_SW;
         end
     end
-
 endmodule

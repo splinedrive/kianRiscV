@@ -48,17 +48,17 @@ module main_fsm (
         input wire                         access_fault,
         output wire                        ALUOutWrite,
         output reg                         mem_valid,
-        output reg                         amo_tmp_write,
+        output reg                         amo_temp_write_operation,
         // AMO
-        output reg                         amo_load,
-        output reg                         amo_store_op,
-        output reg                         Aluout_or_amo_rd_wr_mux,
-        output reg                         amo_set_load_reserved_state,
-        output reg                         amo_intermediate_data,
-        output reg                         amo_intermediate_addr,
-        output reg                         AMOWb_en,
-        output reg                         amo_alu_op,
-        input  wire                        amo_load_reserved_state,
+        output reg                         amo_data_load,
+        output reg                         amo_operation_store,
+        output reg                         muxed_Aluout_or_amo_rd_wr,
+        output reg                         amo_set_reserved_state_load,
+        output reg                         amo_buffered_data,
+        output reg                         amo_buffered_address,
+        output reg                         select_ALUResult,
+        output reg                         select_amo_temp,
+        input  wire                        amo_reserved_state_load,
 
         // Exception Handler
         output reg exception_event,
@@ -182,8 +182,8 @@ module main_fsm (
 
     // amo
     always @* begin
-        amo_load = is_amo & is_amo_lr_w;
-        amo_store_op = is_amo & is_amo_sc_w;
+        amo_data_load = is_amo & is_amo_lr_w;
+        amo_operation_store = is_amo & is_amo_sc_w;
     end
 
     always @* begin
@@ -281,7 +281,7 @@ module main_fsm (
                     next_state = access_fault ? S46 : (unaligned_access_load ? S42 : S19);  // amoloadlr
                 end
                 if (is_amo_sc_w) begin
-                    next_state = access_fault ? S48 : (unaligned_access_store ? S44 : (amo_load_reserved_state ? S21 : S23));
+                    next_state = access_fault ? S48 : (unaligned_access_store ? S44 : (amo_reserved_state_load ? S21 : S23));
                 end
                 if (is_amoadd_w | is_amoswap_w | is_amoxor_w | is_amoand_w
                         | | is_amoor_w | is_amomin_w | is_amomax_w | is_amominu_w | is_amomaxu_w) begin
@@ -368,14 +368,14 @@ module main_fsm (
         RegWrite                    = 1'b0;
         MemWrite                    = 1'b0;
         CSRvalid                    = 1'b0;
-        AMOWb_en                    = 1'b0;
+        select_ALUResult                    = 1'b0;
 
-        amo_tmp_write               = 1'b0;
-        amo_set_load_reserved_state = 1'b0;
-        amo_intermediate_data       = 1'b0;
-        amo_intermediate_addr       = 1'b0;
-        amo_alu_op                  = 1'b0;
-        Aluout_or_amo_rd_wr_mux     = 1'b0;
+        amo_temp_write_operation               = 1'b0;
+        amo_set_reserved_state_load = 1'b0;
+        amo_buffered_data       = 1'b0;
+        amo_buffered_address       = 1'b0;
+        select_amo_temp                  = 1'b0;
+        muxed_Aluout_or_amo_rd_wr     = 1'b0;
 
         mem_valid                   = 1'b0;
         mul_ext_valid               = 1'b0;
@@ -541,14 +541,14 @@ module main_fsm (
                 ALUSrcA = `SRCA_RD1_BUF;
                 ALUSrcB = `SRCB_CONST_0;
                 ALUOp   = `ALU_OP_ADD;
-                amo_intermediate_addr = 1'b1;
+                amo_buffered_address = 1'b1;
             end
             S19: begin
                 // -> S19 (load)
                 // amo mem read LR.w
                 // Data <= Mem[ALUOUt]
-                amo_set_load_reserved_state = 1'b1;  // fixme mem exception revert
-                amo_intermediate_data = 1'b1;  // set amo_reserved
+                amo_set_reserved_state_load = 1'b1;  // fixme mem exception revert
+                amo_buffered_data = 1'b1;  // set amo_reserved
                 mem_valid = 1'b1;
                 ResultSrc = `RESULT_ALUOUT;
                 AdrSrc = `ADDR_RESULT;
@@ -565,8 +565,8 @@ module main_fsm (
                 // sc.w amo store sucesseded0
                 // mem write
                 // Mem[ALUOUt] <- rd2->A2
-                amo_set_load_reserved_state = 1'b1; // fixme mem exception revert
-                amo_intermediate_data = 1'b0; // clr amo_reserved
+                amo_set_reserved_state_load = 1'b1; // fixme mem exception revert
+                amo_buffered_data = 1'b0; // clr amo_reserved
 
                 mem_valid = 1'b1;
                 ResultSrc = `RESULT_AMO_TEMP_ADDR;
@@ -575,8 +575,8 @@ module main_fsm (
             end
             S22: begin
                 // sc.w rdw = 1'b0 sucesseded1
-                amo_intermediate_data = 1'b0;  // clr amo_reserved
-                Aluout_or_amo_rd_wr_mux = 1'b1;
+                amo_buffered_data = 1'b0;  // clr amo_reserved
+                muxed_Aluout_or_amo_rd_wr = 1'b1;
                 ResultSrc = `RESULT_ALUOUT;
                 RegWrite = 1'b1;
                 mem_valid = 1'b1;
@@ -584,8 +584,8 @@ module main_fsm (
             end
             S23: begin
                 // sc.w rdw = 1'b1 failed
-                amo_intermediate_data = 1'b1;  // clr amo_reserved
-                Aluout_or_amo_rd_wr_mux = 1'b1;
+                amo_buffered_data = 1'b1;  // clr amo_reserved
+                muxed_Aluout_or_amo_rd_wr = 1'b1;
                 ResultSrc = `RESULT_ALUOUT;
                 RegWrite = 1'b1;
                 mem_valid = 1'b1;
@@ -596,7 +596,7 @@ module main_fsm (
                 mem_valid = 1'b1;
                 AdrSrc = `ADDR_RESULT;
                 ResultSrc = `RESULT_ALUOUT;
-                amo_tmp_write = 1'b1;
+                amo_temp_write_operation = 1'b1;
             end
             S25: begin
                 // amo wb
@@ -609,12 +609,11 @@ module main_fsm (
             S26: begin
                 // alu exec amo
                 ALUOp = `ALU_OP_AMO;
-                amo_alu_op = 1'b0;
-                ALUSrcA = `SRCA_AMO_TEMP_DATA;
-                ALUSrcB = is_amoswap_w ? `SRCB_CONST_0 : `SRCB_RD2_BUF;
+                ALUSrcA = is_amoswap_w ? `SRCA_CONST_0 : `SRCA_AMO_TEMP_DATA;
+                ALUSrcB = `SRCB_RD2_BUF;
                 ResultSrc = `RESULT_ALURESULT;
-                AMOWb_en = 1'b1;
-                amo_tmp_write = 1'b1;
+                select_ALUResult = 1'b1;
+                amo_temp_write_operation = 1'b1;
             end
             S27: begin
                 // mem addr
@@ -625,7 +624,7 @@ module main_fsm (
             S28: begin
                 // mem write
                 MemWrite = 1'b1;
-                amo_alu_op = !is_amoswap_w;
+                select_amo_temp = 1'b1;
                 ResultSrc = `RESULT_AMO_TEMP_ADDR;
                 AdrSrc    = `ADDR_RESULT;
                 mem_valid = 1'b1;

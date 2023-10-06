@@ -37,7 +37,7 @@ module register_file #(
     localparam X2 = 2;
     initial begin
         bank0[10] = 'h00;  // hartid
-        bank0[11] = 32'h80_000_000 + ((1024*1024*32)-2048);// 32'h81fffa00;  // dtb
+        bank0[11] = 32'h80_000_000 + ((1024 * 1024 * 32) - 2048);  // 32'h81fffa00;  // dtb
     end
 
 

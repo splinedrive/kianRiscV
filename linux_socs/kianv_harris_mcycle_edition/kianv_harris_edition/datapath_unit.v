@@ -53,14 +53,14 @@ module datapath_unit #(
         input wire ALUOutWrite,
 
         // AMO
-        input  wire amo_tmp_write,
-        input  wire amo_set_load_reserved_state,
-        input  wire amo_intermediate_data,
-        input  wire amo_intermediate_addr,
-        output wire amo_load_reserved_state,
-        input  wire Aluout_or_amo_rd_wr_mux,
-        input  wire AMOWb_en,
-        input  wire amo_alu_op,
+        input  wire amo_temp_write_operation,
+        input  wire amo_set_reserved_state_load,
+        input  wire amo_buffered_data,
+        input  wire amo_buffered_address,
+        output wire amo_reserved_state_load,
+        input  wire muxed_Aluout_or_amo_rd_wr,
+        input  wire select_ALUResult,
+        input  wire select_amo_temp,
 
 
         // 32-bit instruction input
@@ -75,8 +75,8 @@ module datapath_unit #(
         input  wire        div_valid,
         output wire        div_ready,
         output wire [31:0] ProgCounter,
-        output wire unaligned_access_load,
-        output wire unaligned_access_store,
+        output wire        unaligned_access_load,
+        output wire        unaligned_access_store,
 
         // Exception Handler
         input wire exception_event,
@@ -145,11 +145,11 @@ module datapath_unit #(
     assign PCNext      = Result;
 
     // AMO
-    wire [31:0] amo_temp_data;
+    wire [31:0] amo_temporary_data;
     wire [31:0] alu_out_or_amo_scw;
     wire [31:0] DataLatched_or_AMOtempData;
-    wire [31:0] amo_A2_temp_data_mux;
-    wire [31:0] Data_ALUResult_mux;
+    wire [31:0] muxed_A2_data;
+    wire [31:0] muxed_Data_ALUResult;
 
     // CSR exception handler
     wire [11:0] CSRAddr;
@@ -167,8 +167,8 @@ module datapath_unit #(
 
     mux2 #(32) DataLatched_or_AMOtempData_i (
              DataLatched,
-             amo_temp_data,
-             amo_alu_op,
+             amo_temporary_data,
+             select_amo_temp,
              DataLatched_or_AMOtempData
          );
 
@@ -178,7 +178,7 @@ module datapath_unit #(
              ALUResult,
              MULExtResultOut,
              CSRDataOut,
-             amo_intermediate_addr_value,
+             amo_buffer_addr_value,
              ResultSrc,
              Result
          );
@@ -208,21 +208,21 @@ module datapath_unit #(
             Instr
         );
 
-    wire [31:0] amo_intermediate_addr_value;
-    dff #(32) amo_intermediate_addr_I (
+    wire [31:0] amo_buffer_addr_value;
+    dff #(32) amo_buffered_addr_I (
             .resetn(resetn),
             .clk(clk),
             .d(ALUResult),
-            .en(amo_intermediate_addr),
-            .q(amo_intermediate_addr_value)
+            .en(amo_buffered_address),
+            .q(amo_buffer_addr_value)
         );
 
-    dff #(1) amo_load_reserved_state_I (
+    dff #(1) amo_reserved_state_load_I (
             .resetn(resetn),
             .clk(clk),
-            .d(amo_intermediate_data),
-            .en(amo_set_load_reserved_state),
-            .q(amo_load_reserved_state)
+            .d(amo_buffered_data),
+            .en(amo_set_reserved_state_load),
+            .q(amo_reserved_state_load)
         );
 
     dff #(32, RESET_ADDR) OldPC_I (
@@ -243,8 +243,8 @@ module datapath_unit #(
 
     mux2 #(32) Aluout_or_atomic_scw_I (
              ALUOut,
-             {{31{1'b0}}, amo_intermediate_data},
-             Aluout_or_amo_rd_wr_mux,
+             {{31{1'b0}}, amo_buffered_data},
+             muxed_Aluout_or_amo_rd_wr,
              alu_out_or_amo_scw
          );
 
@@ -291,17 +291,17 @@ module datapath_unit #(
                ImmExt
            );
 
-    mux2 #(32) amo_A2_temp_data_mux_I (
+    mux2 #(32) muxed_A2_data_I (
              A2,
-             amo_temp_data,
-             amo_alu_op,
-             amo_A2_temp_data_mux
+             amo_temporary_data,
+             select_amo_temp,
+             muxed_A2_data
          );
 
     store_alignment store_alignment_I (
                         mem_addr[1:0],
                         STOREop,
-                        amo_A2_temp_data_mux,
+                        muxed_A2_data,
                         mem_wdata,
                         wmask,
                         unaligned_access_store
@@ -315,26 +315,27 @@ module datapath_unit #(
                        unaligned_access_load
                    );
 
-    mux2 #(32) Data_ALUResult_mux_I (
+    mux2 #(32) muxed_Data_ALUResult_I (
              Data,
              ALUResult,
-             AMOWb_en,
-             Data_ALUResult_mux
+             select_ALUResult,
+             muxed_Data_ALUResult
          );
 
     dff #(32) AMOTmpData_I (
             resetn,
             clk,
-            amo_tmp_write,
-            Data_ALUResult_mux,
-            amo_temp_data
+            amo_temp_write_operation,
+            muxed_Data_ALUResult,
+            amo_temporary_data
         );
 
-    mux4 #(32) SrcA_I (
+    mux5 #(32) SrcA_I (
              PC,
              OldPC,
              A1  /* Rd1 */,
-             amo_temp_data,
+             amo_temporary_data,
+             32'd0,
              ALUSrcA,
              SrcA
          );
@@ -408,11 +409,11 @@ module datapath_unit #(
                               .exception_next_pc(exception_next_pc),
                               .exception_select (exception_select),
                               .csr_access_fault (csr_access_fault),
-                              .mie     (mie    ),
-                              .mip     (mip    ),
-                              .mstatus (mstatus),
-                              .IRQ3    (IRQ3),
-                              .IRQ7    (IRQ7)
+                              .mie              (mie),
+                              .mip              (mip),
+                              .mstatus          (mstatus),
+                              .IRQ3             (IRQ3),
+                              .IRQ7             (IRQ7)
                           );
 
 endmodule

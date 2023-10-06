@@ -31,7 +31,7 @@ module store_alignment (
 
     always @* begin
         unaligned_access = 1'b0;
-        wmask  = 0;
+        wmask = 0;
         result = 'hx;
 
         case (STOREop)
@@ -46,19 +46,19 @@ module store_alignment (
                 unaligned_access = 1'b0;
             end
             (`STORE_OP_SH): begin
-                result[15:0]  = ~addr[1] ? data[15:0] : 16'hx;
-                result[31:16] = addr[1] ? data[15:0] : 16'hx;
-                wmask         = addr[1] ? 4'b1100 : 4'b0011;
+                result[15:0]     = ~addr[1] ? data[15:0] : 16'hx;
+                result[31:16]    = addr[1] ? data[15:0] : 16'hx;
+                wmask            = addr[1] ? 4'b1100 : 4'b0011;
                 unaligned_access = addr[0];
             end
             (`STORE_OP_SW): begin
                 result = data;
-                wmask  = 4'b1111;
+                wmask = 4'b1111;
                 unaligned_access = addr[1:0] != 2'b00;
             end
             default: begin
                 result = 'hx;
-                wmask  = 4'b0000;
+                wmask = 4'b0000;
                 unaligned_access = 1'b0;
             end
         endcase

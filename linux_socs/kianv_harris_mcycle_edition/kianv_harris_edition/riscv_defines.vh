@@ -33,7 +33,8 @@
 `define SRCA_OLD_PC 1
 `define SRCA_RD1_BUF 2
 `define SRCA_AMO_TEMP_DATA 3
-`define SRCA_LAST 4
+`define SRCA_CONST_0 4
+`define SRCA_LAST 5
 
 // mux SRCB
 `define SRCB_WIDTH $clog2(`SRCB_LAST)

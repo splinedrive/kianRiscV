@@ -126,6 +126,8 @@ module top_tb;
                                 .mem_addr (mem_addr),
                                 .mem_wdata(mem_wdata),
                                 .mem_rdata(mem_rdata),
+				.access_fault(1'b0),
+                                .IRQ3     (1'b0),
                                 .IRQ7     (1'b0),
                                 .PC       ()
                             );
