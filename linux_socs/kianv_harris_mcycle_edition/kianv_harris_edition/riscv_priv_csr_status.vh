@@ -55,10 +55,10 @@
 `define MSTATUS_MPRV_MASK (1 << `MSTATUS_MPRV_BIT)
 
 `define GET_MIE_MTIP(mie) ((mie >> `MIE_MTIP_BIT) & 1)
-`define GET_MIE_MSIP(mie) ((mie >> `MIE_MTIP_BIT) & 1)
+`define GET_MIE_MSIP(mie) ((mie >> `MIE_MSIP_BIT) & 1)
 
-`define GET_MIP_MSIP(mip)  ((mip) >> `MIP_MSIP_BIT) & 1'b1
 `define GET_MIP_MTIP(mip)  ((mip) >> `MIP_MTIP_BIT) & 1'b1
+`define GET_MIP_MSIP(mip)  ((mip) >> `MIP_MSIP_BIT) & 1'b1
 `define SET_MIP_MSIP(mip, value)  ((mip) & ~(1 << `MIP_MSIP_BIT)) | ((value) << `MIP_MSIP_BIT)
 `define SET_MIP_MTIP(mip, value)  ((mip) & ~(1 << `MIP_MTIP_BIT)) | ((value) << `MIP_MTIP_BIT)
 `define SET_MIP_MEIP(mip, value)  ((mip) & ~(1 << `MIP_MEIP_BIT)) | ((value) << `MIP_MEIP_BIT)
