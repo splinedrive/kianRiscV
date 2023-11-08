@@ -103,19 +103,26 @@ module datapath_unit #(
 
     wire [31:0] WD3;
 
-    register_file #(
-                      .REGISTER_DEPTH(RV32E ? 16 : 32),
-                      .STACKADDR(STACKADDR)
-                  ) register_file_I (
-                      .clk(clk),
-                      .we (RegWrite),
-                      .A1 (Rs1),
-                      .A2 (Rs2),
-                      .A3 (Rd),
-                      .rd1(Rd1),
-                      .rd2(Rd2),
-                      .wd (WD3)
-                  );
+  // https://www.reddit.com/r/GowinFPGA/comments/155jehq/have_i_discovered_a_synthesisrouting_defect_with/
+  // workarround by https://www.reddit.com/user/laiudm/
+  generate
+    genvar i;
+    for (i = 0; i < 2; i = i + 1) begin : gen_register_file
+      register_file #(
+          .REGISTER_DEPTH(RV32E ? 16 : 32),
+          .REGISTER_WIDTH(16)
+      ) register_file_I (
+          .clk(clk),
+          .we (RegWrite),
+          .A1 (Rs1),
+          .A2 (Rs2),
+          .A3 (Rd),
+          .rd1(Rd1[i*16+:16]),
+          .rd2(Rd2[i*16+:16]),
+          .wd (WD3[i*16+:16])
+      );
+    end
+  endgenerate
 
     wire [31:0] ImmExt;
     wire [31:0] PC, OldPC;
