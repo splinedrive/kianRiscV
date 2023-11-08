@@ -192,7 +192,7 @@ module datapath_unit #(
              pc_or_exception_next
          );
 
-    dff #(32, RESET_ADDR) PC_I (
+    dff_kianv #(32, RESET_ADDR) PC_I (
             resetn,
             clk,
             PCWrite,
@@ -200,7 +200,7 @@ module datapath_unit #(
             PC
         );
 
-    dff #(32, `NOP_INSTR) Instr_I (
+    dff_kianv #(32, `NOP_INSTR) Instr_I (
             resetn,
             clk,
             fetched_instr,
@@ -209,7 +209,7 @@ module datapath_unit #(
         );
 
     wire [31:0] amo_buffer_addr_value;
-    dff #(32) amo_buffered_addr_I (
+    dff_kianv #(32) amo_buffered_addr_I (
             .resetn(resetn),
             .clk(clk),
             .d(ALUResult),
@@ -217,7 +217,7 @@ module datapath_unit #(
             .q(amo_buffer_addr_value)
         );
 
-    dff #(1) amo_reserved_state_load_I (
+    dff_kianv #(1) amo_reserved_state_load_I (
             .resetn(resetn),
             .clk(clk),
             .d(amo_buffered_data),
@@ -225,7 +225,7 @@ module datapath_unit #(
             .q(amo_reserved_state_load)
         );
 
-    dff #(32, RESET_ADDR) OldPC_I (
+    dff_kianv #(32, RESET_ADDR) OldPC_I (
             resetn,
             clk,
             fetched_instr,
@@ -233,7 +233,7 @@ module datapath_unit #(
             OldPC
         );
 
-    dff #(32) ALUOut_I (
+    dff_kianv #(32) ALUOut_I (
             resetn,
             clk,
             ALUOutWrite,
@@ -248,38 +248,38 @@ module datapath_unit #(
              alu_out_or_amo_scw
          );
 
-    dlatch #(2) ADDR_I (
+    dlatch_kianv #(2) ADDR_I (
                clk,
                mem_addr[1:0],
                mem_addr_align_latch
            );
 
-    dlatch #(32) A1_I (
+    dlatch_kianv #(32) A1_I (
                clk,
                Rd1,
                A1
            );
 
-    dlatch #(32) A2_I (
+    dlatch_kianv #(32) A2_I (
                clk,
                Rd2,
                A2
            );
 
-    // todo: data, csrdata, mulex could be stored in one dlatch
-    dlatch #(32) Data_I (
+    // todo: data, csrdata, mulex could be stored in one dlatch_kianv
+    dlatch_kianv #(32) Data_I (
                clk,
                Data,
                DataLatched
            );
 
-    dlatch #(32) CSROut_I (
+    dlatch_kianv #(32) CSROut_I (
                clk,
                CSRData,
                CSRDataOut
            );
 
-    dlatch #(32) MULExtResultOut_I (
+    dlatch_kianv #(32) MULExtResultOut_I (
                clk,
                MULExtResult,
                MULExtResultOut
@@ -322,7 +322,7 @@ module datapath_unit #(
              muxed_Data_ALUResult
          );
 
-    dff #(32) AMOTmpData_I (
+    dff_kianv #(32) AMOTmpData_I (
             resetn,
             clk,
             amo_temp_write_operation,

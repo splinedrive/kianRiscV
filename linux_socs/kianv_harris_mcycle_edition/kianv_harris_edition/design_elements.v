@@ -112,7 +112,7 @@ module mux6 #(
 
 endmodule
 
-module dlatch #(
+module dlatch_kianv #(
         parameter WIDTH = 32
     ) (
         input wire clk,
@@ -122,7 +122,7 @@ module dlatch #(
     always @(posedge clk) q <= d;
 endmodule
 
-module dff #(
+module dff_kianv #(
         parameter WIDTH  = 32,
         parameter PRESET = 0
     ) (
