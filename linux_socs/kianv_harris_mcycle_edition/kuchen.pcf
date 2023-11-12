@@ -1,0 +1,120 @@
+# Kuchen V0
+# ---------
+
+#set_io CLK_48		F7
+set_io clk_osc		F7
+set_frequency net 25
+
+#set_io LED			C13
+set_io led_board			C13
+
+# PMOD A
+#set_io PMOD_A1		F5
+#set_io PMOD_A2		E4
+#set_io PMOD_A3		E2
+#set_io PMOD_A4		B2
+#set_io PMOD_A7		F4
+#set_io PMOD_A8		E3
+#set_io PMOD_A9		C1
+#set_io PMOD_A10	B1
+
+set_io led[0] 	F5
+set_io led[1] 	E4
+set_io led[2] 	E2
+set_io led[3] 	B2
+set_io led[4] 	F4
+set_io led[5] 	E3
+set_io led[6] 	C1
+set_io led[7]	  B1
+
+# PMODB
+#set_io PMOD_B1		B13
+#set_io PMOD_B2		C11
+#set_io PMOD_B3		D11
+#set_io PMOD_B4		B15
+#set_io PMOD_B7		B11
+#set_io PMOD_B8		B12
+#set_io PMOD_B9		A15
+#set_io PMOD_B10	A16
+
+# USB-UART on PMODB
+#set_io UART0_RTS  B13
+#set_io UART0_RX   C11
+#set_io UART0_TX   D11
+#set_io UART0_CTS  B15
+#set_io UART0_RTS  B13
+set_io uart_tx   C11
+set_io uart_rx   D11
+#set_io UART0_CTS  B15
+
+# SDRAM
+set_io sdram_dq[0]	R15
+set_io sdram_dq[1]	P15
+set_io sdram_dq[2]	P16
+set_io sdram_dq[3]	N16
+set_io sdram_dq[4]	M15
+set_io sdram_dq[5]	M16
+set_io sdram_dq[6]	L16
+set_io sdram_dq[7]	K14
+set_io sdram_dq[8]	G15
+set_io sdram_dq[9]	F16
+set_io sdram_dq[10]	F15
+set_io sdram_dq[11]	E16
+set_io sdram_dq[12]	D16
+set_io sdram_dq[13]	D15
+set_io sdram_dq[14]	C16
+set_io sdram_dq[15]	B16
+set_io sdram_dqm[0]	K16
+set_io sdram_dqm[1]	G16
+set_io sdram_cke	D14
+set_io sdram_clk	J15
+set_io sdram_casn	K15
+set_io sdram_rasn	J16
+set_io sdram_csn		M14
+set_io sdram_wen		L14
+set_io sdram_ba[0]	M11
+set_io sdram_ba[1]	N12
+set_io sdram_addr[0]		L13
+set_io sdram_addr[1]		L12
+set_io sdram_addr[2]		K12
+set_io sdram_addr[3]		J11
+set_io sdram_addr[4]		H13
+set_io sdram_addr[5]		H14
+set_io sdram_addr[6]		G13
+set_io sdram_addr[7]		F13
+set_io sdram_addr[8]		F14
+set_io sdram_addr[9]		E13
+set_io sdram_addr[10]	M13
+set_io sdram_addr[11]	E14
+set_io sdram_addr[12]	F12
+
+# DDMI
+set_io DDMI_D0_N	T10
+set_io DDMI_D1_N	T13
+set_io DDMI_D2_N	T15
+set_io DDMI_CK_N	T8
+set_io DDMI_D0_P	T11
+set_io DDMI_D1_P	T14
+set_io DDMI_D2_P	T16
+set_io DDMI_CK_P	T9
+
+# MicroSD
+set_io SD_SS	C5
+set_io SD_MISO	A2
+set_io SD_MOSI	C4
+set_io SD_SCK	A1
+
+# USB-C DEVICE
+set_io USB_DN		T1
+set_io USB_DP		T2
+set_io USB_DP_PU	T3
+
+# USB-A HOST
+set_io USBH_DN		H1
+set_io USBH_DP		J1
+
+# CONFIG SPI
+set_io  flash_csn	R12
+set_io  flash_sclk	 R11
+set_io  flash_miso	 P11	# CSPI_SI
+set_io  flash_mosi	 P12	# CSPI_SO
