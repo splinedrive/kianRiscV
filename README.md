@@ -13,6 +13,16 @@ It provided invaluable insights into **logical design** thinking.
 
 <img src="./certificates.png" width="80%" height="80%"/>
 
+Quick start
+===========
+
+```
+curl -sL https://tinyurl.com/4cbt7um7 | openFPGALoader  --board=tangnano20k --file-type ext --external-flash -f && picocom -b 2000000 /dev/ttyUSB1
+```
+
+You need to have **openFPGALoader** installed either from [source](https://github.com/trabucayre/openFPGALoader) or [prebuilt](https://github.com/YosysHQ/oss-cad-suite-build/releases)
+
+
 Linux SOC
 =========
 ```
