@@ -193,18 +193,18 @@ module csr_exception_handler #(
     end
 
     function [31:0] calculate_exception_pc;
-        input [2:0] mode;
+        input [1:0] mode;
         input [31:0] base_addr;
-        input [31:0] cause;
+        input [31:0] cause_;
 
         begin
             case (mode)
-                3'b000: // Direct mode
+                2'b00: // Direct mode
                     calculate_exception_pc = base_addr;
-                3'b001: // Reserved mode (treated as direct mode in this example)
+                2'b01: // Reserved mode (treated as direct mode in this example)
                     calculate_exception_pc = base_addr;
-                3'b010: // Vectored mode
-                    calculate_exception_pc = base_addr + (cause << 2); // fixme alu
+                2'b10: // Vectored mode
+                    calculate_exception_pc = base_addr + (cause_ << 2); // fixme alu
                 default: // Invalid mode value, handle the exception
                     // exception_controller(MCAUSE_ILLEGAL_INSTRUCTION, PC, csr_stvec);
                     calculate_exception_pc = base_addr;
@@ -266,7 +266,7 @@ module csr_exception_handler #(
             privilege_mode_nxt = `PRIVILEGE_MODE_MACHINE;
             mepc_nxt = pc;
             mcause_nxt = cause;// == `EXC_ECALL_FROM_UMODE ? {cause[31:2], privilege_mode} : cause;
-            exception_next_pc_nxt = calculate_exception_pc(mtvec[2:0], mtvec, mcause_nxt);
+            exception_next_pc_nxt = calculate_exception_pc(mtvec[1:0], {mtvec[31:2], 2'b0}, cause);
             mtval_nxt = &badaddr ? pc : badaddr; // if ~0 then pc
             exception_select_nxt = 1'b1;
 
