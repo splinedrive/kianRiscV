@@ -28,6 +28,8 @@
 #include <termios.h>
 #include <unistd.h>
 
+extern int fileno(FILE *stream);
+
 #define SB(offset, data) *(uint8_t *)(memory + offset) = data
 #define SH(offset, data) *(uint16_t *)(memory + offset) = data
 #define SW(offset, data) *(uint32_t *)(memory + offset) = data
@@ -181,7 +183,7 @@ void execute(uint32_t instr) {
   bool is_lui = false;
   bool is_auipc = false;
   bool is_system = false;
-  bool is_illegal = false;
+  __attribute__((unused)) bool is_illegal = false;
 
   AluOp_t aluOp;
   switch (op) {
@@ -245,7 +247,7 @@ void execute(uint32_t instr) {
   uint32_t immext;
   uint32_t msb;
   uint32_t extend;
-  uint32_t aluop;
+  __attribute__((unused)) uint32_t aluop;
   switch (ImmSrc) {
   case (ITYPE):
     msb = GetBit(instr, 31);
@@ -497,7 +499,7 @@ void execute(uint32_t instr) {
       RegisterFile[rd] = result;
     }
   }
-  PC = is_jal || (is_branch && !zero) ? PC += immext
+  PC = is_jal || (is_branch && !zero) ? PC + immext
        : is_jalr                      ? RegisterFile[rs1] + immext
                                       : PC + 4;
 }
@@ -512,6 +514,8 @@ void LoadFirmware(char *firmware) {
 }
 
 int main(int argc, char **argv) {
+  (void)argc;
+  (void)argv;
   atexit(ResetKeyboardTerm);
   SetKeyboardTerm();
   memory = malloc(MEM_SIZE);
