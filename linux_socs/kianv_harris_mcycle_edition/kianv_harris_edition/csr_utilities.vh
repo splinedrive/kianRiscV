@@ -44,6 +44,7 @@
 
 `define CSR_REG_MHARTID 12'h f14
 `define CSR_REG_MVENDORID 12'h f11
+`define CSR_REG_MARCHID 12'h f12
 
 // Machine-Level CSRs
 // custrom read-only

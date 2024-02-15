@@ -183,7 +183,8 @@ module csr_exception_handler #(
                 `CSR_REG_MIP:       rdata = mip;
                 //              'CSR_REG_MCOUNTEREN: rdata = mcounteren;
                 `CSR_REG_MHARTID:   rdata = 32'b0;
-                `CSR_REG_MVENDORID: rdata = 32'h6b69616e;
+                `CSR_REG_MVENDORID: rdata = 32'h0;
+                `CSR_REG_MARCHID:   rdata = 32'h2b;
                 default:            rdata = 32'b0;
                 // fixme exception
             endcase
