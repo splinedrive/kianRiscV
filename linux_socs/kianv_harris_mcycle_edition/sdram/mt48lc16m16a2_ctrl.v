@@ -256,7 +256,7 @@ module mt48lc16m16a2_ctrl #(
           saddr_nxt       = {addr[24:23], addr[20:10]};
           wait_states_nxt = TRCD;
           ret_state_nxt   = |wmask ? COL_WRITEL : COL_READ;
-          update_ready_nxt = 1'b0;
+          update_ready_nxt = 1'b1;
           state_nxt       = WAIT_STATE;
         end else begin
           /* autorefresh */
@@ -338,7 +338,7 @@ module mt48lc16m16a2_ctrl #(
         wait_states_nxt = wait_states - 1;
         if (wait_states == 1) begin
           state_nxt = ret_state;
-          if (update_ready) begin
+          if (ret_state == IDLE && update_ready) begin
             update_ready_nxt = 1'b0;
             ready_nxt = 1'b1;
           end
