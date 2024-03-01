@@ -13,16 +13,6 @@ It provided invaluable insights into **logical design** thinking.
 
 <img src="./certificates.png" width="80%" height="80%"/>
 
-Quick start
-===========
-
-```
-curl -sL https://tinyurl.com/4cbt7um7 | openFPGALoader  --board=tangnano20k --file-type ext --external-flash -f && picocom -b 2000000 /dev/ttyUSB1
-```
-
-You need to have **openFPGALoader** installed either from [source](https://github.com/trabucayre/openFPGALoader) or [prebuilt](https://github.com/YosysHQ/oss-cad-suite-build/releases)
-
-
 Linux SOC
 =========
 ```
@@ -32,6 +22,8 @@ Linux SOC
 |__|\__|__||___._|__|__| \_____/|_______|__||__|__|_____|__.__|
 ```
 ## KianV RISC-V Linux: Booting Linux like never before!
+If you're interested in trying out the latest binaries for my KianV RV32IMA Zicntr Linux SoC, complete with virtual memory support, check out the link here:
+[KianV SV32 RV32IMA Zicntr.](https://github.com/splinedrive/kianRiscV/tree/master/linux_socs/kianv_mc_rv32ima_sv32).
 
 With KianV RISC-V Linux, booting Linux is not just possible, it's exhilarating. That's right! If you've ever wanted to experience Linux booting in a whole new light, this is your chance.
 🔗 Dive deep into the [implementation details here](https://github.com/splinedrive/kianRiscV/blob/master/linux_socs/kianv_harris_mcycle_edition/README.md).
