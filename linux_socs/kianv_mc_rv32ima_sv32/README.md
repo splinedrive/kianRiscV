@@ -72,14 +72,18 @@ the next Linux SoCs, such as pipelining, larger cache block sizes, DDR RAM with
 burst, etc., with the goal of running Debian and GCC on Debian.
 
 Installation SD Card:
+---------------------
+Please use very good SD cards. I'm overclocking the SPI bus to 35MHz.
 ```
 zcat sv32_kianv_sd_x.img.gz | dd of=/dev/sdaX status=progress
 ```
 FPGA Bitstream:
+---------------
 ```
 openFPGALoader -f --board=ulx3s soc_x.bit Bootloader:
 ```
 bootloader:
+-----------
 ```
 ftdiflash -o 1048576 bootloader.bin
 ```
