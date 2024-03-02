@@ -1,9 +1,8 @@
 KianV RV32IMA SV32 zicntr ULX3S Linux SoC Demo
 ==============================================
 
-I'm offering two demo images for the UL3XS FPGA with an 85F variant, designed
-to operate at 55MHz and 70MHz. This design is also synthesizable for 25k logic
-elements, and theoretically for 12k by reducing BRAM size. These are just
+I'm offering demo images for the UL3XS FPGA with an 12F, 25F, 45F and 85F variant, designed
+to operate at 55MHz, 65MHz and 70MHz. These are just
 demos, but there's room for optimization to extract a few more clock cycles.
 The images come with the latest kernel version 6.6.8 and support for the
 following PMODs (refer to the photo): GPIO (input, output), Network PMOD
