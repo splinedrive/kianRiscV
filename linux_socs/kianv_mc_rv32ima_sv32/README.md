@@ -91,6 +91,7 @@ In this photo, you can see the ULX3S along with all the PMODs that are
 supported both on the hardware and kernel side. It's also possible to operate
 the SoC without these PMODs using the same image, though it might be less fun.
 However, listening to audio and experimenting is still enjoyable.
+![kianV RV32IMA zicntr SV32](console.png "KianV RV32IMA zicntr SV32")
 ![kianV RV32IMA zicntr SV32](kianv_sv32_rv32ima_zicntr.jpg "KianV RV32IMA zicntr SV32")
 
 
