@@ -1,0 +1,13 @@
+diff --git a/arch/riscv/kernel/cpufeature.c b/arch/riscv/kernel/cpufeature.c
+index 1cfbba65d..5535a2c00 100644
+--- a/arch/riscv/kernel/cpufeature.c
++++ b/arch/riscv/kernel/cpufeature.c
+@@ -647,7 +647,7 @@ void check_unaligned_access(int cpu)
+ 
+ static int check_unaligned_access_boot_cpu(void)
+ {
+-	check_unaligned_access(0);
++	//check_unaligned_access(0);
+ 	return 0;
+ }
+ 

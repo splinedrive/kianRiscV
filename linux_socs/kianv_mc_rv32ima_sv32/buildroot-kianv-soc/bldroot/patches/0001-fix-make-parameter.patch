@@ -1,0 +1,25 @@
+From 6d7883b50926c91c6fdf24615b124e2fdbf0372b Mon Sep 17 00:00:00 2001
+From: Hirosh Dabui <hirosh@dabui.de>
+Date: Sun, 17 Mar 2024 12:47:24 +0100
+Subject: [PATCH] fix make parameter
+
+---
+ boot/opensbi/opensbi.mk | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/boot/opensbi/opensbi.mk b/boot/opensbi/opensbi.mk
+index dd113a0b..303fd4df 100644
+--- a/boot/opensbi/opensbi.mk
++++ b/boot/opensbi/opensbi.mk
+@@ -53,7 +53,7 @@ endif
+ endif
+ 
+ define OPENSBI_BUILD_CMDS
+-	$(TARGET_MAKE_ENV) $(OPENSBI_MAKE_ENV) $(MAKE) -C $(@D)
++	$(TARGET_MAKE_ENV) $(MAKE) $(OPENSBI_MAKE_ENV) -C $(@D)
+ endef
+ 
+ ifeq ($(BR2_TARGET_OPENSBI_INSTALL_DYNAMIC_IMG),y)
+-- 
+2.40.1
+

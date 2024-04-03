@@ -1,0 +1,260 @@
+/dts-v1/;
+
+/ {
+	#address-cells = <0x01>;
+	#size-cells = <0x01>;
+
+  /*
+	chosen {
+		//bootargs = "earlycon=uart8250,mmio,0x10000000,3000000 console=ttyS0 debug";
+		//bootargs = "mem=32M@0x40000000 rootwait console=nitrouart earlycon=sbi ubi.mtd=5 root=ubi0:rootfs rootfstype=ubifs init=/sbin/init swiotlb=32";
+		//bootargs = "mem=32M@0x80000000 rootwait earlycon=sbi debug";
+    // bootargs = "mem=32M@0x80000000 earlycon=sbi debug console=ttyS0 debug";
+
+	};
+  */
+    chosen {
+        //bootargs = "console=ttyS0 earlycon=sbi debug";
+        ///bootargs = "earlycon=sbi debug console=ttyS0 memtest=0 root=/dev/mmcblk0p2 rootwait rootfstype=ext2 debug splash fbcon=map:0";
+        //bootargs = "earlycon=sbi debug fbcon=map:0 root=/dev/mmcblk0p2 rootwait rootfstype=ext2";
+        bootargs = "earlycon=sbi debug console=ttyS0 memtest=0 root=/dev/mmcblk0p2 rootwait rootfstype=ext2 debug";
+
+        //bootargs = "mem=28M console=hvc0 earlyprintk=sbi earlycon=sbi debug";
+        //linux,stdout-path = "uart0:3000000";
+//		bootargs = "earlycon=sbi";
+    };
+    /*
+  memory@80000000 {
+      device_type = "memory";
+      reg = <0x80000000 0x1e00000>;
+  };
+  */
+
+	memory@80000000 {
+		device_type = "memory";
+//    reg = <0x00 0x80000000 0x00 0x1f00000>;
+      reg = <0x80000000 (1024*1024*32)>;
+	};
+
+	cpus {
+		#address-cells = <0x01>;
+		#size-cells = <0x00>;
+		timebase-frequency = <1000000>;
+		//timebase-frequency = <1000>;
+
+		cpu@0 {
+			phandle = <0x01>;
+			device_type = "cpu";
+			reg = <0x00>;
+			status = "okay";
+			compatible = "kianv","riscv";
+			riscv,isa = "rv32ima";
+			mmu-type = "riscv,sv32";
+			uarch = "KianV,sv32";
+
+			interrupt-controller {
+				#interrupt-cells = <0x01>;
+				interrupt-controller;
+				compatible = "riscv,cpu-intc";
+				phandle = <0x02>;
+			};
+		};
+
+		cpu-map {
+
+			cluster0 {
+
+				core0 {
+					cpu = <0x01>;
+				};
+			};
+		};
+	};
+
+	soc {
+		#address-cells = <0x01>;
+		#size-cells = <0x01>;
+		compatible = "simple-bus";
+		ranges;
+
+    uart0: uart@10000000 {
+      device_type = "serial";
+			clock-frequency = <0x1000000>;
+			reg = <0x10000000 0x100>;
+			compatible = "ns16850";
+      status = "okay";
+		};
+
+    uart1: uart@10000100 {
+      device_type = "serial";
+			clock-frequency = <0x1000000>;
+			reg = <0x10000100 0x100>;
+			compatible = "ns16850";
+      status = "okay";
+		};
+
+		poweroff {
+			value = <0x5555>;
+			offset = <0x00>;
+			regmap = <0x04>;
+			compatible = "syscon-poweroff";
+		};
+
+		reboot {
+			value = <0x7777>;
+			offset = <0x00>;
+			regmap = <0x04>;
+			compatible = "syscon-reboot";
+		};
+
+		syscon@11100000 {
+			phandle = <0x04>;
+			reg = <0x11100000 0x1000>;
+			compatible = "syscon";
+		};
+
+		clint@11000000 {
+			interrupts-extended = <0x02 0x03 0x02 0x07>;
+			reg = <0x11000000 0x10000>;
+			compatible = "sifive,clint0\0riscv,clint0";
+		};
+
+    kianvgpio: gpio@10000700 {
+      compatible = "kianV,kianv-gpio";
+      reg = <0x10000700 0x1000>;
+      gpio-controller;
+      #gpio-cells = <2>;
+			status = "okay";
+  };
+
+
+   kianVspi0: spi@10500000 {
+       compatible = "kianVfpga,kianVspi-simple";
+       reg = <0x10500000 0x100>;
+       status = "okay";
+       kianVfpga,num-cs = <1>;
+       kianVfpga,sck-frequency = <0>; // sd card works only with small values
+       spi-cpha = <0>;
+       spi-cpol = <0>;
+
+       #address-cells = <1>;
+       #size-cells    = <0>;
+
+ //    flash: flash@0 {
+ //      compatible = "spi-nor";
+ //      reg = <0x0>;
+ //
+ //      #address-cells = <0x1>;
+ //      #size-cells    = <0x1>;
+ //      partition@0 {
+ //        label = "spi-nor-flash";
+ //        reg = <0x00000000 0x02000000>;
+ //      };
+ //    };
+
+         /*
+         partition@0 {
+           label = "fpga";
+           reg = <0x00000000 0x00020000>;
+         };
+
+         partition@20000 {
+           label = "bios";
+           reg = <0x00020000 0x00010000>;
+         };
+
+         partition@30000 {
+           label = "dt";
+           reg = <0x00030000 0x00010000>;
+         };
+
+         partition@40000 {
+           label = "kernel";
+           reg = <0x00040000 0x005c0000>;
+         };
+
+         partition@600000 {
+           label = "ubi";
+           reg = <0x00600000 0x00a00000>;
+         };
+        };
+        */
+
+ //      spidev0: spidev@0 {
+ //        //compatible = "linux,spidev";
+ //        compatible = "kianVfpga,kianVspi-simple";
+ //        reg = <0>;
+ //        spi-max-frequency = <15000000>;
+ //        status = "okay";
+ //       };
+
+       mmc-slot@0 {
+         compatible = "mmc-spi-slot";
+         //bus-width = <1>;
+         spi-max-frequency = <24000000>; /* 24 MHz max freq */
+         voltage-ranges = <3200 3400>; /* Voltage range in millivolts */
+         reg = <0>; /* Chip Select 0 */
+         status = "okay";
+         disable-wp;
+         non-removable;
+         no-sdio;
+         no-mmc;
+       };
+      };
+   };
+
+   kianVspi1: spi@10500100 {
+       compatible = "kianVfpga,kianVspi-simple2";
+       reg = <0x10500100 0x100>;
+       status = "okay";
+       kianVfpga,num-cs = <1>;
+       kianVfpga,sck-frequency = <0>; // sd card works only with small values
+       spi-cpha = <0>;
+       spi-cpol = <0>;
+
+       #address-cells = <1>;
+       #size-cells    = <0>;
+
+			eth0: encx24j600@0 {
+				compatible = "microchip,encx24j600";
+       #address-cells = <0x1>;
+       #size-cells    = <0x1>;
+				reg = <0>; /* CE0 */
+//				pinctrl-names = "default";
+//				pinctrl-0 = <&eth1_pins>;
+//				interrupt-parent = <&gpio>;
+//				interrupts = <25 0x2>; /* falling edge */
+				spi-max-frequency = <12000000>;
+				status = "okay";
+			};
+   };
+
+   kianVspi2: spi@10500200 {
+       compatible = "kianVfpga,kianVspi-simple3";
+       reg = <0x10500200 0x100>;
+       status = "okay";
+       kianVfpga,num-cs = <1>;
+       kianVfpga,sck-frequency = <0>; // sd card works only with small values
+       spi-cpha = <0>;
+       spi-cpol = <0>;
+
+       #address-cells = <1>;
+       #size-cells    = <0>;
+
+			display@0 {
+//rotate = <270>;
+        //bgr;
+        fps = <25>;
+        compatible = "solomon,ssd1331";
+        spi-max-frequency = <25000000>;
+        reg = <0>;
+        regwidth = <8>;
+        buswidth = <8>;
+        //verbose = <3>;
+        //debug = <7>;
+        status = "okay";
+        //reset-gpios = <&pioC 3 0>; /* PC3 - J4.33 */
+        //dc-gpios = <&pioC 4 0>;    /* PC4 - J4.31 */
+			};
+   };
+};

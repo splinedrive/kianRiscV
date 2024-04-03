@@ -1,0 +1,13 @@
+#! /bin/sh
+
+#mount -t devtmpfs devtmpfs /dev
+mkdir -p /dev/pts /dev/shm
+mount -a
+hostname $(cat /etc/hostname)
+export TZ=CET-1CEST,M3.5.0,M10.5.0/3
+ifconfig lo 127.0.0.1
+ifconfig eth0 192.168.2.89
+route add default gw 192.168.2.1
+echo "nameserver 192.168.2.1" > /etc/resolv.conf
+ntpdate 192.168.2.1 &
+telnetd

@@ -1,0 +1,1047 @@
+From dcd78e1bea81d59435180e7372605c2105f08e54 Mon Sep 17 00:00:00 2001
+From: Hirosh Dabui <hirosh@dabui.de>
+Date: Sat, 9 Mar 2024 22:30:35 +0100
+Subject: [PATCH] add kianv sv32 hack (proof of concept) kernel driver and
+ patches
+
+---
+ drivers/gpio/Kconfig                        |   8 ++
+ drivers/gpio/Makefile                       |   2 +
+ drivers/gpio/gpio-kianv.c                   | 124 ++++++++++++++++++
+ drivers/net/ethernet/microchip/encx24j600.c |  91 +++++++++++++
+ drivers/spi/Kconfig                         |   6 +
+ drivers/spi/Makefile                        |   3 +
+ drivers/spi/spi-kianV-simple.c              | 138 ++++++++++++++++++++
+ drivers/spi/spi-kianV-simple2.c             | 137 +++++++++++++++++++
+ drivers/spi/spi-kianV-simple3.c             | 137 +++++++++++++++++++
+ drivers/staging/fbtft/fb_ssd1331.c          |  38 +++++-
+ drivers/staging/fbtft/fbtft-core.c          |   4 +-
+ sound/Kconfig                               |   2 +
+ sound/Makefile                              |   3 +-
+ sound/kianv/Kconfig                         |   4 +
+ sound/kianv/Makefile                        |   1 +
+ sound/kianv/kianv-snd.c                     | 111 ++++++++++++++++
+ 16 files changed, 803 insertions(+), 6 deletions(-)
+ create mode 100644 drivers/gpio/gpio-kianv.c
+ create mode 100644 drivers/spi/spi-kianV-simple.c
+ create mode 100644 drivers/spi/spi-kianV-simple2.c
+ create mode 100644 drivers/spi/spi-kianV-simple3.c
+ create mode 100644 sound/kianv/Kconfig
+ create mode 100644 sound/kianv/Makefile
+ create mode 100644 sound/kianv/kianv-snd.c
+
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index 673bafb8b..3e834f2a7 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -740,6 +740,14 @@ config GPIO_XILINX
+ 	help
+ 	  Say yes here to support the Xilinx FPGA GPIO device.
+ 
++config GPIO_KIANV
++	tristate "KianV RISC-V GPIO support"
++	select GPIO_GENERIC
++	select GPIOLIB_IRQCHIP
++	depends on OF_GPIO
++	help
++	  Say yes here to support the KianV RISC-V FPGA GPIO device.
++
+ config GPIO_XLP
+ 	tristate "Cavium ThunderX2 GPIO support"
+ 	depends on ARCH_THUNDER2 || COMPILE_TEST
+diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+index eb73b5d63..56b140f54 100644
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -195,3 +195,5 @@ obj-$(CONFIG_GPIO_XTENSA)		+= gpio-xtensa.o
+ obj-$(CONFIG_GPIO_ZEVIO)		+= gpio-zevio.o
+ obj-$(CONFIG_GPIO_ZYNQ)			+= gpio-zynq.o
+ obj-$(CONFIG_GPIO_ZYNQMP_MODEPIN)	+= gpio-zynqmp-modepin.o
++obj-$(CONFIG_GPIO_KIANV)	+= gpio-kianv.o
++
+diff --git a/drivers/gpio/gpio-kianv.c b/drivers/gpio/gpio-kianv.c
+new file mode 100644
+index 000000000..d50a87711
+--- /dev/null
++++ b/drivers/gpio/gpio-kianv.c
+@@ -0,0 +1,124 @@
++/*
++ *  kianv.v - a simple RISC-V rv32ima
++ *
++ *  copyright (c) 2023 hirosh dabui <hirosh@dabui.de>
++ *
++ *  permission to use, copy, modify, and/or distribute this software for any
++ *  purpose with or without fee is hereby granted, provided that the above
++ *  copyright notice and this permission notice appear in all copies.
++ *
++ *  the software is provided "as is" and the author disclaims all warranties
++ *  with regard to this software including all implied warranties of
++ *  merchantability and fitness. in no event shall the author be liable for
++ *  any special, direct, indirect, or consequential damages or any damages
++ *  whatsoever resulting from loss of use, data or profits, whether in an
++ *  action of contract, negligence or other tortious action, arising out of
++ *  or in connection with the use or performance of this software.
++ *
++ */
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/io.h>
++#include <linux/gpio/driver.h>
++
++struct kianv_gpio {
++    void __iomem *base;
++    struct gpio_chip gc;
++};
++
++#define GPIO_DIR_OFFSET    0x00
++#define GPIO_OUTPUT_OFFSET 0x04
++#define GPIO_INPUT_OFFSET  0x08
++
++static int kianv_gpio_get(struct gpio_chip *gc, unsigned int offset)
++{
++    struct kianv_gpio *kv = gpiochip_get_data(gc);
++    return readl(kv->base + GPIO_INPUT_OFFSET) & (1 << offset);
++}
++
++static void kianv_gpio_set(struct gpio_chip *gc, unsigned int offset, int value)
++{
++    struct kianv_gpio *kv = gpiochip_get_data(gc);
++    u32 reg_val = readl(kv->base + GPIO_OUTPUT_OFFSET);
++
++    if (value)
++        reg_val |= (1 << offset);
++    else
++        reg_val &= ~(1 << offset);
++
++    writel(reg_val, kv->base + GPIO_OUTPUT_OFFSET);
++}
++
++static int kianv_gpio_dir_out(struct gpio_chip *gc, unsigned int offset, int value)
++{
++    struct kianv_gpio *kv = gpiochip_get_data(gc);
++    u32 reg_val = readl(kv->base + GPIO_DIR_OFFSET);
++    reg_val |= (1 << offset);
++    writel(reg_val, kv->base + GPIO_DIR_OFFSET);
++    kianv_gpio_set(gc, offset, value);
++    return 0;
++}
++
++static int kianv_gpio_dir_in(struct gpio_chip *gc, unsigned int offset)
++{
++    struct kianv_gpio *kv = gpiochip_get_data(gc);
++    u32 reg_val = readl(kv->base + GPIO_DIR_OFFSET);
++    reg_val &= ~(1 << offset);
++    writel(reg_val, kv->base + GPIO_DIR_OFFSET);
++    return 0;
++}
++
++static const struct gpio_chip kianv_chip = {
++    .label            = "kianv-gpio",
++    .get              = kianv_gpio_get,
++    .set              = kianv_gpio_set,
++    .direction_output = kianv_gpio_dir_out,
++    .direction_input  = kianv_gpio_dir_in,
++    .base             = -1,  // dynamically assigned
++    .ngpio            = 32,  // assuming 32 GPIOs; adjust as necessary
++    .owner            = THIS_MODULE,
++};
++
++static int kianv_gpio_probe(struct platform_device *pdev)
++{
++    struct kianv_gpio *kv;
++    struct resource *res;
++
++
++    kv = devm_kzalloc(&pdev->dev, sizeof(*kv), GFP_KERNEL);
++    if (!kv)
++        return -ENOMEM;
++
++    res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++    kv->base = devm_ioremap_resource(&pdev->dev, res);
++    if (IS_ERR(kv->base))
++        return PTR_ERR(kv->base);
++
++    kv->gc = kianv_chip;
++    kv->gc.parent = &pdev->dev;
++    platform_set_drvdata(pdev, kv);
++
++    dev_info(&pdev->dev, "Kianv GPIO driver probed successfully\n");
++    return gpiochip_add_data(&kv->gc, kv);
++}
++
++static const struct of_device_id kianv_gpio_of_match[] = {
++    { .compatible = "kianV,kianv-gpio", },
++    { /* sentinel */ }
++};
++MODULE_DEVICE_TABLE(of, kianv_gpio_of_match);
++
++static struct platform_driver kianv_gpio_driver = {
++    .driver = {
++        .name = "kianv-gpio",
++        .of_match_table = kianv_gpio_of_match,
++    },
++    .probe = kianv_gpio_probe,
++};
++module_platform_driver(kianv_gpio_driver);
++
++MODULE_AUTHOR("Hirosh Dabui <hirosh@dabui.de");
++MODULE_DESCRIPTION("KianV GPIO Driver");
++MODULE_LICENSE("GPL");
++
+diff --git a/drivers/net/ethernet/microchip/encx24j600.c b/drivers/net/ethernet/microchip/encx24j600.c
+index d7c8aa77e..d2d43e2cd 100644
+--- a/drivers/net/ethernet/microchip/encx24j600.c
++++ b/drivers/net/ethernet/microchip/encx24j600.c
+@@ -397,6 +397,7 @@ static void encx24j600_rx_packets(struct encx24j600_priv *priv, u8 packet_count)
+ 	}
+ }
+ 
++#if 0
+ static irqreturn_t encx24j600_isr(int irq, void *dev_id)
+ {
+ 	struct encx24j600_priv *priv = dev_id;
+@@ -445,6 +446,7 @@ static irqreturn_t encx24j600_isr(int irq, void *dev_id)
+ 
+ 	return IRQ_HANDLED;
+ }
++#endif
+ 
+ static int encx24j600_soft_reset(struct encx24j600_priv *priv)
+ {
+@@ -764,11 +766,91 @@ static int encx24j600_set_mac_address(struct net_device *dev, void *addr)
+ 	eth_hw_addr_set(dev, address->sa_data);
+ 	return encx24j600_set_hw_macaddr(dev);
+ }
++static struct task_struct *net_kianv_thread;
++static void __iomem *virt_addr;
++
++#define KIANV_GPIO_HW_ADDR 0x10000700
++
++// Initial sleep time in milliseconds
++#define INITIAL_SLEEP_TIME 50
++#define MIN_SLEEP_TIME 10
++#define MAX_SLEEP_TIME 200
++#define INCREMENT_SLEEP_TIME 10
++unsigned int sleep_ms = INCREMENT_SLEEP_TIME;
++static int net_kianv_thread_function(void *data) {
++    struct net_device *dev = data;
++    struct encx24j600_priv *priv = netdev_priv(dev);
++
++    virt_addr = ioremap(KIANV_GPIO_HW_ADDR, PAGE_SIZE);
++    if (!virt_addr) {
++        printk(KERN_ERR "Failed to map physical address\n");
++        return -1; // Can't proceed without mapping
++    }
++
++    while (1) {
++        u32 value;
++        value = readl(virt_addr + 0x08);
++        if (!((value >> 8) & 1)) {
++            int eir;
++
++            /* Clear interrupts */
++            encx24j600_cmd(priv, CLREIE);
++
++            eir = encx24j600_read_reg(priv, EIR);
++
++            if (eir & LINKIF)
++                encx24j600_int_link_handler(priv);
++
++            if (eir & TXIF)
++                encx24j600_tx_complete(priv, false);
++
++            if (eir & TXABTIF)
++                encx24j600_tx_complete(priv, true);
++
++            if (eir & RXABTIF) {
++                if (eir & PCFULIF) {
++                    /* Packet counter is full */
++                    netif_err(priv, rx_err, dev, "Packet counter full\n");
++                }
++                dev->stats.rx_dropped++;
++                encx24j600_clr_bits(priv, EIR, RXABTIF);
++            }
++
++            if (eir & PKTIF) {
++                u8 packet_count;
++
++                mutex_lock(&priv->lock);
++
++                packet_count = encx24j600_read_reg(priv, ESTAT) & 0xff;
++                while (packet_count) {
++                    encx24j600_rx_packets(priv, packet_count);
++                    packet_count = encx24j600_read_reg(priv, ESTAT) & 0xff;
++                }
++
++                mutex_unlock(&priv->lock);
++            }
++
++            /* Enable interrupts */
++            encx24j600_cmd(priv, SETEIE);
++
++            //sleep_ms = MIN_SLEEP_TIME;
++        } else {
++            //sleep_ms = min((sleep_ms + INCREMENT_SLEEP_TIME), MAX_SLEEP_TIME);
++        }
++        //msleep(sleep_ms);
++        msleep(20);
++    }
++
++    return 0;
++}
++
++
+ 
+ static int encx24j600_open(struct net_device *dev)
+ {
+ 	struct encx24j600_priv *priv = netdev_priv(dev);
+ 
++        /*
+ 	int ret = request_threaded_irq(priv->ctx.spi->irq, NULL, encx24j600_isr,
+ 				       IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+ 				       DRV_NAME, priv);
+@@ -777,12 +859,21 @@ static int encx24j600_open(struct net_device *dev)
+ 			   priv->ctx.spi->irq, ret);
+ 		return ret;
+ 	}
++        */
+ 
+ 	encx24j600_hw_disable(priv);
+ 	encx24j600_hw_init(priv);
+ 	encx24j600_hw_enable(priv);
+ 	netif_start_queue(dev);
+ 
++        printk(KERN_INFO "encx24j600: Creating thread\n");
++        net_kianv_thread = kthread_run(net_kianv_thread_function, dev, "net_kianv_thread");
++        if (net_kianv_thread) {
++            printk(KERN_INFO "Thread created successfully\n");
++        } else {
++            printk(KERN_ERR "Thread creation failed\n");
++        }
++
+ 	return 0;
+ }
+ 
+diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
+index bcbf840cd..9beba545a 100644
+--- a/drivers/spi/Kconfig
++++ b/drivers/spi/Kconfig
+@@ -650,6 +650,12 @@ config SPI_MICROCHIP_CORE_QSPI
+ 	  PolarFire SoC.
+ 	  If built as a module, it will be called spi-microchip-core-qspi.
+ 
++config SPI_KIANV_SPI_SIMPLE
++	tristate "KianV RISC-V FPGA SPI controller"
++	depends on SPI_MASTER
++	help
++	  This enables the QSPI driver for KianV SPI Simple controller
++
+ config SPI_MT65XX
+ 	tristate "MediaTek SPI controller"
+ 	depends on ARCH_MEDIATEK || COMPILE_TEST
+diff --git a/drivers/spi/Makefile b/drivers/spi/Makefile
+index 6af54842b..f713da20f 100644
+--- a/drivers/spi/Makefile
++++ b/drivers/spi/Makefile
+@@ -14,6 +14,9 @@ obj-$(CONFIG_SPI_SPIDEV)		+= spidev.o
+ obj-$(CONFIG_SPI_LOOPBACK_TEST)		+= spi-loopback-test.o
+ 
+ # SPI master controller drivers (bus)
++obj-$(CONFIG_SPI_KIANV_SPI_SIMPLE)      += spi-kianV-simple.o
++obj-$(CONFIG_SPI_KIANV_SPI_SIMPLE)      += spi-kianV-simple2.o
++obj-$(CONFIG_SPI_KIANV_SPI_SIMPLE)      += spi-kianV-simple3.o
+ obj-$(CONFIG_SPI_ALTERA)		+= spi-altera-platform.o
+ obj-$(CONFIG_SPI_ALTERA_CORE)		+= spi-altera-core.o
+ obj-$(CONFIG_SPI_ALTERA_DFL)		+= spi-altera-dfl.o
+diff --git a/drivers/spi/spi-kianV-simple.c b/drivers/spi/spi-kianV-simple.c
+new file mode 100644
+index 000000000..e1fbfc472
+--- /dev/null
++++ b/drivers/spi/spi-kianV-simple.c
+@@ -0,0 +1,138 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * kianV-Simple SPI controller driver
++ *
++ * Copyright (C) 2019 Antmicro Ltd. <www.antmicro.com>
++ * Copyright (C) 2021 Sylvain Munaut <tnt@246tNt.com>
++ * Copyright (C) 2023 Hirosh Dabui <hirosh@dabui.de>
++ */
++
++#include <linux/device.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/platform_device.h>
++#include <linux/spi/spi.h>
++
++#define DRIVER_NAME "kianVspi-simple"
++
++struct kianVspi_regs {
++	uint32_t ctrl;
++	uint32_t data;
++} __attribute__((packed,aligned(4)));
++
++struct kianVspi_hw {
++	struct spi_master *master;
++	volatile struct kianVspi_regs __iomem *regs;
++};
++
++static void kianVspi_set_cs(struct spi_device *spi, bool cs_n)
++{
++	struct kianVspi_hw *hw = spi_master_get_devdata(spi->master);
++
++	/* Set chip select */
++	hw->regs->ctrl = (cs_n ? 0 : BIT(spi->chip_select));
++}
++
++static int kianVspi_transfer_one(struct spi_master *master, struct spi_device *spi,
++    struct spi_transfer *t)
++{
++  struct kianVspi_hw *hw = spi_master_get_devdata(master);
++  const u8 *tx = t->tx_buf;
++  u8 *rx = t->rx_buf;
++  int i;
++
++  for (i = 0; i < t->len; i++) {
++    while ((hw->regs->ctrl & 0x80000000) != 0)
++        ;
++    hw->regs->data = tx ? *tx++ : 0x00;
++    while ((hw->regs->ctrl & 0x80000000) != 0)
++        ;
++
++    if (rx)
++      *rx++ = hw->regs->data;
++  }
++
++	return 0;
++}
++
++static int kianVspi_setup(struct spi_device *spi)
++{
++    return 0;
++}
++
++static int kianVspi_probe(struct platform_device *pdev)
++{
++	struct device_node *node = pdev->dev.of_node;
++	struct kianVspi_hw *hw;
++	struct spi_master *master;
++	//struct resource *res;
++	int ret;
++	u32 val;
++
++	master = spi_alloc_master(&pdev->dev, sizeof(*hw));
++	if (!master)
++		return -ENOMEM;
++
++	master->dev.of_node = pdev->dev.of_node;
++	master->bus_num = pdev->id;
++	master->mode_bits = SPI_MODE_0;
++	master->bits_per_word_mask = SPI_BPW_MASK(8);
++	master->set_cs = kianVspi_set_cs;
++	master->transfer_one = kianVspi_transfer_one;
++	master->setup = kianVspi_setup;
++	master->flags = 0;
++
++	/* get sck frequency */
++	ret = of_property_read_u32(node, "kianVfpga,sck-frequency", &val);
++	if (ret)
++		goto err;
++
++	master->min_speed_hz = val;
++	master->max_speed_hz = val;
++
++	/* get num cs */
++	ret = of_property_read_u32(node, "kianVfpga,num-cs", &val);
++	if (ret)
++		goto err;
++	master->num_chipselect = val;
++
++	hw = spi_master_get_devdata(master);
++	hw->master = master;
++
++	/* get base address */
++	hw->regs = devm_platform_get_and_ioremap_resource(pdev, 0, NULL);
++	if (IS_ERR((void*)hw->regs)) {
++		ret = PTR_ERR((void*)hw->regs);
++		goto err;
++	}
++
++	/* register controller */
++	ret = devm_spi_register_master(&pdev->dev, master);
++	if (ret)
++		goto err;
++
++	return 0;
++
++err:
++	spi_master_put(master);
++	return ret;
++}
++
++static const struct of_device_id kianVspi_match[] = {
++	{ .compatible = "kianVfpga,kianVspi-simple" },
++	{}
++};
++MODULE_DEVICE_TABLE(of, kianVspi_match);
++
++static struct platform_driver kianVspi_driver = {
++	.probe = kianVspi_probe,
++	.driver = {
++		.name = DRIVER_NAME,
++		.of_match_table = of_match_ptr(kianVspi_match)
++	}
++};
++module_platform_driver(kianVspi_driver)
++
++MODULE_AUTHOR("Hirosh Dabui <hirosh@dabui.de");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:" DRIVER_NAME);
+diff --git a/drivers/spi/spi-kianV-simple2.c b/drivers/spi/spi-kianV-simple2.c
+new file mode 100644
+index 000000000..f220fd96f
+--- /dev/null
++++ b/drivers/spi/spi-kianV-simple2.c
+@@ -0,0 +1,137 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * kianV-Simple SPI controller driver
++ *
++ * Copyright (C) 2019 Antmicro Ltd. <www.antmicro.com>
++ * Copyright (C) 2021 Sylvain Munaut <tnt@246tNt.com>
++ * Copyright (C) 2023 Hirosh Dabui <hirosh@dabui.de>
++ */
++
++#include <linux/device.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/platform_device.h>
++#include <linux/spi/spi.h>
++
++#define DRIVER_NAME "kianVspi-simple2"
++
++struct kianVspi_regs {
++	uint32_t ctrl;
++	uint32_t data;
++} __attribute__((packed,aligned(4)));
++
++struct kianVspi_hw {
++	struct spi_master *master;
++	volatile struct kianVspi_regs __iomem *regs;
++};
++
++static void kianVspi_set_cs(struct spi_device *spi, bool cs_n)
++{
++	struct kianVspi_hw *hw = spi_master_get_devdata(spi->master);
++
++	/* Set chip select */
++	hw->regs->ctrl = (cs_n ? 0 : BIT(spi->chip_select));
++}
++
++static int kianVspi_transfer_one(struct spi_master *master, struct spi_device *spi,
++    struct spi_transfer *t)
++{
++  struct kianVspi_hw *hw = spi_master_get_devdata(master);
++  const u8 *tx = t->tx_buf;
++  u8 *rx = t->rx_buf;
++  int i;
++
++  for (i = 0; i < t->len; i++) {
++    while ((hw->regs->ctrl & 0x80000000) != 0)
++        ;
++    hw->regs->data = tx ? *tx++ : 0x00;
++    while ((hw->regs->ctrl & 0x80000000) != 0)
++        ;
++    if (rx)
++      *rx++ = hw->regs->data;
++  }
++
++	return 0;
++}
++
++static int kianVspi_setup(struct spi_device *spi)
++{
++    return 0;
++}
++
++static int kianVspi_probe(struct platform_device *pdev)
++{
++	struct device_node *node = pdev->dev.of_node;
++	struct kianVspi_hw *hw;
++	struct spi_master *master;
++	//struct resource *res;
++	int ret;
++	u32 val;
++
++	master = spi_alloc_master(&pdev->dev, sizeof(*hw));
++	if (!master)
++		return -ENOMEM;
++
++	master->dev.of_node = pdev->dev.of_node;
++	master->bus_num = pdev->id;
++	master->mode_bits = SPI_MODE_0;
++	master->bits_per_word_mask = SPI_BPW_MASK(8);
++	master->set_cs = kianVspi_set_cs;
++	master->transfer_one = kianVspi_transfer_one;
++	master->setup = kianVspi_setup;
++	master->flags = 0;
++
++	/* get sck frequency */
++	ret = of_property_read_u32(node, "kianVfpga,sck-frequency", &val);
++	if (ret)
++		goto err;
++
++	master->min_speed_hz = val;
++	master->max_speed_hz = val;
++
++	/* get num cs */
++	ret = of_property_read_u32(node, "kianVfpga,num-cs", &val);
++	if (ret)
++		goto err;
++	master->num_chipselect = val;
++
++	hw = spi_master_get_devdata(master);
++	hw->master = master;
++
++	/* get base address */
++	hw->regs = devm_platform_get_and_ioremap_resource(pdev, 0, NULL);
++	if (IS_ERR((void*)hw->regs)) {
++		ret = PTR_ERR((void*)hw->regs);
++		goto err;
++	}
++
++	/* register controller */
++	ret = devm_spi_register_master(&pdev->dev, master);
++	if (ret)
++		goto err;
++
++	return 0;
++
++err:
++	spi_master_put(master);
++	return ret;
++}
++
++static const struct of_device_id kianVspi_match[] = {
++	{ .compatible = "kianVfpga,kianVspi-simple2" },
++	{}
++};
++MODULE_DEVICE_TABLE(of, kianVspi_match);
++
++static struct platform_driver kianVspi_driver = {
++	.probe = kianVspi_probe,
++	.driver = {
++		.name = DRIVER_NAME,
++		.of_match_table = of_match_ptr(kianVspi_match)
++	}
++};
++module_platform_driver(kianVspi_driver)
++
++MODULE_AUTHOR("Hirosh Dabui <hirosh@dabui.de");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:" DRIVER_NAME);
+diff --git a/drivers/spi/spi-kianV-simple3.c b/drivers/spi/spi-kianV-simple3.c
+new file mode 100644
+index 000000000..3d2708be2
+--- /dev/null
++++ b/drivers/spi/spi-kianV-simple3.c
+@@ -0,0 +1,137 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * kianV-Simple SPI controller driver
++ *
++ * Copyright (C) 2019 Antmicro Ltd. <www.antmicro.com>
++ * Copyright (C) 2021 Sylvain Munaut <tnt@246tNt.com>
++ * Copyright (C) 2023 Hirosh Dabui <hirosh@dabui.de>
++ */
++
++#include <linux/device.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/platform_device.h>
++#include <linux/spi/spi.h>
++
++#define DRIVER_NAME "kianVspi-simple3"
++
++struct kianVspi_regs {
++	uint32_t ctrl;
++	uint32_t data;
++} __attribute__((packed,aligned(4)));
++
++struct kianVspi_hw {
++	struct spi_master *master;
++	volatile struct kianVspi_regs __iomem *regs;
++};
++
++static void kianVspi_set_cs(struct spi_device *spi, bool cs_n)
++{
++	struct kianVspi_hw *hw = spi_master_get_devdata(spi->master);
++
++	/* Set chip select */
++	hw->regs->ctrl = (cs_n ? 0 : BIT(spi->chip_select));
++}
++
++static int kianVspi_transfer_one(struct spi_master *master, struct spi_device *spi,
++    struct spi_transfer *t)
++{
++  struct kianVspi_hw *hw = spi_master_get_devdata(master);
++  const u8 *tx = t->tx_buf;
++  u8 *rx = t->rx_buf;
++  int i;
++
++  for (i = 0; i < t->len; i++) {
++    while ((hw->regs->ctrl & 0x80000000) != 0)
++        ;
++    hw->regs->data = tx ? *tx++ : 0x00;
++    while ((hw->regs->ctrl & 0x80000000) != 0)
++        ;
++    if (rx)
++      *rx++ = hw->regs->data;
++  }
++
++	return 0;
++}
++
++static int kianVspi_setup(struct spi_device *spi)
++{
++    return 0;
++}
++
++static int kianVspi_probe(struct platform_device *pdev)
++{
++	struct device_node *node = pdev->dev.of_node;
++	struct kianVspi_hw *hw;
++	struct spi_master *master;
++	//struct resource *res;
++	int ret;
++	u32 val;
++
++	master = spi_alloc_master(&pdev->dev, sizeof(*hw));
++	if (!master)
++		return -ENOMEM;
++
++	master->dev.of_node = pdev->dev.of_node;
++	master->bus_num = pdev->id;
++	master->mode_bits = SPI_MODE_0;
++	master->bits_per_word_mask = SPI_BPW_MASK(8);
++	master->set_cs = kianVspi_set_cs;
++	master->transfer_one = kianVspi_transfer_one;
++	master->setup = kianVspi_setup;
++	master->flags = 0;
++
++	/* get sck frequency */
++	ret = of_property_read_u32(node, "kianVfpga,sck-frequency", &val);
++	if (ret)
++		goto err;
++
++	master->min_speed_hz = val;
++	master->max_speed_hz = val;
++
++	/* get num cs */
++	ret = of_property_read_u32(node, "kianVfpga,num-cs", &val);
++	if (ret)
++		goto err;
++	master->num_chipselect = val;
++
++	hw = spi_master_get_devdata(master);
++	hw->master = master;
++
++	/* get base address */
++	hw->regs = devm_platform_get_and_ioremap_resource(pdev, 0, NULL);
++	if (IS_ERR((void*)hw->regs)) {
++		ret = PTR_ERR((void*)hw->regs);
++		goto err;
++	}
++
++	/* register controller */
++	ret = devm_spi_register_master(&pdev->dev, master);
++	if (ret)
++		goto err;
++
++	return 0;
++
++err:
++	spi_master_put(master);
++	return ret;
++}
++
++static const struct of_device_id kianVspi_match[] = {
++	{ .compatible = "kianVfpga,kianVspi-simple3" },
++	{}
++};
++MODULE_DEVICE_TABLE(of, kianVspi_match);
++
++static struct platform_driver kianVspi_driver = {
++	.probe = kianVspi_probe,
++	.driver = {
++		.name = DRIVER_NAME,
++		.of_match_table = of_match_ptr(kianVspi_match)
++	}
++};
++module_platform_driver(kianVspi_driver)
++
++MODULE_AUTHOR("Hirosh Dabui <hirosh@dabui.de");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:" DRIVER_NAME);
+diff --git a/drivers/staging/fbtft/fb_ssd1331.c b/drivers/staging/fbtft/fb_ssd1331.c
+index ec5eced7f..4bfd3ddec 100644
+--- a/drivers/staging/fbtft/fb_ssd1331.c
++++ b/drivers/staging/fbtft/fb_ssd1331.c
+@@ -40,7 +40,7 @@ static int init_display(struct fbtft_par *par)
+ 	write_reg(par, 0xa4); /* NORMALDISPLAY */
+ 	write_reg(par, 0xa8, 0x3f); /* Set multiplex */
+ 	write_reg(par, 0xad, 0x8e); /* Set master */
+-	/* write_reg(par, 0xb0, 0x0b);  Set power mode */
++	write_reg(par, 0xb0, 0x0b);  /* Set power mode */
+ 	write_reg(par, 0xb1, 0x31); /* Precharge */
+ 	write_reg(par, 0xb3, 0xf0); /* Clock div */
+ 	write_reg(par, 0x8a, 0x64); /* Precharge A */
+@@ -63,11 +63,35 @@ static void set_addr_win(struct fbtft_par *par, int xs, int ys, int xe, int ye)
+ 	write_reg(par, 0x75, ys, ye);
+ }
+ 
++#define KIANV_GPIO_HW_ADDR 0x10000700
+ static void write_reg8_bus8(struct fbtft_par *par, int len, ...)
+ {
+ 	va_list args;
+ 	int i, ret;
+ 	u8 *buf = par->buf;
++        u32 value;
++
++        static void __iomem *virt_addr;
++        static bool initialized = false;
++
++        if (!initialized) {
++            virt_addr = ioremap(KIANV_GPIO_HW_ADDR, PAGE_SIZE);
++            if (!virt_addr) {
++                printk(KERN_ERR "Failed to map physical address\n");
++                return;
++            }
++
++            // dir offset
++            value = readl(virt_addr + 0x00);
++            value |= (1 << 9);
++            writel(value, virt_addr + 0x00);
++
++            // output offset
++            value = readl(virt_addr + 0x04);
++            value |= (1 << 9); // set DC
++            writel(value, virt_addr + 0x04);
++            initialized = true;
++        }
+ 
+ 	if (unlikely(par->debug & DEBUG_WRITE_REGISTER)) {
+ 		va_start(args, len);
+@@ -81,7 +105,11 @@ static void write_reg8_bus8(struct fbtft_par *par, int len, ...)
+ 	va_start(args, len);
+ 
+ 	*buf = (u8)va_arg(args, unsigned int);
+-	gpiod_set_value(par->gpio.dc, 0);
++        // output
++        value = readl(virt_addr + 0x04);
++        value &= ~(1 << 9); // clear DC
++        writel(value, virt_addr + 0x04);
++	//gpiod_set_value(par->gpio.dc, 0);
+ 	ret = par->fbtftops.write(par, par->buf, sizeof(u8));
+ 	if (ret < 0) {
+ 		va_end(args);
+@@ -103,7 +131,11 @@ static void write_reg8_bus8(struct fbtft_par *par, int len, ...)
+ 			return;
+ 		}
+ 	}
+-	gpiod_set_value(par->gpio.dc, 1);
++	// output
++        value = readl(virt_addr + 0x04);
++        value |= (1 << 9); // set DC
++        writel(value, virt_addr + 0x04);
++	//gpiod_set_value(par->gpio.dc, 1);
+ 	va_end(args);
+ }
+ 
+diff --git a/drivers/staging/fbtft/fbtft-core.c b/drivers/staging/fbtft/fbtft-core.c
+index eac1d570f..4a175c3d0 100644
+--- a/drivers/staging/fbtft/fbtft-core.c
++++ b/drivers/staging/fbtft/fbtft-core.c
+@@ -1106,7 +1106,7 @@ static int fbtft_verify_gpios(struct fbtft_par *par)
+ 	    !par->gpio.dc) {
+ 		dev_err(par->info->device,
+ 			"Missing info about 'dc' gpio. Aborting.\n");
+-		return -EINVAL;
++	//	return -EINVAL;
+ 	}
+ 
+ 	if (!par->pdev)
+@@ -1120,7 +1120,7 @@ static int fbtft_verify_gpios(struct fbtft_par *par)
+ 		if (!par->gpio.db[i]) {
+ 			dev_err(par->info->device,
+ 				"Missing 'db%02d' gpio. Aborting.\n", i);
+-			return -EINVAL;
++			//return -EINVAL;
+ 		}
+ 	}
+ 
+diff --git a/sound/Kconfig b/sound/Kconfig
+index 4c036a9a4..b069b6b17 100644
+--- a/sound/Kconfig
++++ b/sound/Kconfig
+@@ -99,6 +99,8 @@ source "sound/xen/Kconfig"
+ 
+ source "sound/virtio/Kconfig"
+ 
++source "sound/kianv/Kconfig"
++
+ endif # SND
+ 
+ endif # SOUND
+diff --git a/sound/Makefile b/sound/Makefile
+index 04ef04b11..29605d75b 100644
+--- a/sound/Makefile
++++ b/sound/Makefile
+@@ -6,7 +6,8 @@ obj-$(CONFIG_SOUND) += soundcore.o
+ obj-$(CONFIG_DMASOUND) += oss/dmasound/
+ obj-$(CONFIG_SND) += core/ i2c/ drivers/ isa/ pci/ ppc/ arm/ sh/ synth/ usb/ \
+ 	firewire/ sparc/ spi/ parisc/ pcmcia/ mips/ soc/ atmel/ hda/ x86/ xen/ \
+-	virtio/
++	virtio/ kianv/
++
+ obj-$(CONFIG_SND_AOA) += aoa/
+ 
+ # This one must be compilable even if sound is configured out
+diff --git a/sound/kianv/Kconfig b/sound/kianv/Kconfig
+new file mode 100644
+index 000000000..876f97b1f
+--- /dev/null
++++ b/sound/kianv/Kconfig
+@@ -0,0 +1,4 @@
++config SND_KIANV
++	tristate "KIANV SND"
++	help
++            KianV SND
+diff --git a/sound/kianv/Makefile b/sound/kianv/Makefile
+new file mode 100644
+index 000000000..49646a86d
+--- /dev/null
++++ b/sound/kianv/Makefile
+@@ -0,0 +1 @@
++obj-$(CONFIG_SND_KIANV) += kianv-snd.o
+diff --git a/sound/kianv/kianv-snd.c b/sound/kianv/kianv-snd.c
+new file mode 100644
+index 000000000..e332452fd
+--- /dev/null
++++ b/sound/kianv/kianv-snd.c
+@@ -0,0 +1,111 @@
++#include <linux/module.h>
++#include <linux/fs.h>
++#include <linux/cdev.h>
++#include <linux/uaccess.h>
++#include <linux/io.h>
++#include <linux/ktime.h>
++#include <linux/spinlock.h>
++#include <linux/uaccess.h>
++
++
++#define DEVICE_NAME "dsp"
++#define CLASS_NAME "audio"
++
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Hirosh Dabui");
++MODULE_DESCRIPTION("Driver for Sigma-Delta Converter");
++MODULE_VERSION("0.1");
++
++static int majorNumber;
++static struct class* audioClass = NULL;
++//static struct cdev audioCdev;
++static DEFINE_SPINLOCK(buffer_lock);
++
++
++static int dev_open(struct inode *, struct file *);
++static ssize_t dev_write(struct file *, const char *, size_t, loff_t *);
++static int dev_release(struct inode *, struct file *);
++
++static struct file_operations fops = {
++    .open = dev_open,
++    .write = dev_write,
++    .release = dev_release,
++};
++
++#define KIANV_SND_REG 0x10500000
++static void __iomem *virt_addr;
++static int __init audio_init(void) {
++    printk(KERN_INFO "Audio: Initializing the Audio LKM\n");
++
++    virt_addr = ioremap(KIANV_SND_REG, PAGE_SIZE);
++    if (!virt_addr) {
++        printk(KERN_ERR "Failed to map physical address\n");
++    }
++
++    majorNumber = register_chrdev(0, DEVICE_NAME, &fops);
++    if (majorNumber < 0) {
++        printk(KERN_ALERT "Audio failed to register a major number\n");
++        return majorNumber;
++    }
++    audioClass = class_create(CLASS_NAME);
++    if (IS_ERR(audioClass)) {
++        unregister_chrdev(majorNumber, DEVICE_NAME);
++        printk(KERN_ALERT "Failed to register device class\n");
++        return PTR_ERR(audioClass);
++    }
++    if (IS_ERR(device_create(audioClass, NULL, MKDEV(majorNumber, 0), NULL, DEVICE_NAME))) {
++        class_destroy(audioClass);
++        unregister_chrdev(majorNumber, DEVICE_NAME);
++        printk(KERN_ALERT "Failed to create the device\n");
++        return -1;
++    }
++    printk(KERN_INFO "Audio: device class created correctly\n");
++    return 0;
++}
++
++static void __exit audio_exit(void) {
++    device_destroy(audioClass, MKDEV(majorNumber, 0));
++    class_destroy(audioClass);
++    unregister_chrdev(majorNumber, DEVICE_NAME);
++    printk(KERN_INFO "Audio: Goodbye from the LKM!\n");
++}
++
++static int dev_open(struct inode *inodep, struct file *filep) {
++    printk(KERN_INFO "Audio: Device has been opened\n");
++    return 0;
++}
++
++static ssize_t dev_write(struct file *filep, const char __user *buffer, size_t len, loff_t *offset) {
++    unsigned long flags;
++    size_t i;
++    uint8_t data;
++    uint32_t status;
++
++    for (i = 0; i < len; ++i) {
++        if (copy_from_user(&data, buffer + i, 1) != 0) {
++            return -EFAULT;
++        }
++
++        do {
++            status = readl(virt_addr + 0x300);
++        } while (status & 0x1); // Continue looping while LSB is set
++
++
++        spin_lock_irqsave(&buffer_lock, flags);
++        writel(data, virt_addr + 0x300); // Perform the hardware write operation
++        spin_unlock_irqrestore(&buffer_lock, flags);
++    }
++
++    return i; // Return the number of bytes processed
++}
++
++
++
++static int dev_release(struct inode *inodep, struct file *filep) {
++    printk(KERN_INFO "Audio: Device successfully closed\n");
++    return 0;
++}
++
++
++module_init(audio_init);
++module_exit(audio_exit);
+-- 
+2.40.1
+
