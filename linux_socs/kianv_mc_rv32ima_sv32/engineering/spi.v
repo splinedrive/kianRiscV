@@ -115,6 +115,7 @@ module spi #(
       is_quad <= 0;
       xfer_cycles <= 0;
       ready_xfer <= 0;
+      rx_data <= 0;
       state <= S0_IDLE;
     end else begin
       state <= next_state;
