@@ -1,5 +1,5 @@
 REPO_URL := https://github.com/buildroot/buildroot.git
-BRANCH := master
+BRANCH := 2024.02.x
 DIR := buildroot
 FW_PAYLOAD_BIN := buildroot/output/images/fw_payload.bin
 FW_PAYLOAD_RLE := fw_payload.rle
@@ -37,11 +37,19 @@ customize_buildroot: clone-buildroot
 
 clone-buildroot:
 	@if [ ! -d "$(DIR)" ]; then \
-		echo "Cloning Buildroot into $(DIR)..."; \
-		git clone --depth 1 -b $(BRANCH) $(REPO_URL) $(DIR); \
+	    echo "Cloning Buildroot into $(DIR)..."; \
+	    git clone -b $(BRANCH) $(REPO_URL) $(DIR) && \
+	    pushd $(DIR) && \
+	    git checkout 31abe2f6a9f5787e8ddb9ce9353b2ea72466be4c && \
+	    popd; \
 	else \
-		echo "Already cloned Buildroot into $(DIR)..."; \
+	    echo "Already cloned Buildroot into $(DIR)..."; \
+	    pushd $(DIR) && \
+	    git fetch origin 31abe2f6a9f5787e8ddb9ce9353b2ea72466be4c && \
+	    git checkout 31abe2f6a9f5787e8ddb9ce9353b2ea72466be4c && \
+	    popd; \
 	fi
+
 
 unmount:
 	@echo "Unmounting all mounted partitions on $(DEVICE)..."
