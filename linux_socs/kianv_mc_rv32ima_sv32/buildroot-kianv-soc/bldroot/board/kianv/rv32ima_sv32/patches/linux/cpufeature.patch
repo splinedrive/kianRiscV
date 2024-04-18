@@ -1,0 +1,20 @@
+diff --git a/arch/riscv/kernel/cpufeature.c b/arch/riscv/kernel/cpufeature.c
+index 79a5a35fa..051d55b3f 100644
+--- a/arch/riscv/kernel/cpufeature.c
++++ b/arch/riscv/kernel/cpufeature.c
+@@ -733,6 +733,7 @@ unsigned long riscv_get_elf_hwcap(void)
+
+ static int check_unaligned_access(void *param)
+ {
++#if 0
+ 	int cpu = smp_processor_id();
+ 	u64 start_cycles, end_cycles;
+ 	u64 word_cycles;
+@@ -823,6 +824,7 @@ static int check_unaligned_access(void *param)
+ 	else
+ 		cpumask_clear_cpu(cpu, &fast_misaligned_access);
+
++#endif
+ 	return 0;
+ }
+

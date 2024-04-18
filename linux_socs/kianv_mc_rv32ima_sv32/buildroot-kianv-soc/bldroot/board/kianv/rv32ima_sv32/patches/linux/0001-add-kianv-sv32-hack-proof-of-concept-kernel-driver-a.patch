@@ -392,7 +392,7 @@ index 000000000..e1fbfc472
 +	struct kianVspi_hw *hw = spi_master_get_devdata(spi->master);
 +
 +	/* Set chip select */
-+	hw->regs->ctrl = (cs_n ? 0 : BIT(spi->chip_select));
++	hw->regs->ctrl = (cs_n ? 0 : BIT(spi->chip_select[0]));
 +}
 +
 +static int kianVspi_transfer_one(struct spi_master *master, struct spi_device *spi,
@@ -536,7 +536,7 @@ index 000000000..f220fd96f
 +	struct kianVspi_hw *hw = spi_master_get_devdata(spi->master);
 +
 +	/* Set chip select */
-+	hw->regs->ctrl = (cs_n ? 0 : BIT(spi->chip_select));
++	hw->regs->ctrl = (cs_n ? 0 : BIT(spi->chip_select[0]));
 +}
 +
 +static int kianVspi_transfer_one(struct spi_master *master, struct spi_device *spi,
@@ -679,7 +679,7 @@ index 000000000..3d2708be2
 +	struct kianVspi_hw *hw = spi_master_get_devdata(spi->master);
 +
 +	/* Set chip select */
-+	hw->regs->ctrl = (cs_n ? 0 : BIT(spi->chip_select));
++	hw->regs->ctrl = (cs_n ? 0 : BIT(spi->chip_select[0]));
 +}
 +
 +static int kianVspi_transfer_one(struct spi_master *master, struct spi_device *spi,

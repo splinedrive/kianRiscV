@@ -1,5 +1,5 @@
 REPO_URL := https://github.com/buildroot/buildroot.git
-BRANCH := 2024.02.x
+BRANCH := master
 DIR := buildroot
 FW_PAYLOAD_BIN := buildroot/output/images/fw_payload.bin
 FW_PAYLOAD_RLE := fw_payload.rle
@@ -40,7 +40,7 @@ clone-buildroot:
 	    echo "Cloning Buildroot into $(DIR)..."; \
 	    git clone -b $(BRANCH) $(REPO_URL) $(DIR) && \
 	    pushd $(DIR) && \
-	    git checkout 31abe2f6a9f5787e8ddb9ce9353b2ea72466be4c && \
+	    git checkout 256aa8ed85f8fd65ea0f0f242adb55f95a13eb2b && \
 	    popd; \
 	else \
 	    echo "Already cloned Buildroot into $(DIR)..."; \
