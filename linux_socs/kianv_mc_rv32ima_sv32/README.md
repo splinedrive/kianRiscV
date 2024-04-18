@@ -6,7 +6,7 @@ I implemented it as primitively as possible to achieve the goal. Actually,
 it took less than two weeks before we could boot real Linux on the FPGA. That was during the Christmas holidays,
 and it was a good opportunity to play around with it.
 
-The SoC is operating with the most recent kernel version, 6.6.8,
+The SoC is operating with the most recent kernel version, 6.8.1,
 and offers support for the following PMODs (as shown in the photo): GPIO (input, output),
 Network PMOD (Digilent PMOD NIC100), a second UART (PMOD UART by Digilent), and an OLED display (Digilent OLEDrgb 64x96, 16-bit).
 The board is capable of functioning without these PMODs, with the kernel adjusting accordingly.
