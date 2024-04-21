@@ -3,6 +3,7 @@ BRANCH := master
 DIR := buildroot
 FW_PAYLOAD_BIN := buildroot/output/images/fw_payload.bin
 FW_PAYLOAD_RLE := fw_payload.rle
+NETWORK_CHIP ?= enc28j60
 
 CC=gcc
 CFLAGS=-Wall -g
@@ -20,6 +21,11 @@ build: clean customize_buildroot
 
 customize_buildroot: clone-buildroot
 	@echo "Customizing Buildroot..."
+	@echo "setup network chip: "$(NETWORK_CHIP)
+	@sed -i '/encx24j600@0/,+6 s/status = "okay"/status = "disabled"/' bldroot/board/kianv/rv32ima_sv32/kianv.dts
+	@sed -i '/enc28j60@0/,+6 s/status = "okay"/status = "disabled"/' bldroot/board/kianv/rv32ima_sv32/kianv.dts
+	@sed -i '/w5500@0/,+6 s/status = "okay"/status = "disabled"/' bldroot/board/kianv/rv32ima_sv32/kianv.dts
+	@sed -i '/$(NETWORK_CHIP)@0/,+6 s/status = "disabled"/status = "okay"/' bldroot/board/kianv/rv32ima_sv32/kianv.dts
 	@cp -av bldroot/board/kianv $(DIR)/board/
 	@cp -av bldroot/boot $(DIR)/board/  # This seems to be a mistake; it copies to /board/ but was intended for /boot/ based on later commands.
 	@cp -av bldroot/configs/kianv_rv32ima_sv32_buildroot_defconfig $(DIR)/configs/
@@ -49,7 +55,6 @@ clone-buildroot:
 	    git checkout 31abe2f6a9f5787e8ddb9ce9353b2ea72466be4c && \
 	    popd; \
 	fi
-
 
 unmount:
 	@echo "Unmounting all mounted partitions on $(DEVICE)..."
@@ -102,6 +107,7 @@ $(RLE_ENCODE): $(OBJ)
 
 $(SRCDIR)/%.o: $(SRCDIR)/%.c
 	@$(CC) $(CFLAGS) -c $< -o $@
+
 
 clean:
 	@rm -f $(FW_PAYLOAD_RLE)

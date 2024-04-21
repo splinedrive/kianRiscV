@@ -74,6 +74,17 @@ gain knowledge for future projects, where I plan to apply advanced concepts for
 the next Linux SoCs, such as pipelining, larger cache block sizes, DDR RAM with
 burst, etc., with the goal of running Debian and GCC on Debian.
 
+Network Chip support
+====================
+We support [ENC28J60 (default), ENC24J600, W5500] network chips. You can
+purchase such boards for a few dollars. You need to connect them via CS, SCLK,
+MOSI, MISO, and interrupt pins. Additionally, some boards have a reset
+pin; just connect it to VCC. Check the ULX3S configuration: CS <->
+GN17, MOSI <-> GN16, MISO <-> GN15, SCLK <-> GN14, and INTERRUPT <-> GP17.
+```
+# make NETWORK_CHIP=[enc28j60 (default), encx24j600, w5500]
+```
+
 Generating gateware
 ---------------------
 Currently, two FPGA boards are supported: the ULX3S (12k, 85k, 25k, 12k, um-85k) and the IceSugarPro. They are built as follows:
@@ -109,6 +120,7 @@ Build operating system everything from scratch
 -----------------------------------------------
 ```
 cd buildroot-kianv-soc
+# make NETWORK_CHIP=[enc28j60 (default), encx24j600, w5500]
 make -j $(nproc) # build full operating system
 make flash_os DEVICE=/dev/sdx # flash full operating system
 #make flash_rootfs DEVICE=/dev/sdx # flash only rootfs
