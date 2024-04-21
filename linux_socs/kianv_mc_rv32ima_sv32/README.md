@@ -134,6 +134,7 @@ However, listening to audio and experimenting is still enjoyable.
 ![kianV RV32IMA zicntr SV32](console.png "KianV RV32IMA zicntr SV32")
 ![kianV RV32IMA zicntr SV32](enterprise_soc.jpg "KianV RV32IMA zicntr SV32")
 ![kianV RV32IMA zicntr SV32](kianv_sv32_rv32ima_zicntr.jpg "KianV RV32IMA zicntr SV32")
+![kianV RV32IMA zicntr SV32](network_chips.jpg "KianV RV32IMA zicntr SV32")
 
 best,
 Hirosh
