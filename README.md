@@ -27,7 +27,6 @@ If you're interested in trying out the KianV SV32 (MMU) RV32IMA Zicntr Linux SoC
 
 With KianV RISC-V uLinux, booting Linux is not just possible, it's exhilarating. That's right! If you've ever wanted to experience Linux booting in a whole new light, this is your chance.
 🔗 Dive deep into the [implementation details here](https://github.com/splinedrive/kianRiscV/blob/master/linux_socs/kianv_harris_mcycle_edition/README.md).
-🎥 Or, if you're more of a visual learner, [watch the Kian Linux Soc in action!](https://twitter.com/i/status/1649359364010983424)
 
 # Some Hardware designs can be found here
 [Hardware designs](https://github.com/splinedrive/kianRiscV/blob/master/pcb)
