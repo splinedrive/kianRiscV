@@ -8,7 +8,6 @@ RISC-V Linux SoCs: uLinux and MMU Linux.
 |     <|  ||  _  |     ||   |   |       |  ||     |  |  |_   _|
 |__|\__|__||___._|__|__| \_____/|_______|__||__|__|_____|__.__|
 ```
-## KianV RISC-V Linux: Booting Linux like never before!
 If you're interested in trying out the KianV SV32 (MMU) RV32IMA Zicntr Linux SoC, complete with virtual memory support, check out the link here:
 [KianV SV32 RV32IMA Zicntr.](https://github.com/splinedrive/kianRiscV/tree/master/linux_socs/kianv_mc_rv32ima_sv32).
 
