@@ -616,7 +616,6 @@ module soc #(
       .PC            (PC)
   );
 
-
   /////////////////////////////////////////////////////////////////////////////
   wire is_io = (cpu_mem_addr >= 32'h10_000_000 && cpu_mem_addr <= 32'h12_000_000);
   wire [NUM_UARTS-1:0] match_lsr, match_tx, match_rx;

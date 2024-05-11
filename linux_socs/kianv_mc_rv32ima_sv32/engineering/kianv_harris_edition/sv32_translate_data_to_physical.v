@@ -135,7 +135,7 @@ module sv32_translate_data_to_physical (
         end else if (`IS_SUPERVISOR(priv)) begin
 
           // User page access from super mode access not enabled
-          if (`GET_PTE_U(pte) && !(`GET_MSTATUS_SUM(mstatus))) begin
+          if (`GET_PTE_U(pte) && !(`GET_XSTATUS_SUM(mstatus))) begin
             page_fault_nxt = 1'b1;
           end else if ((is_write && !`GET_PTE_W(pte)) || (!is_write && !`GET_PTE_R(pte))) begin
             page_fault_nxt = 1'b1;

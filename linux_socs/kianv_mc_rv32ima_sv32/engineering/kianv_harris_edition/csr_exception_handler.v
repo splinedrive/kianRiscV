@@ -50,14 +50,18 @@ module csr_exception_handler #(
     output reg tlb_flush,
 
     input wire IRQ1,
-    input wire IRQ5,
     input wire IRQ3,
+    input wire IRQ5,
     input wire IRQ7,
+    input wire IRQ9,
+    input wire IRQ11,
 
     output reg IRQ_TO_CPU_CTRL1,
-    output reg IRQ_TO_CPU_CTRL5,
     output reg IRQ_TO_CPU_CTRL3,
-    output reg IRQ_TO_CPU_CTRL7
+    output reg IRQ_TO_CPU_CTRL5,
+    output reg IRQ_TO_CPU_CTRL7,
+    output reg IRQ_TO_CPU_CTRL9,
+    output reg IRQ_TO_CPU_CTRL11
 );
   wire is_reg_operand;
   assign is_reg_operand = CSRop == `CSR_OP_CSRRW || CSRop == `CSR_OP_CSRRS || CSRop == `CSR_OP_CSRRC;
@@ -163,18 +167,12 @@ module csr_exception_handler #(
   reg  [31:0] scause;
   reg  [31:0] stval;
 
-  reg  [31:0] sie;
-  reg  [31:0] sip;
-
-
   reg  [31:0] sscratch_nxt;
   reg  [31:0] stvec_nxt;
   reg  [31:0] sepc_nxt;
   reg  [31:0] scause_nxt;
   reg  [31:0] stval_nxt;
   reg  [31:0] satp_nxt;
-  reg  [31:0] sip_nxt;
-  reg  [31:0] sie_nxt;
 
   reg  [31:0] exception_next_pc_nxt;
   reg         exception_select_nxt;
@@ -205,7 +203,7 @@ module csr_exception_handler #(
     if (!resetn) begin
       privilege_mode <= `PRIVILEGE_MODE_MACHINE;
       /* verilator lint_off WIDTHEXPAND */
-      mstatus <= `SET_MSTATUS_MPP(`PRIVILEGE_MODE_MACHINE);
+      mstatus <= 0;  //`SET_MSTATUS_MPP(`PRIVILEGE_MODE_MACHINE);
       /* verilator lint_on WIDTHEXPAND */
       mtimecmp <= 0;
       mtimecmph <= 0;
@@ -226,15 +224,11 @@ module csr_exception_handler #(
       sepc <= 0;
       scause <= 0;
       stval <= 0;
-      sie <= 0;
-      sip <= 0;
 
       satp <= 0;
 
       exception_next_pc <= 0;
       exception_select <= 1'b0;
-
-      mstatus <= 0;
     end else begin
       privilege_mode <= privilege_mode_nxt;
 
@@ -257,8 +251,6 @@ module csr_exception_handler #(
       sepc <= sepc_nxt;
       scause <= scause_nxt;
       stval <= stval_nxt;
-      sie <= sie_nxt;
-      sip <= sip_nxt;
 
       satp <= satp_nxt;
 
@@ -306,14 +298,14 @@ module csr_exception_handler #(
       `CSR_MIMPID:    rdata = 0;
 
       // Machine Trap Setup and Handling
-      `CSR_SSTATUS, `CSR_MSTATUS: rdata = mstatus;
-      `CSR_MSCRATCH:              rdata = mscratch;
-      `CSR_MIE:                   rdata = mie;
-      `CSR_MIP:                   rdata = mip;
-      `CSR_MTVEC:                 rdata = mtvec;
-      `CSR_MEPC:                  rdata = mepc;
-      `CSR_MCAUSE:                rdata = mcause;
-      `CSR_MTVAL:                 rdata = mtval;
+      `CSR_MSTATUS:  rdata = mstatus;
+      `CSR_MSCRATCH: rdata = mscratch;
+      `CSR_MIE:      rdata = mie;
+      `CSR_MIP:      rdata = mip;
+      `CSR_MTVEC:    rdata = mtvec;
+      `CSR_MEPC:     rdata = mepc;
+      `CSR_MCAUSE:   rdata = mcause;
+      `CSR_MTVAL:    rdata = mtval;
 
       `CSR_MEDELEG: rdata = medeleg;
       `CSR_MIDELEG: rdata = mideleg;
@@ -322,14 +314,15 @@ module csr_exception_handler #(
       `CSR_MTIMECMPH: rdata = mtimecmph;
 
       // Supervisor Trap Setup and Handling
+      `CSR_SSTATUS: rdata = mstatus & `SSTATUS_MASK;
       `CSR_SSCRATCH: rdata = sscratch;
-      `CSR_SIE:    rdata = sie;
-      `CSR_SIP:    rdata = sip;
-      `CSR_STVEC:  rdata = stvec;
-      `CSR_SEPC:   rdata = sepc;
+      `CSR_SIE: rdata = mie & `SIE_MASK;
+      `CSR_SIP: rdata = mip & `SIP_MASK;
+      `CSR_STVEC: rdata = stvec;
+      `CSR_SEPC: rdata = sepc;
       `CSR_SCAUSE: rdata = scause;
-      `CSR_STVAL:  rdata = stval;
-      `CSR_SATP:   rdata = satp;
+      `CSR_STVAL: rdata = stval;
+      `CSR_SATP: rdata = satp;
 
       default: begin
         csr_not_exist = 1'b1;
@@ -358,15 +351,14 @@ module csr_exception_handler #(
   endfunction
 
 
-  reg [31:0] wdata_nxt;
-  reg [31:0] temp_xstatus;
-  reg [31:0] temp_mip;
-  reg [31:0] temp_sip;
+
   reg [31:0] deleg;
   reg [31:0] mask;
-
-  reg [31:0] pending_master_mask;
-  reg [31:0] pending_supervisor_mask;
+  reg [31:0] pending_irqs;
+  reg [31:0] temp_mip;
+  reg [31:0] temp_restricted;
+  reg [31:0] temp_xstatus;
+  reg [31:0] wdata_nxt;
 
   reg m_enabled;
   reg s_enabled;
@@ -396,9 +388,8 @@ module csr_exception_handler #(
     mtimecmp_nxt = mtimecmp;
     mtimecmph_nxt = mtimecmph;
 
+    temp_restricted = 0;
     sscratch_nxt = sscratch;
-    sie_nxt = sie;
-    sip_nxt = sip;
     stvec_nxt = stvec;
     sepc_nxt = sepc;
     scause_nxt = scause;
@@ -416,7 +407,6 @@ module csr_exception_handler #(
     wdata_nxt = is_csr_clear ? rdata & ~wdata : is_csr_set ? rdata | wdata : wdata;
 
     temp_mip = 0;
-    temp_sip = 0;
     tlb_flush = 1'b0;
 
     if (exception_event) begin
@@ -425,14 +415,14 @@ module csr_exception_handler #(
 
       if ((`IS_USER(privilege_mode) || `IS_SUPERVISOR(privilege_mode)) && (deleg & mask)) begin
 
-        temp_xstatus = (mstatus & ~(`MSTATUS_SIE_MASK | `MSTATUS_SPIE_MASK | `MSTATUS_SPP_MASK));
+        temp_xstatus = (mstatus & ~(`XSTATUS_SIE_MASK | `XSTATUS_SPIE_MASK | `XSTATUS_SPP_MASK));
 
         mstatus_nxt = (temp_xstatus |
-        `SET_MSTATUS_SPIE(`GET_MSTATUS_SIE(mstatus))
+        `SET_XSTATUS_SPIE(`GET_XSTATUS_SIE(mstatus))
         |
-        `SET_MSTATUS_SIE(1'b0)
+        `SET_XSTATUS_SIE(1'b0)
         |
-        `SET_MSTATUS_SPP(`IS_SUPERVISOR(privilege_mode))
+        `SET_XSTATUS_SPP(`IS_SUPERVISOR(privilege_mode))
         );
 
         privilege_mode_nxt = `PRIVILEGE_MODE_SUPERVISOR;
@@ -477,32 +467,32 @@ module csr_exception_handler #(
       exception_next_pc_nxt = mepc;
       exception_select_nxt = 1'b1;
     end else if (sret) begin
-      temp_xstatus = (mstatus & ~(`MSTATUS_SIE_MASK | `MSTATUS_SPIE_MASK | `MSTATUS_SPP_MASK | ((!
+      temp_xstatus = (mstatus & ~(`XSTATUS_SIE_MASK | `XSTATUS_SPIE_MASK | `XSTATUS_SPP_MASK | ((!
       `IS_MACHINE(y)
       ) << `MSTATUS_MPRV_BIT)));
 
       mstatus_nxt = (temp_xstatus |
-      `SET_MSTATUS_SIE(`GET_MSTATUS_SPIE(mstatus))
+      `SET_XSTATUS_SIE(`GET_XSTATUS_SPIE(mstatus))
       |
-      `SET_MSTATUS_SPIE(1'b1)
+      `SET_XSTATUS_SPIE(1'b1)
       |
-      `SET_MSTATUS_SPP(`PRIVILEGE_MODE_USER)
+      `SET_XSTATUS_SPP(1'b0)
       );
 
-      privilege_mode_nxt = `GET_MSTATUS_SPP(mstatus);
+      privilege_mode_nxt = `GET_XSTATUS_SPP(mstatus);
 
       exception_next_pc_nxt = sepc;
       exception_select_nxt = 1'b1;
     end else if (csr_write_valid) begin
       case (CSRAddr)
-        `CSR_SSTATUS, `CSR_MSTATUS: mstatus_nxt = wdata_nxt;
-        `CSR_MSCRATCH:              mscratch_nxt = wdata_nxt;
-        `CSR_MIE:                   mie_nxt = wdata_nxt;
-        `CSR_MIP:                   mip_nxt = wdata_nxt;
-        `CSR_MTVEC:                 mtvec_nxt = wdata_nxt;
-        `CSR_MEPC:                  mepc_nxt = wdata_nxt;
-        `CSR_MCAUSE:                mcause_nxt = wdata_nxt;
-        `CSR_MTVAL:                 mtval_nxt = wdata_nxt;
+        `CSR_MSTATUS:  mstatus_nxt = wdata_nxt;
+        `CSR_MSCRATCH: mscratch_nxt = wdata_nxt;
+        `CSR_MIE:      mie_nxt = wdata_nxt;
+        `CSR_MIP:      mip_nxt = wdata_nxt;
+        `CSR_MTVEC:    mtvec_nxt = wdata_nxt;
+        `CSR_MEPC:     mepc_nxt = wdata_nxt;
+        `CSR_MCAUSE:   mcause_nxt = wdata_nxt;
+        `CSR_MTVAL:    mtval_nxt = wdata_nxt;
 
         `CSR_MEDELEG: medeleg_nxt = wdata_nxt;
         `CSR_MIDELEG: mideleg_nxt = wdata_nxt;
@@ -510,9 +500,19 @@ module csr_exception_handler #(
         `CSR_MTIMECMP:  mtimecmp_nxt = wdata_nxt;
         `CSR_MTIMECMPH: mtimecmph_nxt = wdata_nxt;
 
+        `CSR_SSTATUS: begin
+          temp_restricted = mstatus & ~(`SSTATUS_MASK);
+          mstatus_nxt = temp_restricted | (wdata_nxt & `SSTATUS_MASK);
+        end
         `CSR_SSCRATCH: sscratch_nxt = wdata_nxt;
-        `CSR_SIE:      sie_nxt = wdata_nxt;
-        `CSR_SIP:      sip_nxt = wdata_nxt;
+        `CSR_SIE: begin
+          temp_restricted = mie & ~(`SIE_MASK);
+          mie_nxt = temp_restricted | (wdata_nxt & `SIE_MASK);
+        end
+        `CSR_SIP: begin
+          temp_restricted = mip & ~(`SIP_MASK);
+          mip_nxt = temp_restricted | (wdata_nxt & `SIP_MASK);
+        end
         `CSR_STVEC:    stvec_nxt = wdata_nxt;
         `CSR_SEPC:     sepc_nxt = wdata_nxt;
         `CSR_SCAUSE:   scause_nxt = wdata_nxt;
@@ -527,30 +527,39 @@ module csr_exception_handler #(
       endcase
 
     end else begin
-      temp_mip = mip & ~(`MIP_MSIP_MASK | `MIP_MTIP_MASK);
-      mip_nxt  = `SET_MIP_MSIP(IRQ3) | `SET_MIP_MTIP(IRQ7);
-
-      temp_sip = sip & ~(`MIP_SSIP_MASK | `MIP_STIP_MASK);
-      sip_nxt  = `SET_MIP_SSIP(IRQ1) | `SET_MIP_STIP(IRQ5);
+      temp_mip = mip & ~(`MIP_MSIP_MASK | `MIP_MTIP_MASK | `MIP_MEIP_MASK | `XIP_SSIP_MASK | `XIP_STIP_MASK | `XIP_SEIP_MASK);
+      mip_nxt = temp_mip |
+      `SET_MIP_MSIP(IRQ3)
+      |
+      `SET_MIP_MTIP(IRQ7)
+      |
+      `SET_MIP_MEIP(IRQ11)
+      |
+      `SET_XIP_SSIP(IRQ1)
+      |
+      `SET_XIP_STIP(IRQ5)
+      |
+      `SET_XIP_SEIP(IRQ9);
     end
 
-    pending_master_mask = mip & mie;
-    pending_supervisor_mask = sip & sie;
+    pending_irqs = mip & mie;
 
     /* verilog_format: off */
         m_enabled = (!`IS_MACHINE(privilege_mode)) || (`IS_MACHINE(privilege_mode) && `GET_MSTATUS_MIE(mstatus));
-        s_enabled = `IS_USER(privilege_mode) || (`IS_SUPERVISOR(privilege_mode) && `GET_MSTATUS_SIE(mstatus));
+        s_enabled = `IS_USER(privilege_mode) || (`IS_SUPERVISOR(privilege_mode) && `GET_XSTATUS_SIE(mstatus));
     /* verilog_format: on */
 
-    m_interrupts = pending_master_mask & (~mideleg) & ({32{m_enabled}});
-    s_interrupts = pending_supervisor_mask & (mideleg) & ({32{s_enabled}});
+    m_interrupts = pending_irqs & (~mideleg) & ({32{m_enabled}});
+    s_interrupts = pending_irqs & (mideleg) & ({32{s_enabled}});
 
     interrupts = (|m_interrupts ? m_interrupts : s_interrupts);
 
-    IRQ_TO_CPU_CTRL1 = `GET_MIP_SSIP(interrupts);
-    IRQ_TO_CPU_CTRL5 = `GET_MIP_STIP(interrupts);
+    IRQ_TO_CPU_CTRL1 = `GET_XIP_SSIP(interrupts);
     IRQ_TO_CPU_CTRL3 = `GET_MIP_MSIP(interrupts);
+    IRQ_TO_CPU_CTRL5 = `GET_XIP_STIP(interrupts);
     IRQ_TO_CPU_CTRL7 = `GET_MIP_MTIP(interrupts);
+    IRQ_TO_CPU_CTRL9 = `GET_XIP_SEIP(interrupts);
+    IRQ_TO_CPU_CTRL11 = `GET_MIP_MEIP(interrupts);
 
     /* verilator lint_on WIDTHEXPAND */
     /* verilator lint_on WIDTHTRUNC */

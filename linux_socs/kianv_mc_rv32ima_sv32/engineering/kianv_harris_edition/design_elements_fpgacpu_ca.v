@@ -1,4 +1,3 @@
-// taken from http://fpgacpu.ca/fpga/index.html
 //# A Priority Encoder
 
 // Takes in a bitmask of multiple requests and returns the zero-based index of

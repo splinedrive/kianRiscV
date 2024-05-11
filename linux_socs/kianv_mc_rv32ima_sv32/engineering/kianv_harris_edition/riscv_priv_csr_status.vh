@@ -31,24 +31,37 @@
 `define IS_SUPERVISOR(privilege) (privilege == `PRIVILEGE_MODE_SUPERVISOR)
 `define IS_MACHINE(privilege) (privilege == `PRIVILEGE_MODE_MACHINE)
 
-`define MIP_MTIP_BIT       7
-`define MIE_MTIP_BIT       7
 
-`define MIP_STIP_BIT       5
-`define MIE_STIP_BIT       5
+`define MIE_MEIE_BIT       11
+`define MIE_MSIE_BIT       3
+`define MIE_MTIE_BIT       7
+`define XIE_SEIE_BIT       9
+`define XIE_SSIE_BIT       1
+`define XIE_STIE_BIT       5
 
-
-`define MIP_MTIP_MASK      (1<< `MIP_MTIP_BIT)
-`define MIE_MTIP_MASK      (1<< `MIE_MTIP_BIT)
-
+`define MIP_MEIP_BIT       11
 `define MIP_MSIP_BIT       3
-`define MIE_MSIP_BIT       3
+`define MIP_MTIP_BIT       7
+`define XIP_SEIP_BIT       9
+`define XIP_SSIP_BIT       1
+`define XIP_STIP_BIT       5
 
+`define MIE_MEIE_MASK      (1<< `MIE_MEIE_BIT)
+`define MIE_MSIE_MASK      (1<< `MIE_MSIE_BIT)
+`define MIE_MTIE_MASK      (1<< `MIE_MTIE_BIT)
+`define XIE_SEIE_MASK      (1<< `XIE_SEIE_BIT)
+`define XIE_SSIE_MASK      (1<< `XIE_SSIE_BIT)
+`define XIE_STIE_MASK      (1<< `XIE_STIE_BIT)
+
+`define XIP_SSIP_MASK      (1<< `XIP_SSIP_BIT)
+`define MIP_MEIP_MASK      (1<< `MIP_MEIP_BIT)
 `define MIP_MSIP_MASK      (1<< `MIP_MSIP_BIT)
-`define MIE_MSIP_MASK      (1<< `MIE_MSIP_BIT)
+`define MIP_MTIP_MASK      (1<< `MIP_MTIP_BIT)
+`define XIP_SEIP_MASK      (1<< `XIP_SEIP_BIT)
+`define XIP_STIP_MASK      (1<< `XIP_STIP_BIT)
 
-`define MSTATUS_SIE_BIT 1
-`define MSTATUS_SIE_MASK (1 << `MSTATUS_SIE_BIT)
+`define XSTATUS_SIE_BIT 1
+`define XSTATUS_SIE_MASK (1 << `XSTATUS_SIE_BIT)
 
 `define MSTATUS_MPP_BIT 11
 `define MSTATUS_MPP_WIDTH 2
@@ -56,75 +69,74 @@
 `define MSTATUS_MIE_BIT 3
 `define MSTATUS_MPRV_BIT 17
 
-`define MSTATUS_SPIE_BIT 5
-`define MSTATUS_SPIE_MASK (1 << `MSTATUS_SPIE_BIT)
+`define XSTATUS_SPIE_BIT 5
+`define XSTATUS_SPIE_MASK (1 << `XSTATUS_SPIE_BIT)
 
 
-`define MSTATUS_SPP_BIT 8
-`define MSTATUS_SPP_MASK (1 << `MSTATUS_SPP_BIT)
+`define XSTATUS_SPP_BIT 8
+`define XSTATUS_SPP_MASK (1 << `XSTATUS_SPP_BIT)
 
-`define MIP_MTIE_BIT 7
-`define MIP_MTIE_MASK (1 << `MIP_MTIE_BIT)
-
-`define MIP_STIP_BIT 5
-`define MIP_STIP_MASK (1 << `MIP_STIP_BIT)
-`define MIP_MSIP_BIT 3
-
-`define MIP_SSIP_BIT 0
-`define MIP_SSIP_MASK (1 << `MIP_SSIP_BIT)
-`define MSTATUS_MXR 19
-
-`define MSTATUS_SUM_POS 18
+`define XSTATUS_MXR 19
+`define XSTATUS_SUM_POS 18
 
 `define MSTATUS_MIE_MASK (1 << `MSTATUS_MIE_BIT)
 `define MSTATUS_MPIE_MASK (1 << `MSTATUS_MPIE_BIT)
 `define MSTATUS_MPP_MASK (((1 << `MSTATUS_MPP_WIDTH) - 1) << `MSTATUS_MPP_BIT)
 `define MSTATUS_MPRV_MASK (1 << `MSTATUS_MPRV_BIT)
 
+`define SSTATUS_SIE_BIT   (1 << 1)
+`define SSTATUS_SPIE_BIT  (1 << 5)
+`define SSTATUS_UBE_BIT   (1 << 6)
+`define SSTATUS_SPP_BIT   (1 << 8)
+`define SSTATUS_VS_BIT    (3 << 9)
+`define SSTATUS_FS_BIT    (3 << 13)
+`define SSTATUS_XS_BIT    (3 << 15)
+`define SSTATUS_SUM_BIT   (1 << 18)
+`define SSTATUS_MXR_BIT   (1 << 19)
+`define SSTATUS_SD_BIT    (1 << 31)
 
+`define SSTATUS_MASK (`SSTATUS_SIE_BIT | `SSTATUS_SPIE_BIT | `SSTATUS_UBE_BIT | \
+                      `SSTATUS_SPP_BIT | `SSTATUS_VS_BIT | `SSTATUS_FS_BIT | `SSTATUS_XS_BIT | `SSTATUS_SUM_BIT | \
+                      `SSTATUS_MXR_BIT | `SSTATUS_SD_BIT)
 
-`define GET_MIE_MTIP(mie) ((mie >> `MIE_MTIP_BIT) & 1)
-`define GET_MIE_MSIP(mie) ((mie >> `MIE_MSIP_BIT) & 1)
+`define SIP_MASK (`XIP_SSIP_MASK | `XIP_SEIP_MASK | `XIP_STIP_MASK)
+`define SIE_MASK (`XIE_SSIE_MASK | `XIE_SEIE_MASK | `XIE_STIE_MASK)
 
-`define GET_MIP_MTIP(mip)  (((mip) >> `MIP_MTIP_BIT) & 1'b1)
-`define GET_MIP_MSIP(mip)  (((mip) >> `MIP_MSIP_BIT) & 1'b1)
+`define GET_MIE_MSIE(value) ((value >> `MIE_MSIE_BIT) & 1'b1)
+`define GET_MIE_MTIE(value) ((value >> `MIE_MTIE_BIT) & 1'b1)
+`define GET_MIP_MEIP(value)  (((value) >> `MIP_MEIP_BIT) & 1'b1)
+`define GET_MIP_MSIP(value)  (((value) >> `MIP_MSIP_BIT) & 1'b1)
+`define GET_MIP_MTIP(value)  (((value) >> `MIP_MTIP_BIT) & 1'b1)
+`define GET_XIP_SEIP(value)  (((value) >> `XIP_SEIP_BIT) & 1'b1)
+`define GET_XIP_SSIP(value)  (((value) >> `XIP_SSIP_BIT) & 1'b1)
+`define GET_XIP_STIP(value)  (((value) >> `XIP_STIP_BIT) & 1'b1)
+
+`define SET_MIP_MEIP(value)  ((value) << `MIP_MEIP_BIT)
 `define SET_MIP_MSIP(value)  ((value) << `MIP_MSIP_BIT)
 `define SET_MIP_MTIP(value)  ((value) << `MIP_MTIP_BIT)
-`define SET_MIP_MEIP(mip, value)  ((mip) & ~(1 << `MIP_MEIP_BIT)) | ((value) << `MIP_MEIP_BIT)
-`define SET_MIP_MTIE(mip, value) (((mip) & ~`MIP_MTIE_MASK) | (((value) & 1'b1) << `MIP_MTIE_BIT))
-`define SET_MSTATUS_SPIE(value) ((((value) & 1'b1) << `MSTATUS_SPIE_BIT))
-`define GET_MSTATUS_SPIE(mstatus) (((mstatus) >> `MSTATUS_SPIE_BIT) & 1'b1)
-`define SET_MIP_STIP(value) (((value) & 1'b1) << `MIP_STIP_BIT))
-`define GET_MIP_STIP(mip)  (((mip) >> `MIP_STIP_BIT) & 1'b1)
-
-`define SET_MIP_SSIP(value)  ((((value) << `MIP_SSIP_BIT))
-`define GET_MIP_SSIP(mip)  (((mip) >> `MIP_SSIP_BIT) & 1'b1)
+`define SET_XIP_SEIP(value)  ((value) << `XIP_SEIP_BIT)
+`define SET_XIP_SSIP(value)  ((value) << `XIP_SSIP_BIT)
+`define SET_XIP_STIP(value)  ((value) << `XIP_STIP_BIT)
 
 
+`define GET_MSTATUS_MIE(value) (((value) >> `MSTATUS_MIE_BIT) & 1'b1)
+`define GET_MSTATUS_MPIE(value) (((value) >> `MSTATUS_MPIE_BIT) & 1'b1)
+`define GET_MSTATUS_MPP(value) (((value) >> `MSTATUS_MPP_BIT) & 2'b11)
+`define GET_MSTATUS_MPRV(value) ((value) >> `MSTATUS_MPRV_BIT) & 1'b1
+`define GET_MSTATUS_MXR(value) (((value) >> `XSTATUS_MXR) & 1'b1)
+`define GET_XSTATUS_SIE(value) (((value) >> `XSTATUS_SIE_BIT) & 1'b1)
+`define GET_XSTATUS_SPIE(value) (((value) >> `XSTATUS_SPIE_BIT) & 1'b1)
+`define GET_XSTATUS_SPP(value) (((value) >> `XSTATUS_SPP_BIT) & 1'b1)
+`define GET_XSTATUS_SUM(value) (((value) >> `XSTATUS_SUM_POS) & 1'b1)
+
+`define SET_MSTATUS_MIE(value) ((value) << `MSTATUS_MIE_BIT)
+`define SET_MSTATUS_MPIE(value) ((value) << `MSTATUS_MPIE_BIT)
 `define SET_MSTATUS_MPP(new_privilege_mode) (((new_privilege_mode) & 2'b11) << `MSTATUS_MPP_BIT)
-`define GET_MSTATUS_MPP(mstatus) (((mstatus) >> `MSTATUS_MPP_BIT) & 2'b11)
-
-`define SET_MSTATUS_MPIE(mpi_value) ((((mpi_value) & 1'b1) << `MSTATUS_MPIE_BIT))
-`define GET_MSTATUS_MPIE(mstatus) (((mstatus) >> `MSTATUS_MPIE_BIT) & 1'b1)
-
-`define SET_MSTATUS_MIE(value) ((((value) & 1'b1) << `MSTATUS_MIE_BIT))
-`define GET_MSTATUS_MIE(mstatus) (((mstatus) >> `MSTATUS_MIE_BIT) & 1'b1)
-
-`define SET_MSTATUS_SIE(value) ((((value) & 1'b1) << `MSTATUS_SIE_BIT))
-`define GET_MSTATUS_SIE(mstatus) (((mstatus) >> `MSTATUS_SIE_BIT) & 1'b1)
-
-
 `define SET_MSTATUS_MPRV(mstatus, mprv_value) ((mstatus) & ~`MSTATUS_MPRV_MASK) | (((mprv_value) & 1'b1) << `MSTATUS_MPRV_BIT)
-`define GET_MSTATUS_MPRV(mstatus) ((mstatus) >> `MSTATUS_MPRV_BIT) & 1'b1
-
-`define SET_MSTATUS_SPP(value) ((((value) & 1'b1) << `MSTATUS_SPP_BIT))
-`define GET_MSTATUS_SPP(mstatus) (((mstatus) >> `MSTATUS_SPP_BIT) & 1'b1)
-
-`define SET_MSTATUS_MXR(mstatus, value) ((mstatus) = ((mstatus) & ~`MSTATUS_MXR_MASK) | ((value << 19) & `MSTATUS_MXR_MASK))
-`define GET_MSTATUS_MXR(mstatus) (((mstatus) >> `MSTATUS_MXR) & 1'b1)
-
-`define GET_MSTATUS_SUM(mstatus) (((mstatus) >> `MSTATUS_SUM_POS) & 1'b1)
-
+`define SET_MSTATUS_MXR(mstatus, value) ((mstatus) = ((mstatus) & ~`XSTATUS_MXR_MASK) | ((value << 19) & `XSTATUS_MXR_MASK))
+`define SET_XSTATUS_SIE(value)  ((value) << `XSTATUS_SIE_BIT)
+`define SET_XSTATUS_SPIE(value) ((value) << `XSTATUS_SPIE_BIT)
+`define SET_XSTATUS_SPP(value)  ((value) << `XSTATUS_SPP_BIT)
 
 `define IS_EBREAK(opcode, funct3, funct7, rs1, rs2, rd) ({funct7, rs2, rs1, funct3, rd, opcode} == 32'h00100073)
 `define IS_ECALL(opcode, funct3, funct7, rs1, rs2, rd) ({funct7, rs2, rs1, funct3, rd, opcode} == 32'h00000073)
@@ -132,7 +144,6 @@
 `define IS_SRET(opcode, funct3, funct7, rs1, rs2, rd) ({funct7, rs2, rs1, funct3, rd, opcode} == 32'h10200073)
 `define IS_WFI(opcode, funct3, funct7, rs1, rs2, rd) ({funct7, rs2, rs1, funct3, rd, opcode} == 32'h10500073)
 
-`define IRQ_M_TIMER 7
 `include "mcause.vh"
 
 `endif

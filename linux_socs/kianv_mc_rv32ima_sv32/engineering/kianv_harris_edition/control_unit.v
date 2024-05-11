@@ -77,6 +77,8 @@ module control_unit (
     input wire IRQ_TO_CPU_CTRL3,  // MSIP
     input wire IRQ_TO_CPU_CTRL5,  // STIP
     input wire IRQ_TO_CPU_CTRL7,  // MTIP
+    input wire IRQ_TO_CPU_CTRL9,  // SEIP
+    input wire IRQ_TO_CPU_CTRL11, // MEIP
 
     output wire is_instruction,
     input  wire stall,
@@ -169,10 +171,12 @@ module control_unit (
       .privilege_mode  (privilege_mode),
       .csr_access_fault(csr_access_fault),
 
-      .IRQ_TO_CPU_CTRL1(IRQ_TO_CPU_CTRL1),  // SSIP
-      .IRQ_TO_CPU_CTRL3(IRQ_TO_CPU_CTRL3),  // MSIP
-      .IRQ_TO_CPU_CTRL5(IRQ_TO_CPU_CTRL5),  // STIP
-      .IRQ_TO_CPU_CTRL7(IRQ_TO_CPU_CTRL7),  // MTIP
+      .IRQ_TO_CPU_CTRL1 (IRQ_TO_CPU_CTRL1),  // SSIP
+      .IRQ_TO_CPU_CTRL3 (IRQ_TO_CPU_CTRL3),  // MSIP
+      .IRQ_TO_CPU_CTRL5 (IRQ_TO_CPU_CTRL5),  // STIP
+      .IRQ_TO_CPU_CTRL7 (IRQ_TO_CPU_CTRL7),  // MTIP
+      .IRQ_TO_CPU_CTRL9 (IRQ_TO_CPU_CTRL9),  // SEIP
+      .IRQ_TO_CPU_CTRL11(IRQ_TO_CPU_CTRL11), // MEIP
 
       .mem_valid(mem_valid),
       .mem_ready(mem_ready),

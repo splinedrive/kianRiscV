@@ -76,10 +76,13 @@ module main_fsm (
     input wire [1:0] privilege_mode,
     input wire csr_access_fault,
 
+
     input wire IRQ_TO_CPU_CTRL1,  // SSIP
     input wire IRQ_TO_CPU_CTRL3,  // MSIP
     input wire IRQ_TO_CPU_CTRL5,  // STIP
     input wire IRQ_TO_CPU_CTRL7,  // MTIP
+    input wire IRQ_TO_CPU_CTRL9,  // SEIP
+    input wire IRQ_TO_CPU_CTRL11, // MEIP
 
     output reg  mul_ext_valid,
     input  wire mul_ext_ready,
@@ -269,7 +272,7 @@ module main_fsm (
       S1: begin
         // decode
         case (1'b1)
-          (IRQ_TO_CPU_CTRL1 || IRQ_TO_CPU_CTRL3 || IRQ_TO_CPU_CTRL5 || IRQ_TO_CPU_CTRL7):
+          (IRQ_TO_CPU_CTRL1 || IRQ_TO_CPU_CTRL3 || IRQ_TO_CPU_CTRL5 || IRQ_TO_CPU_CTRL7 || IRQ_TO_CPU_CTRL9 || IRQ_TO_CPU_CTRL11):
           state_nxt = S36;
           (is_load || is_store): state_nxt = S2;
           (is_rtype && !funct7b0): state_nxt = S6;
@@ -819,6 +822,8 @@ module main_fsm (
           IRQ_TO_CPU_CTRL3: cause = `INTERRUPT_MACHINE_SOFTWARE;
           IRQ_TO_CPU_CTRL5: cause = `INTERRUPT_SUPERVISOR_TIMER;
           IRQ_TO_CPU_CTRL7: cause = `INTERRUPT_MACHINE_TIMER;
+          IRQ_TO_CPU_CTRL9: cause = `INTERRUPT_SUPERVISOR_EXTERNAL;
+          IRQ_TO_CPU_CTRL11: cause = `INTERRUPT_MACHINE_EXTERNAL;
           default: cause = 0;
         endcase
         badaddr = 0;

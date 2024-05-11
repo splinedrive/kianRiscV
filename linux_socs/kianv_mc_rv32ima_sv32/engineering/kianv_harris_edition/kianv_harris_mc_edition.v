@@ -38,6 +38,8 @@ module kianv_harris_mc_edition #(
     input  wire        IRQ5,
     input  wire        IRQ3,
     input  wire        IRQ7,
+    input  wire        IRQ9,
+    input  wire        IRQ11,
     output wire [63:0] timer_counter,
     output wire        is_instruction
 );
@@ -106,9 +108,11 @@ module kianv_harris_mc_edition #(
   wire [31:0] mstatus;
 
   wire        IRQ_TO_CPU_CTRL1;
-  wire        IRQ_TO_CPU_CTRL5;
   wire        IRQ_TO_CPU_CTRL3;
+  wire        IRQ_TO_CPU_CTRL5;
   wire        IRQ_TO_CPU_CTRL7;
+  wire        IRQ_TO_CPU_CTRL9;
+  wire        IRQ_TO_CPU_CTRL11;
 
   wire        page_fault;
   wire        selectPC;
@@ -194,11 +198,12 @@ module kianv_harris_mc_edition #(
       .privilege_mode  (privilege_mode),
       .csr_access_fault(csr_access_fault),
 
-      .IRQ_TO_CPU_CTRL1(IRQ_TO_CPU_CTRL1),  // SSIP
-      .IRQ_TO_CPU_CTRL3(IRQ_TO_CPU_CTRL3),  // MSIP
-      .IRQ_TO_CPU_CTRL5(IRQ_TO_CPU_CTRL5),  // STIP
-      .IRQ_TO_CPU_CTRL7(IRQ_TO_CPU_CTRL7)   // MTIP
-
+      .IRQ_TO_CPU_CTRL1 (IRQ_TO_CPU_CTRL1),  // SSIP
+      .IRQ_TO_CPU_CTRL3 (IRQ_TO_CPU_CTRL3),  // MSIP
+      .IRQ_TO_CPU_CTRL5 (IRQ_TO_CPU_CTRL5),  // STIP
+      .IRQ_TO_CPU_CTRL7 (IRQ_TO_CPU_CTRL7),  // MTIP
+      .IRQ_TO_CPU_CTRL9 (IRQ_TO_CPU_CTRL9),  // SEIP
+      .IRQ_TO_CPU_CTRL11(IRQ_TO_CPU_CTRL11)  // MEIP
   );
 
   datapath_unit #(
@@ -269,15 +274,19 @@ module kianv_harris_mc_edition #(
       .page_fault      (page_fault),
       .selectPC        (selectPC),
 
-      .IRQ1(IRQ1),
-      .IRQ5(IRQ5),
-      .IRQ3(IRQ3),
-      .IRQ7(IRQ7),
 
+      .IRQ1(IRQ1),
+      .IRQ3(IRQ3),
+      .IRQ5(IRQ5),
+      .IRQ7(IRQ7),
+      .IRQ9(IRQ9),
+      .IRQ11(IRQ11),
       .IRQ_TO_CPU_CTRL1(IRQ_TO_CPU_CTRL1),  // SSIP
       .IRQ_TO_CPU_CTRL3(IRQ_TO_CPU_CTRL3),  // MSIP
       .IRQ_TO_CPU_CTRL5(IRQ_TO_CPU_CTRL5),  // STIP
-      .IRQ_TO_CPU_CTRL7(IRQ_TO_CPU_CTRL7)   // MTIP
+      .IRQ_TO_CPU_CTRL7(IRQ_TO_CPU_CTRL7),  // MTIP
+      .IRQ_TO_CPU_CTRL9(IRQ_TO_CPU_CTRL9),  // SEIP
+      .IRQ_TO_CPU_CTRL11(IRQ_TO_CPU_CTRL11)  // MEIP
   );
 
   sv32 #(
