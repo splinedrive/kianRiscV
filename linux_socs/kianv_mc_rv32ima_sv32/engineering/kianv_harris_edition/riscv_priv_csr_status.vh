@@ -84,6 +84,9 @@
 `define MSTATUS_MPP_MASK (((1 << `MSTATUS_MPP_WIDTH) - 1) << `MSTATUS_MPP_BIT)
 `define MSTATUS_MPRV_MASK (1 << `MSTATUS_MPRV_BIT)
 
+`define MEDELEG_MASK (32'hff_ff)
+`define MIDELEG_MASK (32'hff_ff)
+
 `define SSTATUS_SIE_BIT   (1 << 1)
 `define SSTATUS_SPIE_BIT  (1 << 5)
 `define SSTATUS_UBE_BIT   (1 << 6)

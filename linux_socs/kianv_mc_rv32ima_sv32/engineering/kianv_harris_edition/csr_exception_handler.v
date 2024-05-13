@@ -307,8 +307,8 @@ module csr_exception_handler #(
       `CSR_MCAUSE:   rdata = mcause;
       `CSR_MTVAL:    rdata = mtval;
 
-      `CSR_MEDELEG: rdata = medeleg;
-      `CSR_MIDELEG: rdata = mideleg;
+      `CSR_MEDELEG: rdata = medeleg & `MEDELEG_MASK;
+      `CSR_MIDELEG: rdata = mideleg & `MIDELEG_MASK;
 
       `CSR_MTIMECMP:  rdata = mtimecmp;
       `CSR_MTIMECMPH: rdata = mtimecmph;
@@ -494,8 +494,8 @@ module csr_exception_handler #(
         `CSR_MCAUSE:   mcause_nxt = wdata_nxt;
         `CSR_MTVAL:    mtval_nxt = wdata_nxt;
 
-        `CSR_MEDELEG: medeleg_nxt = wdata_nxt;
-        `CSR_MIDELEG: mideleg_nxt = wdata_nxt;
+        `CSR_MEDELEG: medeleg_nxt = wdata_nxt & `MEDELEG_MASK;
+        `CSR_MIDELEG: mideleg_nxt = wdata_nxt & `MIDELEG_MASK;
 
         `CSR_MTIMECMP:  mtimecmp_nxt = wdata_nxt;
         `CSR_MTIMECMPH: mtimecmph_nxt = wdata_nxt;
