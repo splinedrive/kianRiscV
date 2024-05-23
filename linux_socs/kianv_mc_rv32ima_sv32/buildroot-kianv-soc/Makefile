@@ -1,3 +1,4 @@
+SHELL := /bin/bash
 REPO_URL := https://github.com/buildroot/buildroot.git
 BRANCH := master
 DIR := buildroot
