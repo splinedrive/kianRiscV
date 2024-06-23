@@ -41,7 +41,7 @@ module clint (
   wire is_mtimeh = (addr == 32'h1100_bffc);
   wire is_mtimel = (addr == 32'h1100_bff8);
 
-  assign is_valid = valid && (is_msip || is_mtimecmpl || is_mtimecmph || is_mtimel || is_mtimeh);
+  assign is_valid = !ready && valid && (is_msip || is_mtimecmpl || is_mtimecmph || is_mtimel || is_mtimeh);
   always @(posedge clk) ready <= !resetn ? 1'b0 : is_valid;
 
   wire [63:0] mtime;
