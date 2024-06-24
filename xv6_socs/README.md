@@ -20,7 +20,7 @@ The filesystem image (fs.img) contains the xv6 root filesystem. Use the dd comma
 
 Command:
 ```
-sudo dd if=fs.img of=/dev/sdx
+sudo dd if=xv6_sd.img of=/dev/sdx
 ```
 
 Step 3: Boot the System
