@@ -6,7 +6,7 @@ I implemented it as primitively as possible to achieve the goal. Actually,
 it took less than two weeks before we could boot real Linux on the FPGA. That was during the Christmas holidays,
 and it was a good opportunity to play around with it.
 
-The SoC is operating with the most recent kernel version, v6.9.6,
+The SoC is operating with the most recent stable kernel version,
 and offers support for the following PMODs (as shown in the photo): GPIO (input, output),
 Network PMOD (Digilent PMOD NIC100), a second UART (PMOD UART by Digilent), and an OLED display (Digilent OLEDrgb 64x96, 16-bit).
 The board is capable of functioning without these PMODs, with the kernel adjusting accordingly.
@@ -149,7 +149,7 @@ Resources I have used:
 - https://danielmangum.com/posts/risc-v-bytes-qemu-gdb/
 - https://www.qemu.org/docs/master/system/target-riscv.html
 - https://riscv.org/technical/specifications/
-- https://starfivetech.com/uploads/sifive-interrupt-cookbook-v1p2.pdf 
+- https://starfivetech.com/uploads/sifive-interrupt-cookbook-v1p2.pdf
 - https://github.com/ultraembedded/exactstep
   (It was very educational, and I was able to compare it with the specification directly.)
 - https://github.com/qemu
