@@ -26,7 +26,7 @@ alt="Harris MultiCycle RISC-V rv32ima"
 <figcaption>KianV Multicycle rv32ima CPU</figcaption>
 </figure>
 <figure>
-<img src="./tangnano20k_linux.png" width="80%" height="80%"
+<img src="./cyc1000_linux.png" width="80%" height="80%"
 alt="Harris MultiCycle RISC-V rv32ima"
 <figcaption>KianV Multicycle rv32ima CPU</figcaption>
 </figure>
@@ -61,7 +61,7 @@ However, I couldn't benefit from it because I didn't understand it. The
 understanding came with the emulator.
 
 he following FPGA boards are currently supported: 
-tangNano20K, iceSugarPro and ulx3s. If the ulx3s does not work, 
+tangNano20K, cyc1000, iceSugarPro and ulx3s. If the ulx3s does not work, 
 change qspi to spi in the define header to 1'b0. 
 Generally speaking, if something does not work, 
 reduce the system clock in the define header to a different clock frequency.

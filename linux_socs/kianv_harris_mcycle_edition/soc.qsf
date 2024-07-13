@@ -1,0 +1,273 @@
+# -------------------------------------------------------------------------- #
+#
+# Copyright (C) 2022  Intel Corporation. All rights reserved.
+# Your use of Intel Corporation's design tools, logic functions 
+# and other software and tools, and any partner logic 
+# functions, and any output files from any of the foregoing 
+# (including device programming or simulation files), and any 
+# associated documentation or information are expressly subject 
+# to the terms and conditions of the Intel Program License 
+# Subscription Agreement, the Intel Quartus Prime License Agreement,
+# the Intel FPGA IP License Agreement, or other applicable license
+# agreement, including, without limitation, that your use is for
+# the sole purpose of programming logic devices manufactured by
+# Intel and sold by Intel or its authorized distributors.  Please
+# refer to the applicable agreement for further details, at
+# https://fpgasoftware.intel.com/eula.
+#
+# -------------------------------------------------------------------------- #
+#
+# Quartus Prime
+# Version 21.1.1 Build 850 06/23/2022 SJ Lite Edition
+#
+# -------------------------------------------------------------------------- #
+#
+# Notes:
+#
+# 1) The default values for assignments are stored in the file:
+#		soc_assignment_defaults.qdf
+#    If this file doesn't exist, see file:
+#		assignment_defaults.qdf
+#
+# 2) Intel recommends that you do not modify this file. This
+#    file is updated automatically by the Quartus Prime software
+#    and any changes you make may be lost or overwritten.
+#
+# -------------------------------------------------------------------------- #
+
+
+set_global_assignment -name FAMILY "Cyclone 10 LP"
+set_global_assignment -name DEVICE 10CL025YU256C8G
+set_global_assignment -name TOP_LEVEL_ENTITY soc
+set_global_assignment -name ORIGINAL_QUARTUS_VERSION 21.1.1
+set_global_assignment -name LAST_QUARTUS_VERSION "21.1.1 Lite Edition"
+set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
+set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
+set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
+set_global_assignment -name ERROR_CHECK_FREQUENCY_DIVISOR 1
+set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
+set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
+set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
+
+set_location_assignment PIN_M6 -to led[0]
+set_location_assignment PIN_T4 -to led[1]
+set_location_assignment PIN_T3 -to led[2]
+set_location_assignment PIN_R3 -to led[3]
+set_location_assignment PIN_T2 -to led[4]
+set_location_assignment PIN_R4 -to led[5]
+set_location_assignment PIN_N5 -to led[6]
+set_location_assignment PIN_N3 -to led[7]
+
+#create_clock -name "clk_osc" -period 20.000ns [get_ports {clk_osc}]
+set_location_assignment PIN_M2 -to clk_osc
+set_location_assignment PIN_A3 -to sdram_addr[0]
+set_location_assignment PIN_B5 -to sdram_addr[1]
+set_location_assignment PIN_B4 -to sdram_addr[2]
+set_location_assignment PIN_B3 -to sdram_addr[3]
+set_location_assignment PIN_C3 -to sdram_addr[4]
+set_location_assignment PIN_D3 -to sdram_addr[5]
+set_location_assignment PIN_E6 -to sdram_addr[6]
+set_location_assignment PIN_E7 -to sdram_addr[7]
+set_location_assignment PIN_D6 -to sdram_addr[8]
+set_location_assignment PIN_D8 -to sdram_addr[9]
+set_location_assignment PIN_A5 -to sdram_addr[10]
+set_location_assignment PIN_E8 -to sdram_addr[11]
+
+
+set_location_assignment PIN_A4 -to sdram_ba[0]
+set_location_assignment PIN_B6 -to sdram_ba[1]
+
+set_location_assignment PIN_B14 -to sdram_clk
+set_location_assignment PIN_F8 -to sdram_cke
+set_location_assignment PIN_A6 -to sdram_csn
+
+set_location_assignment PIN_A7 -to sdram_wen
+set_location_assignment PIN_B7 -to sdram_rasn
+
+
+set_location_assignment PIN_D12 -to sdram_dqm[1]
+set_location_assignment PIN_B13 -to sdram_dqm[0]
+set_location_assignment PIN_B10 -to sdram_dq[0]
+set_location_assignment PIN_A10 -to sdram_dq[1]
+set_location_assignment PIN_B11 -to sdram_dq[2]
+set_location_assignment PIN_A11 -to sdram_dq[3]
+set_location_assignment PIN_A12 -to sdram_dq[4]
+set_location_assignment PIN_D9 -to sdram_dq[5]
+set_location_assignment PIN_B12 -to sdram_dq[6]
+set_location_assignment PIN_C9 -to sdram_dq[7]
+set_location_assignment PIN_D11 -to sdram_dq[8]
+set_location_assignment PIN_E11 -to sdram_dq[9]
+set_location_assignment PIN_A15 -to sdram_dq[10]
+set_location_assignment PIN_E9 -to sdram_dq[11]
+set_location_assignment PIN_D14 -to sdram_dq[12]
+set_location_assignment PIN_F9 -to sdram_dq[13]
+set_location_assignment PIN_C14 -to sdram_dq[14]
+set_location_assignment PIN_A14 -to sdram_dq[15]
+
+
+#set_location_assignment PIN_P2 -to uart_rx
+#set_location_assignment PIN_N2 -to uart_tx
+
+set_location_assignment PIN_R7 -to uart_rx
+set_location_assignment PIN_T7 -to uart_tx
+
+set_global_assignment -name RESERVE_FLASH_NCE_AFTER_CONFIGURATION "USE AS REGULAR IO"
+set_global_assignment -name RESERVE_DATA0_AFTER_CONFIGURATION "USE AS REGULAR IO"
+set_global_assignment -name RESERVE_DATA1_AFTER_CONFIGURATION "USE AS REGULAR IO"
+set_global_assignment -name RESERVE_DCLK_AFTER_CONFIGURATION "USE AS REGULAR IO"
+
+
+set_location_assignment PIN_D2 -to flash_csn
+set_location_assignment PIN_H2 -to flash_miso
+set_location_assignment PIN_C1 -to flash_mosi
+set_location_assignment PIN_H1 -to flash_sclk
+
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to flash_csn
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to flash_miso
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to flash_mosi
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to flash_sclk
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to uart_rx
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to uart_tx
+set_global_assignment -name VERILOG_FILE ../linux_socs/kianv_harris_mcycle_edition/spi.v
+set_global_assignment -name VERILOG_INCLUDE_FILE ../linux_socs/kianv_harris_mcycle_edition/kianv_harris_edition/riscv_defines.vh
+set_global_assignment -name VERILOG_INCLUDE_FILE ../linux_socs/kianv_harris_mcycle_edition/kianv_harris_edition/rv32_amo_opcodes.vh
+set_global_assignment -name VERILOG_INCLUDE_FILE ../linux_socs/kianv_harris_mcycle_edition/kianv_harris_edition/riscv_priv_csr_status.vh
+set_global_assignment -name VERILOG_INCLUDE_FILE ../linux_socs/kianv_harris_mcycle_edition/defines_soc.vh
+set_global_assignment -name VERILOG_FILE ../linux_socs/kianv_harris_mcycle_edition/kianv_harris_edition/store_decoder.v
+set_global_assignment -name VERILOG_FILE ../linux_socs/kianv_harris_mcycle_edition/kianv_harris_edition/store_alignment.v
+set_global_assignment -name VERILOG_FILE ../linux_socs/kianv_harris_mcycle_edition/kianv_harris_edition/register_file.v
+set_global_assignment -name VERILOG_FILE ../linux_socs/kianv_harris_mcycle_edition/kianv_harris_edition/multiplier_extension_decoder.v
+set_global_assignment -name VERILOG_FILE ../linux_socs/kianv_harris_mcycle_edition/kianv_harris_edition/multiplier_decoder.v
+set_global_assignment -name VERILOG_FILE ../linux_socs/kianv_harris_mcycle_edition/kianv_harris_edition/multiplier.v
+set_global_assignment -name VERILOG_FILE ../linux_socs/kianv_harris_mcycle_edition/kianv_harris_edition/main_fsm.v
+set_global_assignment -name VERILOG_FILE ../linux_socs/kianv_harris_mcycle_edition/kianv_harris_edition/load_decoder.v
+set_global_assignment -name VERILOG_FILE ../linux_socs/kianv_harris_mcycle_edition/kianv_harris_edition/load_alignment.v
+set_global_assignment -name VERILOG_FILE ../linux_socs/kianv_harris_mcycle_edition/kianv_harris_edition/kianv_harris_mc_edition.v
+set_global_assignment -name VERILOG_FILE ../linux_socs/kianv_harris_mcycle_edition/kianv_harris_edition/extend.v
+set_global_assignment -name VERILOG_FILE ../linux_socs/kianv_harris_mcycle_edition/kianv_harris_edition/divider_decoder.v
+set_global_assignment -name VERILOG_FILE ../linux_socs/kianv_harris_mcycle_edition/kianv_harris_edition/divider.v
+set_global_assignment -name VERILOG_FILE ../linux_socs/kianv_harris_mcycle_edition/kianv_harris_edition/design_elements.v
+set_global_assignment -name VERILOG_FILE ../linux_socs/kianv_harris_mcycle_edition/kianv_harris_edition/datapath_unit.v
+set_global_assignment -name VERILOG_FILE ../linux_socs/kianv_harris_mcycle_edition/kianv_harris_edition/csr_exception_handler.v
+set_global_assignment -name VERILOG_FILE ../linux_socs/kianv_harris_mcycle_edition/kianv_harris_edition/csr_decoder.v
+set_global_assignment -name VERILOG_FILE ../linux_socs/kianv_harris_mcycle_edition/kianv_harris_edition/control_unit.v
+set_global_assignment -name VERILOG_FILE ../linux_socs/kianv_harris_mcycle_edition/kianv_harris_edition/alu_decoder.v
+set_global_assignment -name VERILOG_FILE ../linux_socs/kianv_harris_mcycle_edition/kianv_harris_edition/alu.v
+set_global_assignment -name VERILOG_FILE ../linux_socs/kianv_harris_mcycle_edition/sdram/w9864g6jt_ctrl.v
+set_global_assignment -name VERILOG_FILE ../linux_socs/kianv_harris_mcycle_edition/tx_uart.v
+set_global_assignment -name VERILOG_FILE ../linux_socs/kianv_harris_mcycle_edition/soc.v
+set_global_assignment -name VERILOG_FILE ../linux_socs/kianv_harris_mcycle_edition/rx_uart.v
+set_global_assignment -name VERILOG_FILE ../linux_socs/kianv_harris_mcycle_edition/qqspi.v
+set_global_assignment -name VERILOG_FILE ../linux_socs/kianv_harris_mcycle_edition/fifo.v
+set_global_assignment -name VERILOG_FILE ../linux_socs/kianv_harris_mcycle_edition/clint.v
+set_global_assignment -name VERILOG_FILE ../linux_socs/kianv_harris_mcycle_edition/bram.v
+set_global_assignment -name SOURCE_FILE db/soc.cmp.rdb
+set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
+set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
+
+#set_location_assignment PIN_K17 -to spi_sclk
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to spi_sclk
+#set_location_assignment PIN_M19 -to spi_cen
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to spi_cen
+#set_location_assignment PIN_K18 -to spi_sio1_so_miso
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to spi_sio1_so_miso
+#set_location_assignment PIN_M20 -to spi_sio0_si_mosi
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to spi_sio0_si_mosi
+#set_instance_assignment -name RESERVE_PIN AS_OUTPUT_DRIVING_VCC -to spi_sclk
+#set_instance_assignment -name RESERVE_PIN AS_OUTPUT_DRIVING_VCC -to spi_cen
+#
+#set_instance_assignment -name RESERVE_PIN AS_OUTPUT_DRIVING_VCC -to spi_sio0_si_mosi
+#set_instance_assignment -name RESERVE_PIN AS_OUTPUT_DRIVING_VCC -to spi_sio1_so_miso
+
+set_location_assignment PIN_R2 -to spi_cen
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to spi_cen
+set_location_assignment PIN_P2 -to spi_sio0_si_mosi
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to spi_sio0_si_mosi
+set_location_assignment PIN_N2 -to spi_sio1_so_miso
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to spi_sio1_so_miso
+set_location_assignment PIN_M2 -to spi_sclk
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to spi_sclk
+
+
+
+
+set_global_assignment -name ENABLE_SIGNALTAP ON
+set_global_assignment -name USE_SIGNALTAP_FILE stp3.stp
+set_global_assignment -name SIGNALTAP_FILE stp3.stp
+set_global_assignment -name ENABLE_LOGIC_ANALYZER_INTERFACE ON
+set_global_assignment -name USE_LOGIC_ANALYZER_INTERFACE_FILE output_files/lai9.lai
+set_global_assignment -name LOGIC_ANALYZER_INTERFACE_FILE output_files/lai9.lai
+set_global_assignment -name SLD_NODE_CREATOR_ID 3698176 -section_id auto_lai_0
+set_global_assignment -name SLD_NODE_ENTITY_NAME sld_multitap -section_id auto_lai_0
+set_instance_assignment -name CONNECT_PIN_FROM_SLD_NODE_ENTITY_PORT acq_output[0] -to altera_reserved_lai_0_0 -section_id auto_lai_0
+set_instance_assignment -name CONNECT_PIN_FROM_SLD_NODE_ENTITY_PORT acq_output[1] -to altera_reserved_lai_0_1 -section_id auto_lai_0
+set_instance_assignment -name CONNECT_PIN_FROM_SLD_NODE_ENTITY_PORT acq_output[2] -to altera_reserved_lai_0_2 -section_id auto_lai_0
+set_instance_assignment -name CONNECT_PIN_FROM_SLD_NODE_ENTITY_PORT acq_output[3] -to altera_reserved_lai_0_3 -section_id auto_lai_0
+set_instance_assignment -name CONNECT_PIN_FROM_SLD_NODE_ENTITY_PORT acq_output[4] -to altera_reserved_lai_0_4 -section_id auto_lai_0
+set_instance_assignment -name CONNECT_PIN_FROM_SLD_NODE_ENTITY_PORT acq_output[5] -to altera_reserved_lai_0_5 -section_id auto_lai_0
+set_instance_assignment -name CONNECT_PIN_FROM_SLD_NODE_ENTITY_PORT acq_output[6] -to altera_reserved_lai_0_6 -section_id auto_lai_0
+set_instance_assignment -name CONNECT_PIN_FROM_SLD_NODE_ENTITY_PORT acq_output[7] -to altera_reserved_lai_0_7 -section_id auto_lai_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_NODE_INFO=3698176" -section_id auto_lai_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_NODE_CRC=13795" -section_id auto_lai_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_BANK_WIDTH=8" -section_id auto_lai_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_BANK_SIZE=1" -section_id auto_lai_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_BANK_SEL_WIDTH=1" -section_id auto_lai_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_POWER_UP_STATE=0" -section_id auto_lai_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_ACQ_MODE=0" -section_id auto_lai_0
+
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led[7]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_addr[12]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_addr[11]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_addr[10]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_addr[9]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_addr[8]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_addr[7]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_addr[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_addr[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_addr[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_addr[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_addr[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_addr[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_addr[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_ba[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_ba[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_casn
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_cke
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_clk
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_csn
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_dq[15]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_dq[14]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_dq[13]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_dq[12]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_dq[11]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_dq[10]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_dq[9]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_dq[8]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_dq[7]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_dq[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_dq[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_dq[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_dq[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_dq[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_dq[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_dq[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_dqm[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_dqm[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_rasn
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdram_wen
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to clk_osc
+
+
+
+set_global_assignment -name SLD_FILE db/stp3_auto_stripped.stp
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

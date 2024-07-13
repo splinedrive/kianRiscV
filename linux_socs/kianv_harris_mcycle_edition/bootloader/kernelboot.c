@@ -22,8 +22,7 @@
 
 #define SPI_ADDR_BASE 0x20000000
 #define KERNEL_IMAGE (SPI_ADDR_BASE + 1024 * 1024 * 2)
-#define DTB_IMAGE (SPI_ADDR_BASE + 1024 * 1024 * 7)
-#define BINARY_SRC (SPI_ADDR_BASE + 1024 * 1024 * 2)
+#define DTB_IMAGE (SPI_ADDR_BASE + (1024 * (1024 + 512)))
 #define SDRAM_START (0x80000000)
 #define SDRAM_END (0x80000000 + 1024 * 1024 * 8)
 #define DTB_TARGET (SDRAM_END - 2048)
@@ -54,7 +53,7 @@ typedef void (*func_ptr)(int, char *);
 void main() {
   // function_ptr_t kernel_entry = (function_ptr_t) SDRAM_START;
   // memset(SDRAM_START, 1, 1024*1024*32);
-  generate_crc32_table();
+//  generate_crc32_table();
   printf("\nKianV RISC-V Linux SOC\n");
   printf("----------------------\n");
   printf("loading kernel Image from flash...\n");
@@ -77,7 +76,7 @@ void main() {
   printf("\nstarting kernel at 0x80000000...\n");
 
   int hartId = 0;
-  char *dtb = (char *)DTB_IMAGE;
+  char *dtb = (char *)DTB_TARGET;
   void *kernel = (void *)SDRAM_START;
   func_ptr kernel_entry = (func_ptr)kernel;
   kernel_entry(hartId, dtb);
