@@ -1,4 +1,4 @@
-From 8413a8586a966ff103faeb4d174cc9f9d5a20c67 Mon Sep 17 00:00:00 2001
+From 7a2ddc3d0289abcfdc3b3cda399a8a42307ffc49 Mon Sep 17 00:00:00 2001
 From: Hirosh Dabui <hirosh@dabui.de>
 Date: Sun, 21 Apr 2024 13:58:21 +0200
 Subject: [PATCH] Add SV32 support patches for KianV RISC-V SoC
@@ -6,23 +6,23 @@ Subject: [PATCH] Add SV32 support patches for KianV RISC-V SoC
 ---
  drivers/gpio/Kconfig                        |   8 ++
  drivers/gpio/Makefile                       |   2 +
- drivers/gpio/gpio-kianv.c                   | 124 +++++++++++++++++
- drivers/net/ethernet/microchip/enc28j60.c   | 141 ++++++++++++++++++++
- drivers/net/ethernet/microchip/encx24j600.c |  92 +++++++++++++
+ drivers/gpio/gpio-kianv.c                   | 124 ++++++++++++++++
+ drivers/net/ethernet/microchip/enc28j60.c   | 141 ++++++++++++++++++
+ drivers/net/ethernet/microchip/encx24j600.c |  92 ++++++++++++
  drivers/net/ethernet/wiznet/w5100.c         |  66 ++++++++-
  drivers/spi/Kconfig                         |  18 +++
  drivers/spi/Makefile                        |   3 +
- drivers/spi/spi-kianV-simple.c              | 138 +++++++++++++++++++
- drivers/spi/spi-kianV-simple2.c             | 138 +++++++++++++++++++
- drivers/spi/spi-kianV-simple3.c             | 138 +++++++++++++++++++
- drivers/staging/fbtft/fb_ssd1331.c          |  38 +++++-
- drivers/staging/fbtft/fbtft-core.c          |   4 +-
+ drivers/spi/spi-kianV-simple.c              | 149 ++++++++++++++++++++
+ drivers/spi/spi-kianV-simple2.c             | 149 ++++++++++++++++++++
+ drivers/spi/spi-kianV-simple3.c             | 149 ++++++++++++++++++++
+ drivers/staging/fbtft/fb_ssd1331.c          |  38 ++++-
+ drivers/staging/fbtft/fbtft-core.c          |  38 ++++-
  sound/Kconfig                               |   2 +
  sound/Makefile                              |   3 +-
  sound/kianv/Kconfig                         |   4 +
  sound/kianv/Makefile                        |   1 +
  sound/kianv/kianv-snd.c                     | 111 +++++++++++++++
- 18 files changed, 1022 insertions(+), 9 deletions(-)
+ 18 files changed, 1086 insertions(+), 12 deletions(-)
  create mode 100644 drivers/gpio/gpio-kianv.c
  create mode 100644 drivers/spi/spi-kianV-simple.c
  create mode 100644 drivers/spi/spi-kianV-simple2.c
@@ -32,10 +32,10 @@ Subject: [PATCH] Add SV32 support patches for KianV RISC-V SoC
  create mode 100644 sound/kianv/kianv-snd.c
 
 diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index b50d0b470849..5b81c83bdf1d 100644
+index 1c28a48915bb..86c0d215feb3 100644
 --- a/drivers/gpio/Kconfig
 +++ b/drivers/gpio/Kconfig
-@@ -773,6 +773,14 @@ config GPIO_XILINX
+@@ -800,6 +800,14 @@ config GPIO_XILINX
  	help
  	  Say yes here to support the Xilinx FPGA GPIO device.
  
@@ -51,10 +51,10 @@ index b50d0b470849..5b81c83bdf1d 100644
  	tristate "Cavium ThunderX2 GPIO support"
  	depends on ARCH_THUNDER2 || COMPILE_TEST
 diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index fdd28c58d890..dccf3f3ddead 100644
+index e2a53013780e..7aad19e91b82 100644
 --- a/drivers/gpio/Makefile
 +++ b/drivers/gpio/Makefile
-@@ -199,3 +199,5 @@ obj-$(CONFIG_GPIO_XTENSA)		+= gpio-xtensa.o
+@@ -200,3 +200,5 @@ obj-$(CONFIG_GPIO_XTENSA)		+= gpio-xtensa.o
  obj-$(CONFIG_GPIO_ZEVIO)		+= gpio-zevio.o
  obj-$(CONFIG_GPIO_ZYNQ)			+= gpio-zynq.o
  obj-$(CONFIG_GPIO_ZYNQMP_MODEPIN)	+= gpio-zynqmp-modepin.o
@@ -378,7 +378,7 @@ index d6c9491537e4..6a614f07a7f5 100644
  	dev->if_port = IF_PORT_10BASET;
  	dev->irq = spi->irq;
 diff --git a/drivers/net/ethernet/microchip/encx24j600.c b/drivers/net/ethernet/microchip/encx24j600.c
-index d7c8aa77ec75..c63d097e5ed4 100644
+index b011bf5c2305..8d484cf9ea54 100644
 --- a/drivers/net/ethernet/microchip/encx24j600.c
 +++ b/drivers/net/ethernet/microchip/encx24j600.c
 @@ -4,6 +4,7 @@
@@ -643,10 +643,10 @@ index b26fd15c25ae..50395a546213 100644
  	destroy_workqueue(priv->xfer_wq);
  err_wq:
 diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
-index bc7021da2fe9..9bd402d65329 100644
+index a2c99ff33e0a..f806efab5f03 100644
 --- a/drivers/spi/Kconfig
 +++ b/drivers/spi/Kconfig
-@@ -661,6 +661,24 @@ config SPI_MICROCHIP_CORE_QSPI
+@@ -672,6 +672,24 @@ config SPI_MICROCHIP_CORE_QSPI
  	  PolarFire SoC.
  	  If built as a module, it will be called spi-microchip-core-qspi.
  
@@ -672,13 +672,13 @@ index bc7021da2fe9..9bd402d65329 100644
  	tristate "MediaTek SPI controller"
  	depends on ARCH_MEDIATEK || COMPILE_TEST
 diff --git a/drivers/spi/Makefile b/drivers/spi/Makefile
-index 4ff8d725ba5e..8fd32abcc4b3 100644
+index e694254dec04..5ee224dd9f82 100644
 --- a/drivers/spi/Makefile
 +++ b/drivers/spi/Makefile
-@@ -14,6 +14,9 @@ obj-$(CONFIG_SPI_SPIDEV)		+= spidev.o
- obj-$(CONFIG_SPI_LOOPBACK_TEST)		+= spi-loopback-test.o
+@@ -15,6 +15,9 @@ obj-$(CONFIG_SPI_LOOPBACK_TEST)		+= spi-loopback-test.o
  
  # SPI master controller drivers (bus)
+ obj-$(CONFIG_SPI_AIROHA_SNFI)		+= spi-airoha-snfi.o
 +obj-$(CONFIG_SPI_KIANV_SPI_SIMPLE0)     += spi-kianV-simple.o
 +obj-$(CONFIG_SPI_KIANV_SPI_SIMPLE1)     += spi-kianV-simple2.o
 +obj-$(CONFIG_SPI_KIANV_SPI_SIMPLE2)     += spi-kianV-simple3.o
@@ -687,10 +687,10 @@ index 4ff8d725ba5e..8fd32abcc4b3 100644
  obj-$(CONFIG_SPI_ALTERA_DFL)		+= spi-altera-dfl.o
 diff --git a/drivers/spi/spi-kianV-simple.c b/drivers/spi/spi-kianV-simple.c
 new file mode 100644
-index 000000000000..aadbe60e408e
+index 000000000000..eea253df4c45
 --- /dev/null
 +++ b/drivers/spi/spi-kianV-simple.c
-@@ -0,0 +1,138 @@
+@@ -0,0 +1,149 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * kianV-Simple SPI controller driver
@@ -727,25 +727,36 @@ index 000000000000..aadbe60e408e
 +}
 +
 +static int kianVspi_transfer_one(struct spi_controller *ctrl, struct spi_device *spi,
-+    struct spi_transfer *t)
++                                 struct spi_transfer *t)
 +{
-+  struct kianVspi_hw *hw = spi_controller_get_devdata(ctrl);
-+  const u8 *tx = t->tx_buf;
-+  u8 *rx = t->rx_buf;
-+  int i;
++    struct kianVspi_hw *hw = spi_controller_get_devdata(ctrl);
++    const u8 *tx = t->tx_buf;
++    u8 *rx = t->rx_buf;
++    int i;
++    unsigned long timeout;
 +
-+  for (i = 0; i < t->len; i++) {
-+    while ((hw->regs->ctrl & 0x80000000) != 0)
-+        ;
-+    hw->regs->data = tx ? *tx++ : 0x00;
-+    while ((hw->regs->ctrl & 0x80000000) != 0)
-+        ;
++    if (!hw || !t) {
++        return -EINVAL;
++    }
 +
-+    if (rx)
-+      *rx++ = hw->regs->data;
-+  }
++    for (i = 0; i < t->len; i++) {
++        while ((hw->regs->ctrl & 0x80000000) != 0) {
++            cpu_relax();
++        }
 +
-+	return 0;
++        hw->regs->data = tx ? *tx++ : 0x00;
++
++        timeout = jiffies + msecs_to_jiffies(100);
++        while ((hw->regs->ctrl & 0x80000000) != 0) {
++            cpu_relax();
++        }
++
++        if (rx) {
++            *rx++ = hw->regs->data;
++        }
++    }
++
++    return 0;
 +}
 +
 +static int kianVspi_setup(struct spi_device *spi)
@@ -831,10 +842,10 @@ index 000000000000..aadbe60e408e
 +MODULE_ALIAS("platform:" DRIVER_NAME);
 diff --git a/drivers/spi/spi-kianV-simple2.c b/drivers/spi/spi-kianV-simple2.c
 new file mode 100644
-index 000000000000..8098bfb3aa18
+index 000000000000..02dc1be1f17b
 --- /dev/null
 +++ b/drivers/spi/spi-kianV-simple2.c
-@@ -0,0 +1,138 @@
+@@ -0,0 +1,149 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * kianV-Simple SPI controller driver
@@ -871,25 +882,36 @@ index 000000000000..8098bfb3aa18
 +}
 +
 +static int kianVspi_transfer_one(struct spi_controller *ctrl, struct spi_device *spi,
-+    struct spi_transfer *t)
++                                 struct spi_transfer *t)
 +{
-+  struct kianVspi_hw *hw = spi_controller_get_devdata(ctrl);
-+  const u8 *tx = t->tx_buf;
-+  u8 *rx = t->rx_buf;
-+  int i;
++    struct kianVspi_hw *hw = spi_controller_get_devdata(ctrl);
++    const u8 *tx = t->tx_buf;
++    u8 *rx = t->rx_buf;
++    int i;
++    unsigned long timeout;
 +
-+  for (i = 0; i < t->len; i++) {
-+    while ((hw->regs->ctrl & 0x80000000) != 0)
-+        ;
-+    hw->regs->data = tx ? *tx++ : 0x00;
-+    while ((hw->regs->ctrl & 0x80000000) != 0)
-+        ;
++    if (!hw || !t) {
++        return -EINVAL;
++    }
 +
-+    if (rx)
-+      *rx++ = hw->regs->data;
-+  }
++    for (i = 0; i < t->len; i++) {
++        while ((hw->regs->ctrl & 0x80000000) != 0) {
++            cpu_relax();
++        }
 +
-+	return 0;
++        hw->regs->data = tx ? *tx++ : 0x00;
++
++        timeout = jiffies + msecs_to_jiffies(100);
++        while ((hw->regs->ctrl & 0x80000000) != 0) {
++            cpu_relax();
++        }
++
++        if (rx) {
++            *rx++ = hw->regs->data;
++        }
++    }
++
++    return 0;
 +}
 +
 +static int kianVspi_setup(struct spi_device *spi)
@@ -975,10 +997,10 @@ index 000000000000..8098bfb3aa18
 +MODULE_ALIAS("platform:" DRIVER_NAME);
 diff --git a/drivers/spi/spi-kianV-simple3.c b/drivers/spi/spi-kianV-simple3.c
 new file mode 100644
-index 000000000000..084375cadacf
+index 000000000000..00bc1b55f3ea
 --- /dev/null
 +++ b/drivers/spi/spi-kianV-simple3.c
-@@ -0,0 +1,138 @@
+@@ -0,0 +1,149 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * kianV-Simple SPI controller driver
@@ -1015,25 +1037,36 @@ index 000000000000..084375cadacf
 +}
 +
 +static int kianVspi_transfer_one(struct spi_controller *ctrl, struct spi_device *spi,
-+    struct spi_transfer *t)
++                                 struct spi_transfer *t)
 +{
-+  struct kianVspi_hw *hw = spi_controller_get_devdata(ctrl);
-+  const u8 *tx = t->tx_buf;
-+  u8 *rx = t->rx_buf;
-+  int i;
++    struct kianVspi_hw *hw = spi_controller_get_devdata(ctrl);
++    const u8 *tx = t->tx_buf;
++    u8 *rx = t->rx_buf;
++    int i;
++    unsigned long timeout;
 +
-+  for (i = 0; i < t->len; i++) {
-+    while ((hw->regs->ctrl & 0x80000000) != 0)
-+        ;
-+    hw->regs->data = tx ? *tx++ : 0x00;
-+    while ((hw->regs->ctrl & 0x80000000) != 0)
-+        ;
++    if (!hw || !t) {
++        return -EINVAL;
++    }
 +
-+    if (rx)
-+      *rx++ = hw->regs->data;
-+  }
++    for (i = 0; i < t->len; i++) {
++        while ((hw->regs->ctrl & 0x80000000) != 0) {
++            cpu_relax();
++        }
 +
-+	return 0;
++        hw->regs->data = tx ? *tx++ : 0x00;
++
++        timeout = jiffies + msecs_to_jiffies(100);
++        while ((hw->regs->ctrl & 0x80000000) != 0) {
++            cpu_relax();
++        }
++
++        if (rx) {
++            *rx++ = hw->regs->data;
++        }
++    }
++
++    return 0;
 +}
 +
 +static int kianVspi_setup(struct spi_device *spi)
@@ -1193,10 +1226,63 @@ index ec5eced7f8cb..4bfd3ddecbca 100644
  }
  
 diff --git a/drivers/staging/fbtft/fbtft-core.c b/drivers/staging/fbtft/fbtft-core.c
-index 38845f23023f..2fdcdcdf90e9 100644
+index c8d52c63d79f..a0fbcc0cc6ff 100644
 --- a/drivers/staging/fbtft/fbtft-core.c
 +++ b/drivers/staging/fbtft/fbtft-core.c
-@@ -1059,7 +1059,7 @@ static int fbtft_verify_gpios(struct fbtft_par *par)
+@@ -34,11 +34,39 @@ static unsigned long debug;
+ module_param(debug, ulong, 0000);
+ MODULE_PARM_DESC(debug, "override device debug level");
+ 
++#define KIANV_GPIO_HW_ADDR 0x10000700
+ int fbtft_write_buf_dc(struct fbtft_par *par, void *buf, size_t len, int dc)
+ {
+ 	int ret;
+ 
+-	gpiod_set_value(par->gpio.dc, dc);
++        static void __iomem *virt_addr;
++        static bool initialized = false;
++
++        if (!initialized) {
++            virt_addr = ioremap(KIANV_GPIO_HW_ADDR, PAGE_SIZE);
++            if (!virt_addr) {
++                printk(KERN_ERR "Failed to map physical address\n");
++                return -1;
++            }
++
++            // dir offset
++            int value = readl(virt_addr + 0x00);
++            value |= (1 << 9);
++            writel(value, virt_addr + 0x00);
++
++            // output offset
++            value = readl(virt_addr + 0x04);
++            value |= (1 << 9); // set DC
++            writel(value, virt_addr + 0x04);
++            initialized = true;
++        }
++
++        // output
++        int value = readl(virt_addr + 0x04);
++	value = (value & ~(1 << 9)) | ((dc & 1) << 9);
++
++        writel(value, virt_addr + 0x04);
++//	gpiod_set_value(par->gpio.dc, dc);
+ 
+ 	ret = par->fbtftops.write(par, buf, len);
+ 	if (ret < 0)
+@@ -627,9 +655,9 @@ struct fb_info *fbtft_framebuffer_alloc(struct fbtft_display *display,
+ 	info->var.nonstd =         1;
+ 
+ 	/* RGB565 */
+-	info->var.red.offset =     11;
++	info->var.red.offset =     3;
+ 	info->var.red.length =     5;
+-	info->var.green.offset =   5;
++	info->var.green.offset =   8;
+ 	info->var.green.length =   6;
+ 	info->var.blue.offset =    0;
+ 	info->var.blue.length =    5;
+@@ -1058,7 +1086,7 @@ static int fbtft_verify_gpios(struct fbtft_par *par)
  	    !par->gpio.dc) {
  		dev_err(par->info->device,
  			"Missing info about 'dc' gpio. Aborting.\n");
@@ -1205,7 +1291,7 @@ index 38845f23023f..2fdcdcdf90e9 100644
  	}
  
  	if (!par->pdev)
-@@ -1073,7 +1073,7 @@ static int fbtft_verify_gpios(struct fbtft_par *par)
+@@ -1072,7 +1100,7 @@ static int fbtft_verify_gpios(struct fbtft_par *par)
  		if (!par->gpio.db[i]) {
  			dev_err(par->info->device,
  				"Missing 'db%02d' gpio. Aborting.\n", i);
@@ -1228,7 +1314,7 @@ index 4c036a9a420a..b069b6b17997 100644
  
  endif # SOUND
 diff --git a/sound/Makefile b/sound/Makefile
-index 04ef04b1168f..29605d75b351 100644
+index 5942311a4232..35335e29db63 100644
 --- a/sound/Makefile
 +++ b/sound/Makefile
 @@ -6,7 +6,8 @@ obj-$(CONFIG_SOUND) += soundcore.o
@@ -1376,5 +1462,5 @@ index 000000000000..e332452fde41
 +module_init(audio_init);
 +module_exit(audio_exit);
 -- 
-2.40.1
+2.43.0
 
