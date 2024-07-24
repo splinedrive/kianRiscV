@@ -1,3 +1,6 @@
 [submodule "TangNano-9K-example"]
 	path = archive/TangNano-9K-example
 	url = https://github.com/splinedrive/TangNano-9K-example
+[submodule "asic/tt05_kianV_rv32ima_ulinux_soc"]
+	path = asic/tt05_kianV_rv32ima_ulinux_soc
+	url = https://github.com/splinedrive/KianV_rv32ia_uLinux_SoC
