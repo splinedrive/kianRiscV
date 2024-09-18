@@ -1,4 +1,4 @@
-<img src="kianVsv32.jpg" alt="Kianv Soc"/>
+<img src="zendots_blue_red.png" alt="Kianv logo"/>
 
 The Journey of an Embedded Systems Engineer: From Logic Design to Implementing a Linux SoC and Beyond
 ======================================================================================================
@@ -11,6 +11,7 @@ RISC-V ASIC/FPGA uLinux/MMU Linux SoCs:
 =========================================
 If you're interested in trying out the KianV SV32 (MMU) RV32IMA Zicntr Linux SoC, complete with virtual memory support, check out the link here:
 [KianV SV32 RV32IMA Zicntr.](https://github.com/splinedrive/kianRiscV/tree/master/linux_socs/kianv_mc_rv32ima_sv32).
+<img src="kianVsv32.jpg" alt="Kianv Soc"/>
 
 Checkout my KianV RISC-V uLinux SoC!
 [FPGA implementation details here](https://github.com/splinedrive/kianRiscV/blob/master/linux_socs/kianv_harris_mcycle_edition/README.md).
