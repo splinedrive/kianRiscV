@@ -88,6 +88,6 @@
 `define HAS_BRAM
 `define RESET_ADDR 0 //(`SPI_NOR_MEM_ADDR_START + `SPI_MEMORY_OFFSET)
 `define FIRMWARE_BRAM "bootloader/bootloader.hex"
-`define BRAM_WORDS (1024*3)
+`define BRAM_WORDS (1024*4)
 
 `endif  // KIANV_SOC
