@@ -86,14 +86,14 @@ flash_os: partition-disk $(FW_PAYLOAD_RLE) flash_kernel flash_rootfs
 
 flash_kernel: unmount $(FW_PAYLOAD_RLE)
 	@echo "Burning kernel payload to $(DEVICE)1..."
-	@sudo dd if=fw_payload.rle of=$(DEVICE)1 bs=4M status=progress
+	@sudo dd if=fw_payload.rle of=$(DEVICE)1 bs=512 conv=sync status=progress
 	@echo "Syncing disks..."
 	@sudo sync
 	@echo "Burn kernel process completed."
 
 flash_rootfs: unmount $(FW_PAYLOAD_RLE)
 	@echo "Burning rootfs to $(DEVICE)2..."
-	@sudo dd if=buildroot/output/images/rootfs.ext2 of=$(DEVICE)2 bs=4M status=progress
+	@sudo dd if=buildroot/output/images/rootfs.ext2 of=$(DEVICE)2 bs=512 conv=sync status=progress
 	@echo "Syncing disks..."
 	@sudo sync
 	@echo "Burn rootfs process completed."
