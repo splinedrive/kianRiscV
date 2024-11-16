@@ -1,7 +1,7 @@
 /*
  *  kianv.v - RISC-V rv32ima
  *
- *  copyright (c) 2023 hirosh dabui <hirosh@dabui.de>
+ *  copyright (c) 2023/2024 hirosh dabui <hirosh@dabui.de>
  *
  *  permission to use, copy, modify, and/or distribute this software for any
  *  purpose with or without fee is hereby granted, provided that the above
@@ -43,6 +43,11 @@
 `define CSR_MTVAL 12'h 343
 `define CSR_MIP 12'h 344
 
+`define CSR_MENVCFG 12'h 30a
+`define CSR_MENVCFGH 12'h 31a
+`define CSR_MCOUNTEREN 12'h 306
+`define CSR_MCOUNTINHIBIT 12'h 320
+
 // Supervisor Trap Handling
 `define CSR_SSTATUS 12'h 100
 `define CSR_SSCRATCH 12'h 140
@@ -53,6 +58,10 @@
 `define CSR_SIE 12'h 104
 `define CSR_SIP 12'h 144
 `define CSR_SATP 12'h 180
+
+`define CSR_STIMECMP 12'h 14d
+`define CSR_STIMECMPH 12'h 15d
+`define CSR_SCOUNTEREN 12'h 106
 
 `define CSR_MEDELEG 12'h 302
 `define CSR_MIDELEG 12'h 303

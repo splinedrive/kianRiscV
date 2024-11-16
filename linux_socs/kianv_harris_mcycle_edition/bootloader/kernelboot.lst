@@ -1,0 +1,1287 @@
+   1              		.file	"kernelboot.c"
+   2              		.option nopic
+   3              		.attribute arch, "rv32i2p0_m2p0_a2p0"
+   4              		.attribute unaligned_access, 0
+   5              		.attribute stack_align, 16
+   6              	# GNU C17 (GCC) version 11.1.0 (riscv32-unknown-elf)
+   7              	#	compiled by GNU C version 9.3.0, GMP version 6.2.0, MPFR version 4.0.2, MPC version 1.1.0, isl ve
+   8              	# warning: GMP header version 6.2.0 differs from library version 6.3.0.
+   9              	# warning: MPFR header version 4.0.2 differs from library version 4.2.1.
+  10              	# warning: MPC header version 1.1.0 differs from library version 1.3.1.
+  11              	# GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072
+  12              	# options passed: -march=rv32ima -mabi=ilp32 -mtune=rocket -march=rv32ima -Os -fno-pic -fno-stack-p
+  13              		.text
+  14              		.align	2
+  15              		.globl	get_cycles
+  17              	get_cycles:
+  18 0000 130101FF 		addi	sp,sp,-16	#,,
+  19              	# kianv_stdlib.h:28:   asm volatile("rdcycleh %0" : "=r"(tmph0));
+  20              	 #APP
+  21              	# 28 "kianv_stdlib.h" 1
+   1              	#include <math.h>
+   2              	#include <stdint.h>
+   3              	
+   4              	/* kian hardware register */
+   5              	#define IO_BASE 0x10000000
+   6              	#define UART_TX (volatile uint32_t *)(IO_BASE + 0x0000)
+   7              	#define UART_LSR (volatile uint8_t *)(IO_BASE + 0x0005)
+   8              	#define CPU_FREQ (volatile uint32_t *)(IO_BASE + 0x0010)
+   9              	
+  10              	#define RED "\x1B[31m"
+  11              	#define GRN "\x1B[32m"
+  12              	#define YEL "\x1B[33m"
+  13              	#define BLU "\x1B[34m"
+  14              	#define MAG "\x1B[35m"
+  15              	#define CYN "\x1B[36m"
+  16              	#define WHT "\x1B[37m"
+  17              	#define RESET "\x1B[0m"
+  18              	
+  19              	#define CLS "\x1B[2J"
+  20              	#define BOLD "\x1B[1m"
+  21              	#define BLINK "\x1B[5m"
+  22              	#define BLINK_OFF "\x1B[25m"
+  23              	
+  24              	uint64_t get_cycles() {
+  25              	  volatile uint32_t tmph0;
+  26              	  volatile uint32_t tmpl0;
+  27              	
+  28 0004 F32700C8 	  asm volatile("rdcycleh %0" : "=r"(tmph0));
+  29              	  asm volatile("rdcycle  %0" : "=r"(tmpl0));
+  22              		rdcycleh a5	# tmp78
+  23              	# 0 "" 2
+  24              	 #NO_APP
+  25 0008 2324F100 		sw	a5,8(sp)	# tmp78, tmph0
+  26              	# kianv_stdlib.h:29:   asm volatile("rdcycle  %0" : "=r"(tmpl0));
+  27              	 #APP
+  28              	# 29 "kianv_stdlib.h" 1
+  30              	
+  29              		rdcycle  a5	# tmp79
+  30              	# 0 "" 2
+  31              	 #NO_APP
+  32 0010 2326F100 		sw	a5,12(sp)	# tmp79, tmpl0
+  33              	# kianv_stdlib.h:31:   return ((uint64_t)(tmph0) << 32) + tmpl0;
+  34 0014 83258100 		lw	a1,8(sp)		# tmph0.0_1, tmph0
+  35              	# kianv_stdlib.h:31:   return ((uint64_t)(tmph0) << 32) + tmpl0;
+  36 0018 0325C100 		lw	a0,12(sp)		# tmpl0.1_4, tmpl0
+  37              	# kianv_stdlib.h:32: }
+  38 001c 13010101 		addi	sp,sp,16	#,,
+  39 0020 67800000 		jr	ra		#
+  41              		.align	2
+  42              		.globl	wait_cycles
+  44              	wait_cycles:
+  45 0024 130101FF 		addi	sp,sp,-16	#,,
+  46 0028 23248100 		sw	s0,8(sp)	#,
+  47 002c 23229100 		sw	s1,4(sp)	#,
+  48 0030 23202101 		sw	s2,0(sp)	#,
+  49 0034 93040500 		mv	s1,a0	# wait, tmp97
+  50 0038 13890500 		mv	s2,a1	# wait, tmp98
+  51 003c 23261100 		sw	ra,12(sp)	#,
+  52              	# kianv_stdlib.h:37:   uint64_t lim = get_cycles() + wait;
+  53 0040 97000000 		call	get_cycles		#
+  53      E7800000 
+  54              	# kianv_stdlib.h:37:   uint64_t lim = get_cycles() + wait;
+  55 0048 B3049500 		add	s1,a0,s1	# wait, tmp95, _1
+  56 004c 33B4A400 		sltu	s0,s1,a0	# _1, tmp78, tmp95
+  57 0050 B3852501 		add	a1,a1,s2	# wait, tmp96, tmp100
+  58 0054 3304B400 		add	s0,s0,a1	# tmp96, tmp80, tmp78
+  59              	.L6:
+  60              	# kianv_stdlib.h:38:   while (get_cycles() < lim)
+  61 0058 97000000 		call	get_cycles		#
+  61      E7800000 
+  62              	# kianv_stdlib.h:38:   while (get_cycles() < lim)
+  63 0060 E3EC85FE 		bgtu	s0,a1,.L6	#, tmp80, _2,
+  64 0064 6314B400 		bne	s0,a1,.L3	#, tmp80, _2,
+  65 0068 E36895FE 		bgtu	s1,a0,.L6	#, tmp95, _2,
+  66              	.L3:
+  67              	# kianv_stdlib.h:40: }
+  68 006c 8320C100 		lw	ra,12(sp)		#,
+  69 0070 03248100 		lw	s0,8(sp)		#,
+  70 0074 83244100 		lw	s1,4(sp)		#,
+  71 0078 03290100 		lw	s2,0(sp)		#,
+  72 007c 13010101 		addi	sp,sp,16	#,,
+  73 0080 67800000 		jr	ra		#
+  75              		.align	2
+  76              		.globl	usleep
+  78              	usleep:
+  79              	# kianv_stdlib.h:43:   if (us)
+  80 0084 63040502 		beq	a0,zero,.L8	#, us,,
+  81              	# kianv_stdlib.h:34: inline uint32_t get_cpu_freq() { return *((volatile uint32_t *)CPU_FREQ); }
+  82 0088 B7070010 		li	a5,268435456		# tmp78,
+  83 008c 83A70701 		lw	a5,16(a5)		# _8, MEM[(volatile uint32_t *)268435472B]
+  84              	# kianv_stdlib.h:44:     wait_cycles(us * (get_cpu_freq() / 1000000));
+  85 0090 37470F00 		li	a4,999424		# tmp82,
+  86 0094 13070724 		addi	a4,a4,576	#, tmp81, tmp82
+  87 0098 B3D7E702 		divu	a5,a5,a4	# tmp81, tmp80, _8
+  88              	# kianv_stdlib.h:44:     wait_cycles(us * (get_cpu_freq() / 1000000));
+  89 009c 93050000 		li	a1,0		#,
+  90 00a0 3385A702 		mul	a0,a5,a0	#, tmp80, us
+  91 00a4 17030000 		tail	wait_cycles		#
+  91      67000300 
+  92              	.L8:
+  93              	# kianv_stdlib.h:45: }
+  94 00ac 67800000 		ret	
+  96              		.align	2
+  97              		.globl	msleep
+  99              	msleep:
+ 100              	# kianv_stdlib.h:48:   if (ms)
+ 101 00b0 63020502 		beq	a0,zero,.L10	#, ms,,
+ 102              	# kianv_stdlib.h:34: inline uint32_t get_cpu_freq() { return *((volatile uint32_t *)CPU_FREQ); }
+ 103 00b4 B7070010 		li	a5,268435456		# tmp78,
+ 104 00b8 83A70701 		lw	a5,16(a5)		# _8, MEM[(volatile uint32_t *)268435472B]
+ 105              	# kianv_stdlib.h:49:     wait_cycles(ms * (get_cpu_freq() / 1000));
+ 106 00bc 1307803E 		li	a4,1000		# tmp80,
+ 107              	# kianv_stdlib.h:49:     wait_cycles(ms * (get_cpu_freq() / 1000));
+ 108 00c0 93050000 		li	a1,0		#,
+ 109              	# kianv_stdlib.h:49:     wait_cycles(ms * (get_cpu_freq() / 1000));
+ 110 00c4 B3D7E702 		divu	a5,a5,a4	# tmp80, tmp81, _8
+ 111              	# kianv_stdlib.h:49:     wait_cycles(ms * (get_cpu_freq() / 1000));
+ 112 00c8 3385A702 		mul	a0,a5,a0	#, tmp81, ms
+ 113 00cc 17030000 		tail	wait_cycles		#
+ 113      67000300 
+ 114              	.L10:
+ 115              	# kianv_stdlib.h:50: }
+ 116 00d4 67800000 		ret	
+ 118              		.align	2
+ 119              		.globl	sleep
+ 121              	sleep:
+ 122              	# kianv_stdlib.h:53:   if (sec)
+ 123 00d8 630E0500 		beq	a0,zero,.L12	#, sec,,
+ 124              	# kianv_stdlib.h:34: inline uint32_t get_cpu_freq() { return *((volatile uint32_t *)CPU_FREQ); }
+ 125 00dc B7070010 		li	a5,268435456		# tmp77,
+ 126 00e0 83A70701 		lw	a5,16(a5)		# _7, MEM[(volatile uint32_t *)268435472B]
+ 127              	# kianv_stdlib.h:54:     wait_cycles(sec * get_cpu_freq());
+ 128 00e4 93050000 		li	a1,0		#,
+ 129 00e8 3305F502 		mul	a0,a0,a5	#, sec, _7
+ 130 00ec 17030000 		tail	wait_cycles		#
+ 130      67000300 
+ 131              	.L12:
+ 132              	# kianv_stdlib.h:55: }
+ 133 00f4 67800000 		ret	
+ 135              		.globl	__udivdi3
+ 136              		.align	2
+ 137              		.globl	nanoseconds
+ 139              	nanoseconds:
+ 140 00f8 130101FF 		addi	sp,sp,-16	#,,
+ 141 00fc 23261100 		sw	ra,12(sp)	#,
+ 142              	# kianv_stdlib.h:58:   return get_cycles() / (uint64_t)(get_cpu_freq() / 1000000);
+ 143 0100 97000000 		call	get_cycles		#
+ 143      E7800000 
+ 144              	# kianv_stdlib.h:34: inline uint32_t get_cpu_freq() { return *((volatile uint32_t *)CPU_FREQ); }
+ 145 0108 B7070010 		li	a5,268435456		# tmp78,
+ 146 010c 03A60701 		lw	a2,16(a5)		# _7, MEM[(volatile uint32_t *)268435472B]
+ 147              	# kianv_stdlib.h:58:   return get_cycles() / (uint64_t)(get_cpu_freq() / 1000000);
+ 148 0110 B7470F00 		li	a5,999424		# tmp83,
+ 149 0114 93870724 		addi	a5,a5,576	#, tmp82, tmp83
+ 150 0118 3356F602 		divu	a2,a2,a5	# tmp82,, _7
+ 151 011c 93060000 		li	a3,0		#,
+ 152 0120 97000000 		call	__udivdi3		#
+ 152      E7800000 
+ 153              	# kianv_stdlib.h:59: }
+ 154 0128 8320C100 		lw	ra,12(sp)		#,
+ 155 012c 13010101 		addi	sp,sp,16	#,,
+ 156 0130 67800000 		jr	ra		#
+ 158              		.align	2
+ 159              		.globl	milliseconds
+ 161              	milliseconds:
+ 162 0134 130101FF 		addi	sp,sp,-16	#,,
+ 163 0138 23261100 		sw	ra,12(sp)	#,
+ 164              	# kianv_stdlib.h:62:   return get_cycles() / (uint64_t)(get_cpu_freq() / 1000);
+ 165 013c 97000000 		call	get_cycles		#
+ 165      E7800000 
+ 166              	# kianv_stdlib.h:34: inline uint32_t get_cpu_freq() { return *((volatile uint32_t *)CPU_FREQ); }
+ 167 0144 B7070010 		li	a5,268435456		# tmp78,
+ 168 0148 03A60701 		lw	a2,16(a5)		# _7, MEM[(volatile uint32_t *)268435472B]
+ 169              	# kianv_stdlib.h:62:   return get_cycles() / (uint64_t)(get_cpu_freq() / 1000);
+ 170 014c 9307803E 		li	a5,1000		# tmp81,
+ 171 0150 93060000 		li	a3,0		#,
+ 172 0154 3356F602 		divu	a2,a2,a5	# tmp81,, _7
+ 173 0158 97000000 		call	__udivdi3		#
+ 173      E7800000 
+ 174              	# kianv_stdlib.h:63: }
+ 175 0160 8320C100 		lw	ra,12(sp)		#,
+ 176 0164 13010101 		addi	sp,sp,16	#,,
+ 177 0168 67800000 		jr	ra		#
+ 179              		.align	2
+ 180              		.globl	seconds
+ 182              	seconds:
+ 183 016c 130101FF 		addi	sp,sp,-16	#,,
+ 184 0170 23261100 		sw	ra,12(sp)	#,
+ 185              	# kianv_stdlib.h:65: uint64_t seconds() { return get_cycles() / (uint64_t)(get_cpu_freq()); }
+ 186 0174 97000000 		call	get_cycles		#
+ 186      E7800000 
+ 187              	# kianv_stdlib.h:34: inline uint32_t get_cpu_freq() { return *((volatile uint32_t *)CPU_FREQ); }
+ 188 017c B7070010 		li	a5,268435456		# tmp77,
+ 189 0180 03A60701 		lw	a2,16(a5)		# _6, MEM[(volatile uint32_t *)268435472B]
+ 190              	# kianv_stdlib.h:65: uint64_t seconds() { return get_cycles() / (uint64_t)(get_cpu_freq()); }
+ 191 0184 93060000 		li	a3,0		#,
+ 192 0188 97000000 		call	__udivdi3		#
+ 192      E7800000 
+ 193              	# kianv_stdlib.h:65: uint64_t seconds() { return get_cycles() / (uint64_t)(get_cpu_freq()); }
+ 194 0190 8320C100 		lw	ra,12(sp)		#,
+ 195 0194 13010101 		addi	sp,sp,16	#,,
+ 196 0198 67800000 		jr	ra		#
+ 198              		.align	2
+ 199              		.globl	putchar
+ 201              	putchar:
+ 202              	# kianv_stdlib.h:68:   while ((*((volatile uint8_t *)UART_LSR) & 0x60) == 0)
+ 203 019c 37070010 		li	a4,268435456		# tmp77,
+ 204              	.L21:
+ 205              	# kianv_stdlib.h:68:   while ((*((volatile uint8_t *)UART_LSR) & 0x60) == 0)
+ 206 01a0 83475700 		lbu	a5,5(a4)	# MEM[(volatile uint8_t *)268435461B], MEM[(volatile uint8_t *)268435461B]
+ 207              	# kianv_stdlib.h:68:   while ((*((volatile uint8_t *)UART_LSR) & 0x60) == 0)
+ 208 01a4 93F70706 		andi	a5,a5,96	#, tmp82, MEM[(volatile uint8_t *)268435461B]
+ 209 01a8 E38C07FE 		beq	a5,zero,.L21	#, tmp82,,
+ 210              	# kianv_stdlib.h:70:   *((volatile uint32_t *)UART_TX) = c == 13 ? 10 : c;
+ 211 01ac 9307D000 		li	a5,13		# tmp83,
+ 212 01b0 6314F500 		bne	a0,a5,.L22	#, c, tmp83,
+ 213 01b4 1305A000 		li	a0,10		# c,
+ 214              	.L22:
+ 215              	# kianv_stdlib.h:70:   *((volatile uint32_t *)UART_TX) = c == 13 ? 10 : c;
+ 216 01b8 B7070010 		li	a5,268435456		# tmp84,
+ 217 01bc 23A0A700 		sw	a0,0(a5)	# c, MEM[(volatile uint32_t *)268435456B]
+ 218              	# kianv_stdlib.h:71: }
+ 219 01c0 67800000 		ret	
+ 221              		.align	2
+ 222              		.globl	print_chr
+ 224              	print_chr:
+ 225              	# kianv_stdlib.h:73: void print_chr(char ch) { putchar(ch); }
+ 226 01c4 17030000 		tail	putchar		#
+ 226      67000300 
+ 228              		.align	2
+ 229              		.globl	print_char
+ 231              	print_char:
+ 232 01cc 17030000 		tail	putchar		#
+ 232      67000300 
+ 234              		.align	2
+ 235              		.globl	print_str
+ 237              	print_str:
+ 238 01d4 130101FF 		addi	sp,sp,-16	#,,
+ 239 01d8 23248100 		sw	s0,8(sp)	#,
+ 240 01dc 23229100 		sw	s1,4(sp)	#,
+ 241 01e0 23261100 		sw	ra,12(sp)	#,
+ 242              	# kianv_stdlib.h:77: void print_str(char *p) {
+ 243 01e4 13040500 		mv	s0,a0	# p, tmp84
+ 244              	# kianv_stdlib.h:79:     while ((*((volatile uint8_t *)UART_LSR) & 0x60) == 0)
+ 245 01e8 B7040010 		li	s1,268435456		# tmp83,
+ 246              	.L29:
+ 247              	# kianv_stdlib.h:78:   while (*p != 0) {
+ 248 01ec 03450400 		lbu	a0,0(s0)	# _3, MEM[(char *)p_4]
+ 249              	# kianv_stdlib.h:78:   while (*p != 0) {
+ 250 01f0 631C0500 		bne	a0,zero,.L30	#, _3,,
+ 251              	# kianv_stdlib.h:83: }
+ 252 01f4 8320C100 		lw	ra,12(sp)		#,
+ 253 01f8 03248100 		lw	s0,8(sp)		#,
+ 254 01fc 83244100 		lw	s1,4(sp)		#,
+ 255 0200 13010101 		addi	sp,sp,16	#,,
+ 256 0204 67800000 		jr	ra		#
+ 257              	.L30:
+ 258              	# kianv_stdlib.h:79:     while ((*((volatile uint8_t *)UART_LSR) & 0x60) == 0)
+ 259 0208 83C75400 		lbu	a5,5(s1)	# MEM[(volatile uint8_t *)268435461B], MEM[(volatile uint8_t *)268435461B]
+ 260              	# kianv_stdlib.h:79:     while ((*((volatile uint8_t *)UART_LSR) & 0x60) == 0)
+ 261 020c 93F70706 		andi	a5,a5,96	#, tmp82, MEM[(volatile uint8_t *)268435461B]
+ 262 0210 E38C07FE 		beq	a5,zero,.L30	#, tmp82,,
+ 263              	# kianv_stdlib.h:81:     putchar(*(p++));
+ 264 0214 13041400 		addi	s0,s0,1	#, p, p
+ 265              	# kianv_stdlib.h:81:     putchar(*(p++));
+ 266 0218 97000000 		call	putchar		#
+ 266      E7800000 
+ 267 0220 6FF0DFFC 		j	.L29		#
+ 269              		.align	2
+ 270              		.globl	print_str_ln
+ 272              	print_str_ln:
+ 273 0224 130101FF 		addi	sp,sp,-16	#,,
+ 274 0228 23261100 		sw	ra,12(sp)	#,
+ 275              	# kianv_stdlib.h:86:   print_str(p);
+ 276 022c 97000000 		call	print_str		#
+ 276      E7800000 
+ 277              	# kianv_stdlib.h:88: }
+ 278 0234 8320C100 		lw	ra,12(sp)		#,
+ 279              	# kianv_stdlib.h:73: void print_chr(char ch) { putchar(ch); }
+ 280 0238 1305D000 		li	a0,13		#,
+ 281              	# kianv_stdlib.h:88: }
+ 282 023c 13010101 		addi	sp,sp,16	#,,
+ 283              	# kianv_stdlib.h:73: void print_chr(char ch) { putchar(ch); }
+ 284 0240 17030000 		tail	putchar		#
+ 284      67000300 
+ 286              		.align	2
+ 287              		.globl	print_dec
+ 289              	print_dec:
+ 290 0248 130101FF 		addi	sp,sp,-16	#,,
+ 291              	# kianv_stdlib.h:92:   char *p = buffer;
+ 292 024c 93074100 		addi	a5,sp,4	#, p,
+ 293 0250 93860700 		mv	a3,a5	# p, p
+ 294              	# kianv_stdlib.h:94:     *(p++) = val % 10;
+ 295 0254 1307A000 		li	a4,10		# tmp100,
+ 296              	.L38:
+ 297              	# kianv_stdlib.h:93:   while (val || p == buffer) {
+ 298 0258 631A0502 		bne	a0,zero,.L39	#, val,,
+ 299              	# kianv_stdlib.h:93:   while (val || p == buffer) {
+ 300 025c 6388D702 		beq	a5,a3,.L39	#, p, p,
+ 301              	# kianv_stdlib.h:99:     while ((*((volatile uint8_t *)UART_LSR) & 0x60) == 0)
+ 302 0260 37060010 		li	a2,268435456		# tmp90,
+ 303              	.L40:
+ 304              	# kianv_stdlib.h:99:     while ((*((volatile uint8_t *)UART_LSR) & 0x60) == 0)
+ 305 0264 03475600 		lbu	a4,5(a2)	# MEM[(volatile uint8_t *)268435461B], MEM[(volatile uint8_t *)268435461B]
+ 306              	# kianv_stdlib.h:99:     while ((*((volatile uint8_t *)UART_LSR) & 0x60) == 0)
+ 307 0268 13770706 		andi	a4,a4,96	#, tmp95, MEM[(volatile uint8_t *)268435461B]
+ 308 026c E30C07FE 		beq	a4,zero,.L40	#, tmp95,,
+ 309              	# kianv_stdlib.h:101:     *((volatile uint32_t *)UART_TX) = '0' + *(--p);
+ 310 0270 03C7F7FF 		lbu	a4,-1(a5)	# MEM[(char *)p_17], MEM[(char *)p_17]
+ 311              	# kianv_stdlib.h:101:     *((volatile uint32_t *)UART_TX) = '0' + *(--p);
+ 312 0274 9387F7FF 		addi	a5,a5,-1	#, p, p
+ 313              	# kianv_stdlib.h:101:     *((volatile uint32_t *)UART_TX) = '0' + *(--p);
+ 314 0278 13070703 		addi	a4,a4,48	#, _7, MEM[(char *)p_17]
+ 315              	# kianv_stdlib.h:101:     *((volatile uint32_t *)UART_TX) = '0' + *(--p);
+ 316 027c 2320E600 		sw	a4,0(a2)	# _7, MEM[(volatile uint32_t *)268435456B]
+ 317              	# kianv_stdlib.h:98:   while (p != buffer) {
+ 318 0280 E392D7FE 		bne	a5,a3,.L40	#, p, p,
+ 319              	# kianv_stdlib.h:103: }
+ 320 0284 13010101 		addi	sp,sp,16	#,,
+ 321 0288 67800000 		jr	ra		#
+ 322              	.L39:
+ 323              	# kianv_stdlib.h:94:     *(p++) = val % 10;
+ 324 028c 3376E502 		remu	a2,a0,a4	# tmp100, tmp84, val
+ 325              	# kianv_stdlib.h:94:     *(p++) = val % 10;
+ 326 0290 93871700 		addi	a5,a5,1	#, p, p
+ 327              	# kianv_stdlib.h:95:     val = val / 10;
+ 328 0294 3355E502 		divu	a0,a0,a4	# tmp100, val, val
+ 329              	# kianv_stdlib.h:94:     *(p++) = val % 10;
+ 330 0298 A38FC7FE 		sb	a2,-1(a5)	# tmp84, MEM[(char *)p_19 + 4294967295B]
+ 331 029c 6FF0DFFB 		j	.L38		#
+ 333              		.globl	__umoddi3
+ 334              		.align	2
+ 335              		.globl	print_dec64
+ 337              	print_dec64:
+ 338 02a0 130101FC 		addi	sp,sp,-64	#,,
+ 339 02a4 23282103 		sw	s2,48(sp)	#,
+ 340              	# kianv_stdlib.h:107:   char *p = buffer;
+ 341 02a8 1309C100 		addi	s2,sp,12	#, p,
+ 342              	# kianv_stdlib.h:105: void print_dec64(uint64_t val) {
+ 343 02ac 232C8102 		sw	s0,56(sp)	#,
+ 344 02b0 232A9102 		sw	s1,52(sp)	#,
+ 345 02b4 23263103 		sw	s3,44(sp)	#,
+ 346 02b8 232E1102 		sw	ra,60(sp)	#,
+ 347              	# kianv_stdlib.h:105: void print_dec64(uint64_t val) {
+ 348 02bc 13040500 		mv	s0,a0	# val, tmp109
+ 349 02c0 93840500 		mv	s1,a1	# val, tmp110
+ 350 02c4 93090900 		mv	s3,s2	# p, p
+ 351              	.L47:
+ 352              	# kianv_stdlib.h:108:   while (val || p == buffer) {
+ 353 02c8 B3679400 		or	a5,s0,s1	# val, val, val
+ 354 02cc 63940704 		bne	a5,zero,.L48	#, val,,
+ 355              	# kianv_stdlib.h:108:   while (val || p == buffer) {
+ 356 02d0 63023905 		beq	s2,s3,.L48	#, p, p,
+ 357              	# kianv_stdlib.h:114:     while ((*((volatile uint8_t *)UART_LSR) & 0x60) == 0)
+ 358 02d4 37070010 		li	a4,268435456		# tmp95,
+ 359              	.L49:
+ 360              	# kianv_stdlib.h:114:     while ((*((volatile uint8_t *)UART_LSR) & 0x60) == 0)
+ 361 02d8 83475700 		lbu	a5,5(a4)	# MEM[(volatile uint8_t *)268435461B], MEM[(volatile uint8_t *)268435461B]
+ 362              	# kianv_stdlib.h:114:     while ((*((volatile uint8_t *)UART_LSR) & 0x60) == 0)
+ 363 02dc 93F70706 		andi	a5,a5,96	#, tmp100, MEM[(volatile uint8_t *)268435461B]
+ 364 02e0 E38C07FE 		beq	a5,zero,.L49	#, tmp100,,
+ 365              	# kianv_stdlib.h:116:     *((volatile uint32_t *)UART_TX) = '0' + *(--p);
+ 366 02e4 8347F9FF 		lbu	a5,-1(s2)	# MEM[(char *)p_17], MEM[(char *)p_17]
+ 367              	# kianv_stdlib.h:116:     *((volatile uint32_t *)UART_TX) = '0' + *(--p);
+ 368 02e8 1309F9FF 		addi	s2,s2,-1	#, p, p
+ 369              	# kianv_stdlib.h:116:     *((volatile uint32_t *)UART_TX) = '0' + *(--p);
+ 370 02ec 93870703 		addi	a5,a5,48	#, _7, MEM[(char *)p_17]
+ 371              	# kianv_stdlib.h:116:     *((volatile uint32_t *)UART_TX) = '0' + *(--p);
+ 372 02f0 2320F700 		sw	a5,0(a4)	# _7, MEM[(volatile uint32_t *)268435456B]
+ 373              	# kianv_stdlib.h:113:   while (p != buffer) {
+ 374 02f4 E31239FF 		bne	s2,s3,.L49	#, p, p,
+ 375              	# kianv_stdlib.h:118: }
+ 376 02f8 8320C103 		lw	ra,60(sp)		#,
+ 377 02fc 03248103 		lw	s0,56(sp)		#,
+ 378 0300 83244103 		lw	s1,52(sp)		#,
+ 379 0304 03290103 		lw	s2,48(sp)		#,
+ 380 0308 8329C102 		lw	s3,44(sp)		#,
+ 381 030c 13010104 		addi	sp,sp,64	#,,
+ 382 0310 67800000 		jr	ra		#
+ 383              	.L48:
+ 384              	# kianv_stdlib.h:109:     *(p++) = val % 10;
+ 385 0314 1306A000 		li	a2,10		#,
+ 386 0318 93060000 		li	a3,0		#,
+ 387 031c 13050400 		mv	a0,s0	#, val
+ 388 0320 93850400 		mv	a1,s1	#, val
+ 389 0324 97000000 		call	__umoddi3		#
+ 389      E7800000 
+ 390              	# kianv_stdlib.h:110:     val = val / 10;
+ 391 032c 93850400 		mv	a1,s1	#, val
+ 392              	# kianv_stdlib.h:109:     *(p++) = val % 10;
+ 393 0330 2300A900 		sb	a0,0(s2)	# tmp111, MEM[(char *)p_19 + 4294967295B]
+ 394              	# kianv_stdlib.h:110:     val = val / 10;
+ 395 0334 1306A000 		li	a2,10		#,
+ 396 0338 13050400 		mv	a0,s0	#, val
+ 397 033c 93060000 		li	a3,0		#,
+ 398 0340 97000000 		call	__udivdi3		#
+ 398      E7800000 
+ 399              	# kianv_stdlib.h:109:     *(p++) = val % 10;
+ 400 0348 13091900 		addi	s2,s2,1	#, p, p
+ 401              	# kianv_stdlib.h:110:     val = val / 10;
+ 402 034c 13040500 		mv	s0,a0	# val, tmp113
+ 403 0350 93840500 		mv	s1,a1	# val, tmp114
+ 404 0354 6FF05FF7 		j	.L47		#
+ 406              		.section	.rodata.str1.4,"aMS",@progbits,1
+ 407              		.align	2
+ 408              	.LC0:
+ 409 0000 30313233 		.string	"0123456789ABCDEF"
+ 409      34353637 
+ 409      38394142 
+ 409      43444546 
+ 409      00
+ 410              		.text
+ 411              		.align	2
+ 412              		.globl	print_hex
+ 414              	print_hex:
+ 415              	# kianv_stdlib.h:121:   for (int i = (4 * digits) - 4; i >= 0; i -= 4) {
+ 416 0358 9385F5FF 		addi	a1,a1,-1	#, tmp82, tmp100
+ 417              	# kianv_stdlib.h:124:     *((volatile uint32_t *)UART_TX) = "0123456789ABCDEF"[(val >> i) % 16];
+ 418 035c 37070000 		lui	a4,%hi(.LC0)	# tmp97,
+ 419              	# kianv_stdlib.h:121:   for (int i = (4 * digits) - 4; i >= 0; i -= 4) {
+ 420 0360 93952500 		slli	a1,a1,2	#, i, tmp82
+ 421              	# kianv_stdlib.h:122:     while ((*((volatile uint8_t *)UART_LSR) & 0x60) == 0)
+ 422 0364 B7060010 		li	a3,268435456		# tmp96,
+ 423              	# kianv_stdlib.h:124:     *((volatile uint32_t *)UART_TX) = "0123456789ABCDEF"[(val >> i) % 16];
+ 424 0368 13070700 		addi	a4,a4,%lo(.LC0)	# tmp98, tmp97,
+ 425              	.L56:
+ 426              	# kianv_stdlib.h:121:   for (int i = (4 * digits) - 4; i >= 0; i -= 4) {
+ 427 036c 63D40500 		bge	a1,zero,.L57	#, i,,
+ 428              	# kianv_stdlib.h:126: }
+ 429 0370 67800000 		ret	
+ 430              	.L57:
+ 431              	# kianv_stdlib.h:122:     while ((*((volatile uint8_t *)UART_LSR) & 0x60) == 0)
+ 432 0374 83C75600 		lbu	a5,5(a3)	# MEM[(volatile uint8_t *)268435461B], MEM[(volatile uint8_t *)268435461B]
+ 433              	# kianv_stdlib.h:122:     while ((*((volatile uint8_t *)UART_LSR) & 0x60) == 0)
+ 434 0378 93F70706 		andi	a5,a5,96	#, tmp89, MEM[(volatile uint8_t *)268435461B]
+ 435 037c E38C07FE 		beq	a5,zero,.L57	#, tmp89,,
+ 436              	# kianv_stdlib.h:124:     *((volatile uint32_t *)UART_TX) = "0123456789ABCDEF"[(val >> i) % 16];
+ 437 0380 B357B500 		srl	a5,a0,a1	# i, tmp92, val
+ 438              	# kianv_stdlib.h:124:     *((volatile uint32_t *)UART_TX) = "0123456789ABCDEF"[(val >> i) % 16];
+ 439 0384 93F7F700 		andi	a5,a5,15	#, tmp93, tmp92
+ 440              	# kianv_stdlib.h:124:     *((volatile uint32_t *)UART_TX) = "0123456789ABCDEF"[(val >> i) % 16];
+ 441 0388 B307F700 		add	a5,a4,a5	# tmp93, tmp94, tmp98
+ 442 038c 83C70700 		lbu	a5,0(a5)	# _7, "0123456789ABCDEF"[_5]
+ 443              	# kianv_stdlib.h:121:   for (int i = (4 * digits) - 4; i >= 0; i -= 4) {
+ 444 0390 9385C5FF 		addi	a1,a1,-4	#, i, i
+ 445              	# kianv_stdlib.h:124:     *((volatile uint32_t *)UART_TX) = "0123456789ABCDEF"[(val >> i) % 16];
+ 446 0394 23A0F600 		sw	a5,0(a3)	# _7, MEM[(volatile uint32_t *)268435456B]
+ 447 0398 6FF05FFD 		j	.L56		#
+ 449              		.align	2
+ 450              		.globl	printf
+ 452              	printf:
+ 453 039c 130101F8 		addi	sp,sp,-128	#,,
+ 454 03a0 232AF106 		sw	a5,116(sp)	#,
+ 455              	# stdlib.c:69:   va_start(ap, format);
+ 456 03a4 93074106 		addi	a5,sp,100	#, tmp107,
+ 457              	# stdlib.c:65: int printf(const char *format, ...) {
+ 458 03a8 23282105 		sw	s2,80(sp)	#,
+ 459 03ac 23263105 		sw	s3,76(sp)	#,
+ 460 03b0 23244105 		sw	s4,72(sp)	#,
+ 461 03b4 23225105 		sw	s5,68(sp)	#,
+ 462 03b8 23206105 		sw	s6,64(sp)	#,
+ 463 03bc 232E7103 		sw	s7,60(sp)	#,
+ 464 03c0 232E1104 		sw	ra,92(sp)	#,
+ 465 03c4 232C8104 		sw	s0,88(sp)	#,
+ 466 03c8 232A9104 		sw	s1,84(sp)	#,
+ 467 03cc 232C8103 		sw	s8,56(sp)	#,
+ 468              	# stdlib.c:65: int printf(const char *format, ...) {
+ 469 03d0 93090500 		mv	s3,a0	# format, tmp175
+ 470 03d4 2322B106 		sw	a1,100(sp)	#,
+ 471 03d8 2324C106 		sw	a2,104(sp)	#,
+ 472 03dc 2326D106 		sw	a3,108(sp)	#,
+ 473 03e0 2328E106 		sw	a4,112(sp)	#,
+ 474 03e4 232C0107 		sw	a6,120(sp)	#,
+ 475 03e8 232E1107 		sw	a7,124(sp)	#,
+ 476              	# stdlib.c:69:   va_start(ap, format);
+ 477 03ec 2326F100 		sw	a5,12(sp)	# tmp107, MEM[(void * *)&ap]
+ 478              	# stdlib.c:71:   for (i = 0; format[i]; i++)
+ 479 03f0 13090000 		li	s2,0		# i,
+ 480              	# stdlib.c:74:         if (format[i] == 'c') {
+ 481 03f4 130A3006 		li	s4,99		# tmp167,
+ 482              	# stdlib.c:78:         if (format[i] == 's') {
+ 483 03f8 930A3007 		li	s5,115		# tmp168,
+ 484              	# stdlib.c:82:         if (format[i] == 'd') {
+ 485 03fc 130B4006 		li	s6,100		# tmp169,
+ 486              	# stdlib.c:86:         if (format[i] == 'u') {
+ 487 0400 930B5007 		li	s7,117		# tmp170,
+ 488              	.L62:
+ 489              	# stdlib.c:71:   for (i = 0; format[i]; i++)
+ 490 0404 B3872901 		add	a5,s3,s2	# i, tmp157, format
+ 491 0408 03C50700 		lbu	a0,0(a5)	# _14, *_13
+ 492              	# stdlib.c:71:   for (i = 0; format[i]; i++)
+ 493 040c 631A0502 		bne	a0,zero,.L79	#, _14,,
+ 494              	# stdlib.c:96: }
+ 495 0410 8320C105 		lw	ra,92(sp)		#,
+ 496 0414 03248105 		lw	s0,88(sp)		#,
+ 497 0418 83244105 		lw	s1,84(sp)		#,
+ 498 041c 03290105 		lw	s2,80(sp)		#,
+ 499 0420 8329C104 		lw	s3,76(sp)		#,
+ 500 0424 032A8104 		lw	s4,72(sp)		#,
+ 501 0428 832A4104 		lw	s5,68(sp)		#,
+ 502 042c 032B0104 		lw	s6,64(sp)		#,
+ 503 0430 832BC103 		lw	s7,60(sp)		#,
+ 504 0434 032C8103 		lw	s8,56(sp)		#,
+ 505 0438 13010108 		addi	sp,sp,128	#,,
+ 506 043c 67800000 		jr	ra		#
+ 507              	.L79:
+ 508              	# stdlib.c:72:     if (format[i] == '%') {
+ 509 0440 93075002 		li	a5,37		# tmp108,
+ 510 0444 6314F502 		bne	a0,a5,.L84	#, _14, tmp108,
+ 511              	.L63:
+ 512              	# stdlib.c:73:       while (format[++i]) {
+ 513 0448 13091900 		addi	s2,s2,1	#, i, i
+ 514              	# stdlib.c:73:       while (format[++i]) {
+ 515 044c B3872901 		add	a5,s3,s2	# i, tmp156, format
+ 516 0450 83C70700 		lbu	a5,0(a5)	# _10, MEM[(const char *)_27]
+ 517              	# stdlib.c:73:       while (format[++i]) {
+ 518 0454 63800704 		beq	a5,zero,.L66	#, _10,,
+ 519              	# stdlib.c:74:         if (format[i] == 'c') {
+ 520 0458 63904703 		bne	a5,s4,.L65	#, _10, tmp167,
+ 521              	# stdlib.c:75:           printf_c(va_arg(ap, int));
+ 522 045c 8327C100 		lw	a5,12(sp)		# D.2024, ap
+ 523              	# kianv_stdlib.h:73: void print_chr(char ch) { putchar(ch); }
+ 524 0460 03C50700 		lbu	a0,0(a5)	#, MEM[(int *)_98]
+ 525              	# stdlib.c:75:           printf_c(va_arg(ap, int));
+ 526 0464 13874700 		addi	a4,a5,4	#, D.2025, D.2024
+ 527 0468 2326E100 		sw	a4,12(sp)	# D.2025, ap
+ 528              	.L84:
+ 529              	# kianv_stdlib.h:73: void print_chr(char ch) { putchar(ch); }
+ 530 046c 97000000 		call	putchar		#
+ 530      E7800000 
+ 531              	# stdlib.c:30: static void printf_c(int c) { print_chr(c); }
+ 532 0474 6F000002 		j	.L66		#
+ 533              	.L65:
+ 534              	# stdlib.c:78:         if (format[i] == 's') {
+ 535 0478 639A5703 		bne	a5,s5,.L67	#, _10, tmp168,
+ 536              	# stdlib.c:79:           printf_s(va_arg(ap, char *));
+ 537 047c 8327C100 		lw	a5,12(sp)		# D.2026, ap
+ 538 0480 03A40700 		lw	s0,0(a5)		# p, MEM[(char * *)_67]
+ 539 0484 13874700 		addi	a4,a5,4	#, D.2027, D.2026
+ 540 0488 2326E100 		sw	a4,12(sp)	# D.2027, ap
+ 541              	.L68:
+ 542              	# stdlib.c:33:   while (*p)
+ 543 048c 03450400 		lbu	a0,0(s0)	# _39, MEM[(char *)p_37]
+ 544 0490 63160500 		bne	a0,zero,.L69	#, _39,,
+ 545              	.L66:
+ 546              	# stdlib.c:71:   for (i = 0; format[i]; i++)
+ 547 0494 13091900 		addi	s2,s2,1	#, i, i
+ 548 0498 6FF0DFF6 		j	.L62		#
+ 549              	.L69:
+ 550              	# stdlib.c:34:     print_chr(*(p++));
+ 551 049c 13041400 		addi	s0,s0,1	#, p, p
+ 552              	# kianv_stdlib.h:73: void print_chr(char ch) { putchar(ch); }
+ 553 04a0 97000000 		call	putchar		#
+ 553      E7800000 
+ 554              	# kianv_stdlib.h:73: void print_chr(char ch) { putchar(ch); }
+ 555 04a8 6FF05FFE 		j	.L68		#
+ 556              	.L67:
+ 557              	# stdlib.c:82:         if (format[i] == 'd') {
+ 558 04ac 63966707 		bne	a5,s6,.L70	#, _10, tmp169,
+ 559              	# stdlib.c:83:           printf_d(va_arg(ap, int));
+ 560 04b0 8327C100 		lw	a5,12(sp)		# D.2028, ap
+ 561 04b4 83A40700 		lw	s1,0(a5)		# val, MEM[(int *)_99]
+ 562 04b8 13874700 		addi	a4,a5,4	#, D.2029, D.2028
+ 563 04bc 2326E100 		sw	a4,12(sp)	# D.2029, ap
+ 564              	# stdlib.c:40:   if (val < 0) {
+ 565 04c0 63DA0400 		bge	s1,zero,.L71	#, val,,
+ 566              	# kianv_stdlib.h:73: void print_chr(char ch) { putchar(ch); }
+ 567 04c4 1305D002 		li	a0,45		#,
+ 568 04c8 97000000 		call	putchar		#
+ 568      E7800000 
+ 569              	# stdlib.c:42:     val = -val;
+ 570 04d0 B3049040 		neg	s1,s1	# val, val
+ 571              	.L71:
+ 572              	# stdlib.c:65: int printf(const char *format, ...) {
+ 573 04d4 13040101 		addi	s0,sp,16	#, p,
+ 574 04d8 130C0400 		mv	s8,s0	# p, p
+ 575              	# stdlib.c:45:     *(p++) = '0' + val % 10;
+ 576 04dc 1307A000 		li	a4,10		# tmp161,
+ 577              	.L72:
+ 578              	# stdlib.c:44:   while (val || p == buffer) {
+ 579 04e0 63900402 		bne	s1,zero,.L73	#, val,,
+ 580 04e4 630E8401 		beq	s0,s8,.L73	#, p, p,
+ 581              	.L74:
+ 582              	# kianv_stdlib.h:73: void print_chr(char ch) { putchar(ch); }
+ 583 04e8 0345F4FF 		lbu	a0,-1(s0)	#, MEM[(char *)p_49]
+ 584              	# stdlib.c:49:     printf_c(*(--p));
+ 585 04ec 1304F4FF 		addi	s0,s0,-1	#, p, p
+ 586              	# kianv_stdlib.h:73: void print_chr(char ch) { putchar(ch); }
+ 587 04f0 97000000 		call	putchar		#
+ 587      E7800000 
+ 588              	# stdlib.c:48:   while (p != buffer)
+ 589 04f8 E31884FF 		bne	s0,s8,.L74	#, p, p,
+ 590 04fc 6FF09FF9 		j	.L66		#
+ 591              	.L73:
+ 592              	# stdlib.c:45:     *(p++) = '0' + val % 10;
+ 593 0500 B3E7E402 		rem	a5,s1,a4	# tmp161, tmp122, val
+ 594              	# stdlib.c:45:     *(p++) = '0' + val % 10;
+ 595 0504 13041400 		addi	s0,s0,1	#, p, p
+ 596              	# stdlib.c:45:     *(p++) = '0' + val % 10;
+ 597 0508 93870703 		addi	a5,a5,48	#, tmp124, tmp122
+ 598              	# stdlib.c:46:     val = val / 10;
+ 599 050c B3C4E402 		div	s1,s1,a4	# tmp161, val, val
+ 600              	# stdlib.c:45:     *(p++) = '0' + val % 10;
+ 601 0510 A30FF4FE 		sb	a5,-1(s0)	# tmp124, MEM[(char *)p_45 + 4294967295B]
+ 602 0514 6FF0DFFC 		j	.L72		#
+ 603              	.L70:
+ 604              	# stdlib.c:86:         if (format[i] == 'u') {
+ 605 0518 E39877F3 		bne	a5,s7,.L63	#, _10, tmp170,
+ 606              	# stdlib.c:87:           printf_u(va_arg(ap, int));
+ 607 051c 8327C100 		lw	a5,12(sp)		# D.2030, ap
+ 608              	# stdlib.c:54:   char *p = buffer;
+ 609 0520 13040101 		addi	s0,sp,16	#, p,
+ 610 0524 93040400 		mv	s1,s0	# p, p
+ 611              	# stdlib.c:87:           printf_u(va_arg(ap, int));
+ 612 0528 13874700 		addi	a4,a5,4	#, D.2031, D.2030
+ 613              	# stdlib.c:56:   val = val >= 0 ? val : -val;
+ 614 052c 83A70700 		lw	a5,0(a5)		# MEM[(int *)_102], MEM[(int *)_102]
+ 615              	# stdlib.c:87:           printf_u(va_arg(ap, int));
+ 616 0530 2326E100 		sw	a4,12(sp)	# D.2031, ap
+ 617              	# stdlib.c:58:     *(p++) = '0' + val % 10;
+ 618 0534 9306A000 		li	a3,10		# tmp162,
+ 619              	# stdlib.c:56:   val = val >= 0 ? val : -val;
+ 620 0538 13D7F741 		srai	a4,a5,31	#, tmp136, MEM[(int *)_102]
+ 621 053c B347F700 		xor	a5,a4,a5	# MEM[(int *)_102], val, tmp136
+ 622 0540 B387E740 		sub	a5,a5,a4	# val, val, tmp136
+ 623              	.L75:
+ 624              	# stdlib.c:57:   while (val || p == buffer) {
+ 625 0544 63900702 		bne	a5,zero,.L76	#, val,,
+ 626 0548 630E9400 		beq	s0,s1,.L76	#, p, p,
+ 627              	.L77:
+ 628              	# kianv_stdlib.h:73: void print_chr(char ch) { putchar(ch); }
+ 629 054c 0345F4FF 		lbu	a0,-1(s0)	#, MEM[(char *)p_62]
+ 630              	# stdlib.c:62:     printf_c(*(--p));
+ 631 0550 1304F4FF 		addi	s0,s0,-1	#, p, p
+ 632              	# kianv_stdlib.h:73: void print_chr(char ch) { putchar(ch); }
+ 633 0554 97000000 		call	putchar		#
+ 633      E7800000 
+ 634              	# stdlib.c:61:   while (p != buffer)
+ 635 055c E31894FE 		bne	s0,s1,.L77	#, p, p,
+ 636 0560 6FF05FF3 		j	.L66		#
+ 637              	.L76:
+ 638              	# stdlib.c:58:     *(p++) = '0' + val % 10;
+ 639 0564 33E7D702 		rem	a4,a5,a3	# tmp162, tmp144, val
+ 640              	# stdlib.c:58:     *(p++) = '0' + val % 10;
+ 641 0568 13041400 		addi	s0,s0,1	#, p, p
+ 642              	# stdlib.c:58:     *(p++) = '0' + val % 10;
+ 643 056c 13070703 		addi	a4,a4,48	#, tmp146, tmp144
+ 644              	# stdlib.c:59:     val = val / 10;
+ 645 0570 B3C7D702 		div	a5,a5,a3	# tmp162, val, val
+ 646              	# stdlib.c:58:     *(p++) = '0' + val % 10;
+ 647 0574 A30FE4FE 		sb	a4,-1(s0)	# tmp146, MEM[(char *)p_58 + 4294967295B]
+ 648 0578 6FF0DFFC 		j	.L75		#
+ 650              		.align	2
+ 651              		.globl	malloc
+ 653              	malloc:
+ 654              	# stdlib.c:100:   char *p = heap_memory + heap_memory_used;
+ 655 057c B7060000 		lui	a3,%hi(heap_memory_used)	# tmp77,
+ 656 0580 03A70600 		lw	a4,%lo(heap_memory_used)(a3)		# heap_memory_used.17_1, heap_memory_used
+ 657              	# stdlib.c:100:   char *p = heap_memory + heap_memory_used;
+ 658 0584 B7070000 		lui	a5,%hi(.LANCHOR0)	# tmp79,
+ 659 0588 93870700 		addi	a5,a5,%lo(.LANCHOR0)	# tmp78, tmp79,
+ 660 058c B387E700 		add	a5,a5,a4	# heap_memory_used.17_1, <retval>, tmp78
+ 661              	# stdlib.c:103:   heap_memory_used += size;
+ 662 0590 3307A700 		add	a4,a4,a0	# tmp83, _3, heap_memory_used.17_1
+ 663 0594 23A0E600 		sw	a4,%lo(heap_memory_used)(a3)	# _3, heap_memory_used
+ 664              	# stdlib.c:104:   if (heap_memory_used > 1024)
+ 665 0598 93060040 		li	a3,1024		# tmp81,
+ 666 059c 63D4E600 		ble	a4,a3,.L86	#, _3, tmp81,
+ 667              	# stdlib.c:105:     asm volatile("ebreak");
+ 668              	 #APP
+ 669              	# 105 "stdlib.c" 1
+   1              	// This is free and unencumbered software released into the public domain.
+   2              	//
+   3              	// Anyone is free to copy, modify, publish, use, compile, sell, or
+   4              	// distribute this software, either in source code form or as a compiled
+   5              	// binary, for any purpose, commercial or non-commercial, and by any
+   6              	// means.
+   7              	
+   8              	#ifndef KV_STDLIB_H
+   9              	#define KV_STDLIB_H
+  10              	
+  11              	#include "kianv_stdlib.h"
+  12              	#include <stdarg.h>
+  13              	#include <stdint.h>
+  14              	extern long time();
+  15              	extern long insn();
+  16              	
+  17              	#if defined(NOT_USE_MYSTDLIB)
+  18              	#else
+  19              	extern char *malloc();
+  20              	extern int printf(const char *format, ...);
+  21              	
+  22              	extern void *memcpy(void *dest, const void *src, long n);
+  23              	extern char *strcpy(char *dest, const char *src);
+  24              	extern int strcmp(const char *s1, const char *s2);
+  25              	
+  26              	char heap_memory[1024];
+  27              	int heap_memory_used = 0;
+  28              	#endif
+  29              	
+  30              	static void printf_c(int c) { print_chr(c); }
+  31              	
+  32              	static void printf_s(char *p) {
+  33              	  while (*p)
+  34              	    print_chr(*(p++));
+  35              	}
+  36              	
+  37              	static void printf_d(int val) {
+  38              	  char buffer[32];
+  39              	  char *p = buffer;
+  40              	  if (val < 0) {
+  41              	    printf_c('-');
+  42              	    val = -val;
+  43              	  }
+  44              	  while (val || p == buffer) {
+  45              	    *(p++) = '0' + val % 10;
+  46              	    val = val / 10;
+  47              	  }
+  48              	  while (p != buffer)
+  49              	    printf_c(*(--p));
+  50              	}
+  51              	
+  52              	static void printf_u(int val) {
+  53              	  char buffer[32];
+  54              	  char *p = buffer;
+  55              	
+  56              	  val = val >= 0 ? val : -val;
+  57              	  while (val || p == buffer) {
+  58              	    *(p++) = '0' + val % 10;
+  59              	    val = val / 10;
+  60              	  }
+  61              	  while (p != buffer)
+  62              	    printf_c(*(--p));
+  63              	}
+  64              	
+  65              	int printf(const char *format, ...) {
+  66              	  int i;
+  67              	  va_list ap;
+  68              	
+  69              	  va_start(ap, format);
+  70              	
+  71              	  for (i = 0; format[i]; i++)
+  72              	    if (format[i] == '%') {
+  73              	      while (format[++i]) {
+  74              	        if (format[i] == 'c') {
+  75              	          printf_c(va_arg(ap, int));
+  76              	          break;
+  77              	        }
+  78              	        if (format[i] == 's') {
+  79              	          printf_s(va_arg(ap, char *));
+  80              	          break;
+  81              	        }
+  82              	        if (format[i] == 'd') {
+  83              	          printf_d(va_arg(ap, int));
+  84              	          break;
+  85              	        }
+  86              	        if (format[i] == 'u') {
+  87              	          printf_u(va_arg(ap, int));
+  88              	          break;
+  89              	        }
+  90              	      }
+  91              	    } else
+  92              	      printf_c(format[i]);
+  93              	
+  94              	  va_end(ap);
+  95              	  return 0;
+  96              	}
+  97              	
+  98              	#if !defined(NOT_USE_MYSTDLIB)
+  99              	char *malloc(int size) {
+ 100              	  char *p = heap_memory + heap_memory_used;
+ 101              	  // printf("[malloc(%d) -> %d (%d..%d)]", size, (int)p, heap_memory_used,
+ 102              	  // heap_memory_used + size);
+ 103              	  heap_memory_used += size;
+ 104              	  if (heap_memory_used > 1024)
+ 105 05a0 73001000 	    asm volatile("ebreak");
+ 106              	  return p;
+ 670              		ebreak
+ 671              	# 0 "" 2
+ 672              	 #NO_APP
+ 673              	.L86:
+ 674              	# stdlib.c:107: }
+ 675 05a4 13850700 		mv	a0,a5	#, <retval>
+ 676 05a8 67800000 		ret	
+ 678              		.align	2
+ 679              		.globl	memcpy
+ 681              	memcpy:
+ 682              	# stdlib.c:113:   while (n--)
+ 683 05ac 93070000 		li	a5,0		# ivtmp.176,
+ 684              	.L89:
+ 685              	# stdlib.c:113:   while (n--)
+ 686 05b0 6394C700 		bne	a5,a2,.L90	#, ivtmp.176, _16,
+ 687              	# stdlib.c:116: }
+ 688 05b4 67800000 		ret	
+ 689              	.L90:
+ 690              	# stdlib.c:114:     *(a++) = *(b++);
+ 691 05b8 3387F500 		add	a4,a1,a5	# ivtmp.176, tmp81, bb
+ 692 05bc 83460700 		lbu	a3,0(a4)	# _1, MEM[(const char *)_17]
+ 693              	# stdlib.c:114:     *(a++) = *(b++);
+ 694 05c0 3307F500 		add	a4,a0,a5	# ivtmp.176, tmp82, aa
+ 695 05c4 93871700 		addi	a5,a5,1	#, ivtmp.176, ivtmp.176
+ 696 05c8 2300D700 		sb	a3,0(a4)	# _1, MEM[(char *)_18]
+ 697 05cc 6FF05FFE 		j	.L89		#
+ 699              		.align	2
+ 700              		.globl	strcpy
+ 702              	strcpy:
+ 703              	# stdlib.c:121:   while ((((uint32_t)dst | (uint32_t)src) & 3) != 0) {
+ 704 05d0 93070500 		mv	a5,a0	# dst, dst
+ 705              	.L92:
+ 706              	# stdlib.c:121:   while ((((uint32_t)dst | (uint32_t)src) & 3) != 0) {
+ 707 05d4 33E7B700 		or	a4,a5,a1	# src, tmp96, dst
+ 708              	# stdlib.c:121:   while ((((uint32_t)dst | (uint32_t)src) & 3) != 0) {
+ 709 05d8 13773700 		andi	a4,a4,3	#, tmp97, tmp96
+ 710              	# stdlib.c:121:   while ((((uint32_t)dst | (uint32_t)src) & 3) != 0) {
+ 711 05dc 63120706 		bne	a4,zero,.L94	#, tmp97,,
+ 712              	# stdlib.c:131:     if (__builtin_expect((((v)-0x01010101UL) & ~(v)&0x80808080UL), 0)) {
+ 713 05e0 3706FFFE 		li	a2,-16842752		# tmp100,
+ 714              	# stdlib.c:131:     if (__builtin_expect((((v)-0x01010101UL) & ~(v)&0x80808080UL), 0)) {
+ 715 05e4 37888080 		li	a6,-2139062272		# tmp105,
+ 716              	# stdlib.c:131:     if (__builtin_expect((((v)-0x01010101UL) & ~(v)&0x80808080UL), 0)) {
+ 717 05e8 1306F6EF 		addi	a2,a2,-257	#, tmp99, tmp100
+ 718              	# stdlib.c:131:     if (__builtin_expect((((v)-0x01010101UL) & ~(v)&0x80808080UL), 0)) {
+ 719 05ec 13080808 		addi	a6,a6,128	#, tmp104, tmp105
+ 720              	.L97:
+ 721              	# stdlib.c:129:     uint32_t v = *(uint32_t *)src;
+ 722 05f0 03A70500 		lw	a4,0(a1)		# v, MEM[(uint32_t *)src_21]
+ 723              	# stdlib.c:131:     if (__builtin_expect((((v)-0x01010101UL) & ~(v)&0x80808080UL), 0)) {
+ 724 05f4 B306C700 		add	a3,a4,a2	# tmp99, tmp98, v
+ 725              	# stdlib.c:131:     if (__builtin_expect((((v)-0x01010101UL) & ~(v)&0x80808080UL), 0)) {
+ 726 05f8 9348F7FF 		not	a7,a4	# tmp101, v
+ 727              	# stdlib.c:131:     if (__builtin_expect((((v)-0x01010101UL) & ~(v)&0x80808080UL), 0)) {
+ 728 05fc B3F61601 		and	a3,a3,a7	# tmp101, tmp102, tmp98
+ 729              	# stdlib.c:131:     if (__builtin_expect((((v)-0x01010101UL) & ~(v)&0x80808080UL), 0)) {
+ 730 0600 B3F60601 		and	a3,a3,a6	# tmp104, tmp103, tmp102
+ 731              	# stdlib.c:131:     if (__builtin_expect((((v)-0x01010101UL) & ~(v)&0x80808080UL), 0)) {
+ 732 0604 638A0604 		beq	a3,zero,.L95	#, tmp103,,
+ 733              	# stdlib.c:132:       dst[0] = v & 0xff;
+ 734 0608 2380E700 		sb	a4,0(a5)	# v, *dst_19
+ 735              	# stdlib.c:133:       if ((v & 0xff) == 0)
+ 736 060c 9376F70F 		andi	a3,a4,255	#, tmp106, v
+ 737              	# stdlib.c:133:       if ((v & 0xff) == 0)
+ 738 0610 63820604 		beq	a3,zero,.L96	#, tmp106,,
+ 739              	# stdlib.c:135:       v = v >> 8;
+ 740 0614 93568700 		srli	a3,a4,8	#, v, v
+ 741              	# stdlib.c:137:       dst[1] = v & 0xff;
+ 742 0618 A380D700 		sb	a3,1(a5)	# v, MEM[(char *)dst_19 + 1B]
+ 743              	# stdlib.c:138:       if ((v & 0xff) == 0)
+ 744 061c 93F6F60F 		andi	a3,a3,255	#, tmp107, v
+ 745              	# stdlib.c:138:       if ((v & 0xff) == 0)
+ 746 0620 638A0602 		beq	a3,zero,.L96	#, tmp107,,
+ 747              	# stdlib.c:140:       v = v >> 8;
+ 748 0624 93560701 		srli	a3,a4,16	#, v, v
+ 749              	# stdlib.c:142:       dst[2] = v & 0xff;
+ 750 0628 2381D700 		sb	a3,2(a5)	# v, MEM[(char *)dst_19 + 2B]
+ 751              	# stdlib.c:143:       if ((v & 0xff) == 0)
+ 752 062c 93F6F60F 		andi	a3,a3,255	#, tmp108, v
+ 753              	# stdlib.c:143:       if ((v & 0xff) == 0)
+ 754 0630 63820602 		beq	a3,zero,.L96	#, tmp108,,
+ 755              	# stdlib.c:145:       v = v >> 8;
+ 756 0634 13578701 		srli	a4,a4,24	#, v, v
+ 757              	# stdlib.c:147:       dst[3] = v & 0xff;
+ 758 0638 A381E700 		sb	a4,3(a5)	# v, MEM[(char *)dst_19 + 3B]
+ 759              	# stdlib.c:148:       return r;
+ 760 063c 67800000 		ret	
+ 761              	.L94:
+ 762              	# stdlib.c:122:     char c = *(src++);
+ 763 0640 03C70500 		lbu	a4,0(a1)	# c, MEM[(const char *)src_40 + 4294967295B]
+ 764              	# stdlib.c:122:     char c = *(src++);
+ 765 0644 93851500 		addi	a1,a1,1	#, src, src
+ 766              	# stdlib.c:123:     *(dst++) = c;
+ 767 0648 93871700 		addi	a5,a5,1	#, dst, dst
+ 768              	# stdlib.c:123:     *(dst++) = c;
+ 769 064c A38FE7FE 		sb	a4,-1(a5)	# c, MEM[(char *)dst_42 + 4294967295B]
+ 770              	# stdlib.c:124:     if (!c)
+ 771 0650 E31207F8 		bne	a4,zero,.L92	#, c,,
+ 772              	.L96:
+ 773              	# stdlib.c:155: }
+ 774 0654 67800000 		ret	
+ 775              	.L95:
+ 776              	# stdlib.c:151:     *(uint32_t *)dst = v;
+ 777 0658 23A0E700 		sw	a4,0(a5)	# v, MEM[(uint32_t *)dst_19]
+ 778              	# stdlib.c:152:     src += 4;
+ 779 065c 93854500 		addi	a1,a1,4	#, src, src
+ 780              	# stdlib.c:153:     dst += 4;
+ 781 0660 93874700 		addi	a5,a5,4	#, dst, dst
+ 782              	# stdlib.c:128:   while (1) {
+ 783 0664 6FF0DFF8 		j	.L97		#
+ 785              		.align	2
+ 786              		.globl	strcmp
+ 788              	strcmp:
+ 789              	.L111:
+ 790              	# stdlib.c:158:   while ((((uint32_t)s1 | (uint32_t)s2) & 3) != 0) {
+ 791 0668 B367B500 		or	a5,a0,a1	# s2, tmp101, s1
+ 792              	# stdlib.c:158:   while ((((uint32_t)s1 | (uint32_t)s2) & 3) != 0) {
+ 793 066c 93F73700 		andi	a5,a5,3	#, tmp102, tmp101
+ 794              	# stdlib.c:158:   while ((((uint32_t)s1 | (uint32_t)s2) & 3) != 0) {
+ 795 0670 639E0702 		bne	a5,zero,.L115	#, tmp102,,
+ 796              	# stdlib.c:202:     if (__builtin_expect((((v1)-0x01010101UL) & ~(v1)&0x80808080UL), 0))
+ 797 0674 B706FFFE 		li	a3,-16842752		# tmp156,
+ 798              	# stdlib.c:202:     if (__builtin_expect((((v1)-0x01010101UL) & ~(v1)&0x80808080UL), 0))
+ 799 0678 37868080 		li	a2,-2139062272		# tmp158,
+ 800              	# stdlib.c:202:     if (__builtin_expect((((v1)-0x01010101UL) & ~(v1)&0x80808080UL), 0))
+ 801 067c 9386F6EF 		addi	a3,a3,-257	#, tmp157, tmp156
+ 802              	# stdlib.c:202:     if (__builtin_expect((((v1)-0x01010101UL) & ~(v1)&0x80808080UL), 0))
+ 803 0680 13060608 		addi	a2,a2,128	#, tmp159, tmp158
+ 804              	.L120:
+ 805              	# stdlib.c:169:     uint32_t v1 = *(uint32_t *)s1;
+ 806 0684 83270500 		lw	a5,0(a0)		# v1, MEM[(uint32_t *)s1_15]
+ 807              	# stdlib.c:170:     uint32_t v2 = *(uint32_t *)s2;
+ 808 0688 03A70500 		lw	a4,0(a1)		# v2, MEM[(uint32_t *)s2_17]
+ 809              	# stdlib.c:172:     if (__builtin_expect(v1 != v2, 0)) {
+ 810 068c 6384E70A 		beq	a5,a4,.L116	#, v1, v2,
+ 811              	# stdlib.c:175:       c1 = v1 & 0xff, c2 = v2 & 0xff;
+ 812 0690 93F6F70F 		andi	a3,a5,0xff	# c1, v1
+ 813              	# stdlib.c:175:       c1 = v1 & 0xff, c2 = v2 & 0xff;
+ 814 0694 1376F70F 		andi	a2,a4,0xff	# c2, v2
+ 815              	# stdlib.c:176:       if (c1 != c2)
+ 816 0698 6382C604 		beq	a3,a2,.L117	#, c1, c2,
+ 817              	.L134:
+ 818              	# stdlib.c:163:       return c1 < c2 ? -1 : +1;
+ 819 069c 13051000 		li	a0,1		# <retval>,
+ 820              	# stdlib.c:191:         return c1 < c2 ? -1 : +1;
+ 821 06a0 63F8C608 		bgeu	a3,a2,.L110	#, c1, c2,
+ 822              	.L132:
+ 823              	# stdlib.c:163:       return c1 < c2 ? -1 : +1;
+ 824 06a4 1305F0FF 		li	a0,-1		# <retval>,
+ 825 06a8 67800000 		ret	
+ 826              	.L115:
+ 827              	# stdlib.c:159:     char c1 = *(s1++);
+ 828 06ac 83470500 		lbu	a5,0(a0)	# c1, MEM[(const char *)s1_48 + 4294967295B]
+ 829              	# stdlib.c:160:     char c2 = *(s2++);
+ 830 06b0 03C70500 		lbu	a4,0(a1)	# c2, MEM[(const char *)s2_50 + 4294967295B]
+ 831              	# stdlib.c:159:     char c1 = *(s1++);
+ 832 06b4 13051500 		addi	a0,a0,1	#, s1, s1
+ 833              	# stdlib.c:160:     char c2 = *(s2++);
+ 834 06b8 93851500 		addi	a1,a1,1	#, s2, s2
+ 835              	# stdlib.c:162:     if (c1 != c2)
+ 836 06bc 638AE700 		beq	a5,a4,.L112	#, c1, c2,
+ 837              	# stdlib.c:163:       return c1 < c2 ? -1 : +1;
+ 838 06c0 1305F0FF 		li	a0,-1		# <retval>,
+ 839 06c4 63E6E706 		bltu	a5,a4,.L110	#, c1, c2,
+ 840 06c8 13051000 		li	a0,1		# <retval>,
+ 841 06cc 67800000 		ret	
+ 842              	.L112:
+ 843              	# stdlib.c:164:     else if (!c1)
+ 844 06d0 E39C07F8 		bne	a5,zero,.L111	#, c1,,
+ 845              	.L130:
+ 846              	# stdlib.c:165:       return 0;
+ 847 06d4 13050000 		li	a0,0		# <retval>,
+ 848 06d8 6F008005 		j	.L110		#
+ 849              	.L117:
+ 850 06dc 13050000 		li	a0,0		# <retval>,
+ 851              	# stdlib.c:178:       if (!c1)
+ 852 06e0 63880604 		beq	a3,zero,.L110	#, c1,,
+ 853              	# stdlib.c:180:       v1 = v1 >> 8, v2 = v2 >> 8;
+ 854 06e4 93D68700 		srli	a3,a5,8	#, v1, v1
+ 855              	# stdlib.c:180:       v1 = v1 >> 8, v2 = v2 >> 8;
+ 856 06e8 13568700 		srli	a2,a4,8	#, v2, v2
+ 857              	# stdlib.c:182:       c1 = v1 & 0xff, c2 = v2 & 0xff;
+ 858 06ec 93F6F60F 		andi	a3,a3,0xff	# c1, v1
+ 859              	# stdlib.c:182:       c1 = v1 & 0xff, c2 = v2 & 0xff;
+ 860 06f0 1376F60F 		andi	a2,a2,0xff	# c2, v2
+ 861              	# stdlib.c:183:       if (c1 != c2)
+ 862 06f4 E394C6FA 		bne	a3,a2,.L134	#, c1, c2,
+ 863              	# stdlib.c:165:       return 0;
+ 864 06f8 13050000 		li	a0,0		# <retval>,
+ 865              	# stdlib.c:185:       if (!c1)
+ 866 06fc 638A0602 		beq	a3,zero,.L110	#, c1,,
+ 867              	# stdlib.c:187:       v1 = v1 >> 8, v2 = v2 >> 8;
+ 868 0700 93D60701 		srli	a3,a5,16	#, v1, v1
+ 869              	# stdlib.c:187:       v1 = v1 >> 8, v2 = v2 >> 8;
+ 870 0704 13560701 		srli	a2,a4,16	#, v2, v2
+ 871              	# stdlib.c:189:       c1 = v1 & 0xff, c2 = v2 & 0xff;
+ 872 0708 93F6F60F 		andi	a3,a3,0xff	# c1, v1
+ 873              	# stdlib.c:189:       c1 = v1 & 0xff, c2 = v2 & 0xff;
+ 874 070c 1376F60F 		andi	a2,a2,0xff	# c2, v2
+ 875              	# stdlib.c:190:       if (c1 != c2)
+ 876 0710 E396C6F8 		bne	a3,a2,.L134	#, c1, c2,
+ 877              	# stdlib.c:165:       return 0;
+ 878 0714 13050000 		li	a0,0		# <retval>,
+ 879              	# stdlib.c:192:       if (!c1)
+ 880 0718 638C0600 		beq	a3,zero,.L110	#, c1,,
+ 881              	# stdlib.c:196:       c1 = v1 & 0xff, c2 = v2 & 0xff;
+ 882 071c 93D78701 		srli	a5,a5,24	#, c1, v1
+ 883              	# stdlib.c:196:       c1 = v1 & 0xff, c2 = v2 & 0xff;
+ 884 0720 13578701 		srli	a4,a4,24	#, c2, v2
+ 885              	# stdlib.c:197:       if (c1 != c2)
+ 886 0724 6386E700 		beq	a5,a4,.L110	#, c1, c2,
+ 887              	# stdlib.c:163:       return c1 < c2 ? -1 : +1;
+ 888 0728 13051000 		li	a0,1		# <retval>,
+ 889              	# stdlib.c:198:         return c1 < c2 ? -1 : +1;
+ 890 072c E3ECE7F6 		bltu	a5,a4,.L132	#, c1, c2,
+ 891              	.L110:
+ 892              	# stdlib.c:208: }
+ 893 0730 67800000 		ret	
+ 894              	.L116:
+ 895              	# stdlib.c:202:     if (__builtin_expect((((v1)-0x01010101UL) & ~(v1)&0x80808080UL), 0))
+ 896 0734 3387D700 		add	a4,a5,a3	# tmp157, tmp109, v1
+ 897              	# stdlib.c:202:     if (__builtin_expect((((v1)-0x01010101UL) & ~(v1)&0x80808080UL), 0))
+ 898 0738 93C7F7FF 		not	a5,a5	# tmp112, v1
+ 899              	# stdlib.c:202:     if (__builtin_expect((((v1)-0x01010101UL) & ~(v1)&0x80808080UL), 0))
+ 900 073c B377F700 		and	a5,a4,a5	# tmp112, tmp113, tmp109
+ 901              	# stdlib.c:202:     if (__builtin_expect((((v1)-0x01010101UL) & ~(v1)&0x80808080UL), 0))
+ 902 0740 B3F7C700 		and	a5,a5,a2	# tmp159, tmp114, tmp113
+ 903              	# stdlib.c:202:     if (__builtin_expect((((v1)-0x01010101UL) & ~(v1)&0x80808080UL), 0))
+ 904 0744 E39807F8 		bne	a5,zero,.L130	#, tmp114,,
+ 905              	# stdlib.c:205:     s1 += 4;
+ 906 0748 13054500 		addi	a0,a0,4	#, s1, s1
+ 907              	# stdlib.c:206:     s2 += 4;
+ 908 074c 93854500 		addi	a1,a1,4	#, s2, s2
+ 909              	# stdlib.c:168:   while (1) {
+ 910 0750 6FF05FF3 		j	.L120		#
+ 912              		.align	2
+ 913              		.globl	generate_crc32_table
+ 915              	generate_crc32_table:
+ 916 0754 37070000 		lui	a4,%hi(.LANCHOR0+1024)	# tmp81,
+ 917              	# kernelboot.c:37:       crc = (crc << 1) ^ ((crc & 0x80000000) ? polynomial : 0);
+ 918 0758 3726C104 		li	a2,79765504		# tmp84,
+ 919 075c 13070740 		addi	a4,a4,%lo(.LANCHOR0+1024)	# ivtmp.244, tmp81,
+ 920              	# kernelboot.c:34:   for (uint32_t i = 0; i < 256; i++) {
+ 921 0760 93060000 		li	a3,0		# i,
+ 922              	# kernelboot.c:37:       crc = (crc << 1) ^ ((crc & 0x80000000) ? polynomial : 0);
+ 923 0764 130676DB 		addi	a2,a2,-585	#, iftmp.37_6, tmp84
+ 924              	# kernelboot.c:34:   for (uint32_t i = 0; i < 256; i++) {
+ 925 0768 13050010 		li	a0,256		# tmp83,
+ 926              	.L139:
+ 927 076c 93978601 		slli	a5,a3,24	#, crc, i
+ 928              	# kernelboot.c:34:   for (uint32_t i = 0; i < 256; i++) {
+ 929 0770 93058000 		li	a1,8		# ivtmp_17,
+ 930              	.L138:
+ 931              	# kernelboot.c:37:       crc = (crc << 1) ^ ((crc & 0x80000000) ? polynomial : 0);
+ 932 0774 13981700 		slli	a6,a5,1	#, _1, crc
+ 933              	# kernelboot.c:37:       crc = (crc << 1) ^ ((crc & 0x80000000) ? polynomial : 0);
+ 934 0778 93D7F741 		srai	a5,a5,31	#, tmp90, crc
+ 935 077c B3F7C700 		and	a5,a5,a2	# iftmp.37_6, tmp91, tmp90
+ 936              	# kernelboot.c:36:     for (int j = 0; j < 8; j++) {
+ 937 0780 9385F5FF 		addi	a1,a1,-1	#, ivtmp_17, ivtmp_17
+ 938              	# kernelboot.c:37:       crc = (crc << 1) ^ ((crc & 0x80000000) ? polynomial : 0);
+ 939 0784 B347F800 		xor	a5,a6,a5	# iftmp.37_6, crc, _1
+ 940              	# kernelboot.c:36:     for (int j = 0; j < 8; j++) {
+ 941 0788 E39605FE 		bne	a1,zero,.L138	#, ivtmp_17,,
+ 942              	# kernelboot.c:39:     crc32_table[i] = crc;
+ 943 078c 2320F700 		sw	a5,0(a4)	# crc, MEM[(long unsigned int *)_19]
+ 944              	# kernelboot.c:34:   for (uint32_t i = 0; i < 256; i++) {
+ 945 0790 93861600 		addi	a3,a3,1	#, i, i
+ 946              	# kernelboot.c:34:   for (uint32_t i = 0; i < 256; i++) {
+ 947 0794 13074700 		addi	a4,a4,4	#, ivtmp.244, ivtmp.244
+ 948 0798 E39AA6FC 		bne	a3,a0,.L139	#, i, tmp83,
+ 949              	# kernelboot.c:41: }
+ 950 079c 67800000 		ret	
+ 952              		.align	2
+ 953              		.globl	crc32
+ 955              	crc32:
+ 956              	# kernelboot.c:47:     crc = (crc << 8) ^ crc32_table[index];
+ 957 07a0 37060000 		lui	a2,%hi(.LANCHOR0)	# tmp97,
+ 958              	# kernelboot.c:45:   for (size_t i = 0; i < len; i++) {
+ 959 07a4 93060000 		li	a3,0		# i,
+ 960              	# kernelboot.c:44:   uint32_t crc = 0xFFFFFFFF;
+ 961 07a8 9307F0FF 		li	a5,-1		# crc,
+ 962              	# kernelboot.c:47:     crc = (crc << 8) ^ crc32_table[index];
+ 963 07ac 13060600 		addi	a2,a2,%lo(.LANCHOR0)	# tmp98, tmp97,
+ 964              	.L144:
+ 965              	# kernelboot.c:45:   for (size_t i = 0; i < len; i++) {
+ 966 07b0 6396B600 		bne	a3,a1,.L145	#, i, len,
+ 967              	# kernelboot.c:50: }
+ 968 07b4 13C5F7FF 		not	a0,a5	#, crc
+ 969 07b8 67800000 		ret	
+ 970              	.L145:
+ 971              	# kernelboot.c:46:     uint8_t index = (crc >> 24) ^ data[i];
+ 972 07bc 3307D500 		add	a4,a0,a3	# i, tmp87, data
+ 973              	# kernelboot.c:46:     uint8_t index = (crc >> 24) ^ data[i];
+ 974 07c0 03470700 		lbu	a4,0(a4)	# MEM[(uint8_t *)_18], MEM[(uint8_t *)_18]
+ 975              	# kernelboot.c:47:     crc = (crc << 8) ^ crc32_table[index];
+ 976 07c4 13988700 		slli	a6,a5,8	#, _5, crc
+ 977              	# kernelboot.c:46:     uint8_t index = (crc >> 24) ^ data[i];
+ 978 07c8 93D78701 		srli	a5,a5,24	#, tmp88, crc
+ 979              	# kernelboot.c:47:     crc = (crc << 8) ^ crc32_table[index];
+ 980 07cc B347F700 		xor	a5,a4,a5	# tmp88, tmp93, MEM[(uint8_t *)_18]
+ 981 07d0 93972700 		slli	a5,a5,2	#, tmp95, tmp93
+ 982 07d4 B307F600 		add	a5,a2,a5	# tmp95, tmp94, tmp98
+ 983 07d8 83A70740 		lw	a5,1024(a5)		# _7, crc32_table[_6]
+ 984              	# kernelboot.c:45:   for (size_t i = 0; i < len; i++) {
+ 985 07dc 93861600 		addi	a3,a3,1	#, i, i
+ 986              	# kernelboot.c:47:     crc = (crc << 8) ^ crc32_table[index];
+ 987 07e0 B347F800 		xor	a5,a6,a5	# _7, crc, _5
+ 988 07e4 6FF0DFFC 		j	.L144		#
+ 990              		.section	.rodata.str1.4
+ 991 0011 000000   		.align	2
+ 992              	.LC1:
+ 993 0014 0A4B6961 		.string	"\nKianV RISC-V Linux SOC\n"
+ 993      6E562052 
+ 993      4953432D 
+ 993      56204C69 
+ 993      6E757820 
+ 994 002d 000000   		.align	2
+ 995              	.LC2:
+ 996 0030 2D2D2D2D 		.string	"----------------------\n"
+ 996      2D2D2D2D 
+ 996      2D2D2D2D 
+ 996      2D2D2D2D 
+ 996      2D2D2D2D 
+ 997              		.align	2
+ 998              	.LC3:
+ 999 0048 6C6F6164 		.string	"loading kernel Image from flash...\n"
+ 999      696E6720 
+ 999      6B65726E 
+ 999      656C2049 
+ 999      6D616765 
+ 1000              		.align	2
+ 1001              	.LC4:
+ 1002 006c 6C6F6164 		.string	"loading dtb Image from flash...\n"
+ 1002      696E6720 
+ 1002      64746220 
+ 1002      496D6167 
+ 1002      65206672 
+ 1003 008d 000000   		.align	2
+ 1004              	.LC5:
+ 1005 0090 0A435243 		.string	"\nCRC-32 checksum of kernel: 0x"
+ 1005      2D333220 
+ 1005      63686563 
+ 1005      6B73756D 
+ 1005      206F6620 
+ 1006 00af 00       		.align	2
+ 1007              	.LC6:
+ 1008 00b0 4352432D 		.string	"CRC-32 checksum of DTB   : 0x"
+ 1008      33322063 
+ 1008      6865636B 
+ 1008      73756D20 
+ 1008      6F662044 
+ 1009 00ce 0000     		.align	2
+ 1010              	.LC7:
+ 1011 00d0 0A737461 		.string	"\nstarting kernel at 0x80000000...\n"
+ 1011      7274696E 
+ 1011      67206B65 
+ 1011      726E656C 
+ 1011      20617420 
+ 1012              		.section	.text.startup,"ax",@progbits
+ 1013              		.align	2
+ 1014              		.globl	main
+ 1016              	main:
+ 1017              	# kernelboot.c:57:   printf("\nKianV RISC-V Linux SOC\n");
+ 1018 0000 37050000 		lui	a0,%hi(.LC1)	# tmp74,
+ 1019              	# kernelboot.c:53: void main() {
+ 1020 0004 130101FF 		addi	sp,sp,-16	#,,
+ 1021              	# kernelboot.c:57:   printf("\nKianV RISC-V Linux SOC\n");
+ 1022 0008 13050500 		addi	a0,a0,%lo(.LC1)	#, tmp74,
+ 1023              	# kernelboot.c:53: void main() {
+ 1024 000c 23261100 		sw	ra,12(sp)	#,
+ 1025 0010 23248100 		sw	s0,8(sp)	#,
+ 1026 0014 23229100 		sw	s1,4(sp)	#,
+ 1027 0018 23202101 		sw	s2,0(sp)	#,
+ 1028              	# kernelboot.c:57:   printf("\nKianV RISC-V Linux SOC\n");
+ 1029 001c 97000000 		call	printf		#
+ 1029      E7800000 
+ 1030              	# kernelboot.c:58:   printf("----------------------\n");
+ 1031 0024 37050000 		lui	a0,%hi(.LC2)	# tmp75,
+ 1032 0028 13050500 		addi	a0,a0,%lo(.LC2)	#, tmp75,
+ 1033 002c 97000000 		call	printf		#
+ 1033      E7800000 
+ 1034              	# kernelboot.c:59:   printf("loading kernel Image from flash...\n");
+ 1035 0034 37050000 		lui	a0,%hi(.LC3)	# tmp76,
+ 1036 0038 13050500 		addi	a0,a0,%lo(.LC3)	#, tmp76,
+ 1037 003c 97000000 		call	printf		#
+ 1037      E7800000 
+ 1038              	# kernelboot.c:60:   memcpy(SDRAM_START, KERNEL_IMAGE, 1024 * 1024 * 4);
+ 1039 0044 37064000 		li	a2,4194304		#,
+ 1040 0048 B7052020 		li	a1,538968064		#,
+ 1041 004c 37050080 		li	a0,-2147483648		#,
+ 1042 0050 97000000 		call	memcpy		#
+ 1042      E7800000 
+ 1043              	# kernelboot.c:61:   printf("loading dtb Image from flash...\n");
+ 1044 0058 37050000 		lui	a0,%hi(.LC4)	# tmp77,
+ 1045 005c 13050500 		addi	a0,a0,%lo(.LC4)	#, tmp77,
+ 1046 0060 97000000 		call	printf		#
+ 1046      E7800000 
+ 1047              	# kernelboot.c:62:   memcpy(DTB_TARGET, DTB_IMAGE, 2048);
+ 1048 0068 37048080 		li	s0,-2139095040		# tmp79,
+ 1049 006c 37190000 		li	s2,4096		# tmp78,
+ 1050 0070 13060980 		addi	a2,s2,-2048	#,, tmp78
+ 1051 0074 B7051820 		li	a1,538443776		#,
+ 1052 0078 13050480 		addi	a0,s0,-2048	#,, tmp79
+ 1053 007c 97000000 		call	memcpy		#
+ 1053      E7800000 
+ 1054              	# kernelboot.c:68:   crc_32 = crc32(SDRAM_START, 4 * 1024 * 1024);
+ 1055 0084 B7054000 		li	a1,4194304		#,
+ 1056 0088 37050080 		li	a0,-2147483648		#,
+ 1057 008c 97000000 		call	crc32		#
+ 1057      E7800000 
+ 1058 0094 93040500 		mv	s1,a0	# crc_32, tmp87
+ 1059              	# kernelboot.c:69:   printf("\nCRC-32 checksum of kernel: 0x");
+ 1060 0098 37050000 		lui	a0,%hi(.LC5)	# tmp80,
+ 1061 009c 13050500 		addi	a0,a0,%lo(.LC5)	#, tmp80,
+ 1062 00a0 97000000 		call	printf		#
+ 1062      E7800000 
+ 1063              	# kernelboot.c:70:   print_hex(crc_32, 8);
+ 1064 00a8 93058000 		li	a1,8		#,
+ 1065 00ac 13850400 		mv	a0,s1	#, crc_32
+ 1066 00b0 97000000 		call	print_hex		#
+ 1066      E7800000 
+ 1067              	# kernelboot.c:71:   putchar(13);
+ 1068 00b8 1305D000 		li	a0,13		#,
+ 1069 00bc 97000000 		call	putchar		#
+ 1069      E7800000 
+ 1070              	# kernelboot.c:72:   crc_32 = crc32(DTB_TARGET, 2048);
+ 1071 00c4 93050980 		addi	a1,s2,-2048	#,, tmp78
+ 1072 00c8 13050480 		addi	a0,s0,-2048	#,, tmp79
+ 1073 00cc 97000000 		call	crc32		#
+ 1073      E7800000 
+ 1074 00d4 93040500 		mv	s1,a0	# crc_32, tmp88
+ 1075              	# kernelboot.c:73:   printf("CRC-32 checksum of DTB   : 0x");
+ 1076 00d8 37050000 		lui	a0,%hi(.LC6)	# tmp83,
+ 1077 00dc 13050500 		addi	a0,a0,%lo(.LC6)	#, tmp83,
+ 1078 00e0 97000000 		call	printf		#
+ 1078      E7800000 
+ 1079              	# kernelboot.c:74:   print_hex(crc_32, 8);
+ 1080 00e8 93058000 		li	a1,8		#,
+ 1081 00ec 13850400 		mv	a0,s1	#, crc_32
+ 1082 00f0 97000000 		call	print_hex		#
+ 1082      E7800000 
+ 1083              	# kernelboot.c:75:   putchar(13);
+ 1084 00f8 1305D000 		li	a0,13		#,
+ 1085 00fc 97000000 		call	putchar		#
+ 1085      E7800000 
+ 1086              	# kernelboot.c:76:   printf("\nstarting kernel at 0x80000000...\n");
+ 1087 0104 37050000 		lui	a0,%hi(.LC7)	# tmp84,
+ 1088 0108 13050500 		addi	a0,a0,%lo(.LC7)	#, tmp84,
+ 1089 010c 97000000 		call	printf		#
+ 1089      E7800000 
+ 1090              	# kernelboot.c:82:   kernel_entry(hartId, dtb);
+ 1091 0114 93050480 		addi	a1,s0,-2048	#,, tmp79
+ 1092              	# kernelboot.c:83: }
+ 1093 0118 03248100 		lw	s0,8(sp)		#,
+ 1094 011c 8320C100 		lw	ra,12(sp)		#,
+ 1095 0120 83244100 		lw	s1,4(sp)		#,
+ 1096 0124 03290100 		lw	s2,0(sp)		#,
+ 1097              	# kernelboot.c:82:   kernel_entry(hartId, dtb);
+ 1098 0128 13050000 		li	a0,0		#,
+ 1099              	# kernelboot.c:83: }
+ 1100              	# kernelboot.c:82:   kernel_entry(hartId, dtb);
+ 1101 012c B7070080 		li	a5,-2147483648		# tmp85,
+ 1102              	# kernelboot.c:83: }
+ 1103 0130 13010101 		addi	sp,sp,16	#,,
+ 1104              	# kernelboot.c:82:   kernel_entry(hartId, dtb);
+ 1105 0134 67800700 		jr	a5		# tmp85
+ 1107              		.globl	crc32_table
+ 1108              		.globl	heap_memory_used
+ 1109              		.globl	heap_memory
+ 1110              		.bss
+ 1111              		.align	2
+ 1112              		.set	.LANCHOR0,. + 0
+ 1115              	heap_memory:
+ 1116 0000 00000000 		.zero	1024
+ 1116      00000000 
+ 1116      00000000 
+ 1116      00000000 
+ 1116      00000000 
+ 1119              	crc32_table:
+ 1120 0400 00000000 		.zero	1024
+ 1120      00000000 
+ 1120      00000000 
+ 1120      00000000 
+ 1120      00000000 
+ 1121              		.section	.sbss,"aw",@nobits
+ 1122              		.align	2
+ 1125              	heap_memory_used:
+ 1126 0000 00000000 		.zero	4
+ 1127              		.ident	"GCC: (GNU) 11.1.0"

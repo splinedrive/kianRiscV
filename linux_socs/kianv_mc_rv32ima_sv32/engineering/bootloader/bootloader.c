@@ -26,13 +26,14 @@
 #define SPI_ADDR_BASE 0x20000000
 #define KERNEL_IMAGE (SPI_ADDR_BASE + 1024 * 1024 * 1)
 #define SDRAM_START 0x80000000
-#define SDRAM_END (SDRAM_START + 1024 * 1024 * 32)
+#define SDRAM_END (SDRAM_START + (*SDRAM_SIZE))  // Dereference SDRAM_SIZE to get size in bytes
 #define IMAGE_MB_SIZE 20
 #define SD_BLOCK_OFFSET (1024 * 1024 / 512)
 #define CHUNK_SIZE 512
 
 /* Frequency and Register Settings */
 const volatile uint32_t *BASE_FREQ_ADDR = (volatile uint32_t *)0x10000014;
+const volatile uint32_t * const SDRAM_SIZE = (volatile uint32_t *)0x10000018; // Pointer to SDRAM size register
 const uint32_t DIVISOR_1 = 5000000;
 const uint32_t DIVISOR_2 = 2000000;
 volatile uint32_t *HW_REGISTER_ADDR = (volatile uint32_t *)0x10000010;
@@ -43,7 +44,9 @@ typedef void (*func_ptr)(int, char *);
 /* Clear SDRAM memory */
 void clear_sdram() {
   uint32_t *sdram_ptr = (uint32_t *)SDRAM_START;
-  while (sdram_ptr < (uint32_t *)SDRAM_END) {
+  uint32_t *sdram_end = (uint32_t *)(SDRAM_START + *SDRAM_SIZE);
+
+  while (sdram_ptr < sdram_end) {
     *sdram_ptr++ = 0;
   }
 }
@@ -59,7 +62,7 @@ void main() {
 
   /* Display Bootloader Header */
   printf(COLOR_BLUE);
-  printf("***************************************\n");
+  printf("\n***************************************\n");
   printf("*   KianV RISC-V RV32IMA SSTC, ZICNTR *\n");
   printf("*   SV32 RLE ROM Bootloader v0.2      *\n");
   printf("***************************************\n");

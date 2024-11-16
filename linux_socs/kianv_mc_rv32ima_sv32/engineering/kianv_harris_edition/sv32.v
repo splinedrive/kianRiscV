@@ -88,7 +88,42 @@ module sv32 #(
   localparam STATE_WIDTH = $clog2(S_LAST);
   reg [STATE_WIDTH-1:0] state, next_state;
 
-  wire is_page_fault;
+  wire [33:0] physical_data_address;
+  reg         translate_data_valid;
+  wire        translate_data_ready;
+  wire        page_fault_instruction;
+  wire        page_fault_data;
+
+  wire [33:0] physical_instruction_address;
+  reg         translate_instruction_valid;
+  wire        translate_instruction_ready;
+
+  wire        walk_translate_instruction_mem_valid;
+  wire        walk_translate_instruction_mem_ready;
+  wire [31:0] walk_translate_instruction_mem_addr;
+
+  wire        walk_translate_data_mem_valid;
+  wire        walk_translate_data_mem_ready;
+  wire [31:0] walk_translate_data_mem_addr;
+
+  wire [31:0] pte;
+
+  wire        walk_valid;
+  wire        walk_ready;
+
+  wire        trans_instr_to_phy_walk_valid;
+  wire        trans_instr_to_phy_walk_ready;
+
+  wire        trans_data_to_phy_walk_valid;
+  wire        trans_data_to_phy_walk_ready;
+
+
+  wire        walk_mem_valid;
+  reg         walk_mem_ready;
+  wire [31:0] walk_mem_addr;
+  reg  [31:0] walk_mem_rdata;
+
+  wire        is_page_fault;
   assign is_page_fault = page_fault_instruction || page_fault_data;
   always @(posedge clk) begin
     if (!resetn) begin
@@ -103,10 +138,10 @@ module sv32 #(
   always @(posedge clk) state <= !resetn ? S0 : next_state;
 
   wire translate_req_pending;
-  assign translate_req_pending = mmu_translate_enable && cpu_valid && !mem_ready && !page_fault;
   /* verilator lint_off WIDTHEXPAND */
   /* verilator lint_off WIDTHTRUNC */
   wire mmu_translate_enable = `GET_SATP_MODE(satp);
+  assign translate_req_pending = mmu_translate_enable && cpu_valid && !mem_ready && !page_fault;
   /* verilator lint_on WIDTHEXPAND */
   /* verilator lint_on WIDTHTRUNC */
 
@@ -200,40 +235,6 @@ module sv32 #(
   end
 
   //////////////////////////////////////////////////////////////////////////////
-  wire [33:0] physical_data_address;
-  reg         translate_data_valid;
-  wire        translate_data_ready;
-  wire        page_fault_instruction;
-  wire        page_fault_data;
-
-  wire [33:0] physical_instruction_address;
-  reg         translate_instruction_valid;
-  wire        translate_instruction_ready;
-
-  wire        walk_translate_instruction_mem_valid;
-  wire        walk_translate_instruction_mem_ready;
-  wire [31:0] walk_translate_instruction_mem_addr;
-
-  wire        walk_translate_data_mem_valid;
-  wire        walk_translate_data_mem_ready;
-  wire [31:0] walk_translate_data_mem_addr;
-
-  wire [31:0] pte;
-
-  wire        walk_valid;
-  wire        walk_ready;
-
-  wire        trans_instr_to_phy_walk_valid;
-  wire        trans_instr_to_phy_walk_ready;
-
-  wire        trans_data_to_phy_walk_valid;
-  wire        trans_data_to_phy_walk_ready;
-
-
-  wire        walk_mem_valid;
-  reg         walk_mem_ready;
-  wire [31:0] walk_mem_addr;
-  reg  [31:0] walk_mem_rdata;
 
   assign walk_valid = is_instruction ? trans_instr_to_phy_walk_valid : trans_data_to_phy_walk_valid;
   assign trans_instr_to_phy_walk_ready = is_instruction && walk_ready;

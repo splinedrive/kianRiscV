@@ -21,25 +21,23 @@ module clint (
     input wire clk,
     input wire resetn,
     input wire valid,
-    input wire [31:0] addr,
+    input wire [23:0] addr,
     input wire [3:0] wmask,
     input wire [31:0] wdata,
     input wire [15:0] div,
     output reg [31:0] rdata,
     output wire is_valid,
     output reg ready,
-    output wire IRQ1,
-    output wire IRQ5,
     output wire IRQ3,
     output wire IRQ7,
     input wire [63:0] timer_counter
 );
 
-  wire is_msip = (addr == 32'h1100_0000);
-  wire is_mtimecmpl = (addr == 32'h1100_4000);
-  wire is_mtimecmph = (addr == 32'h1100_4004);
-  wire is_mtimeh = (addr == 32'h1100_bffc);
-  wire is_mtimel = (addr == 32'h1100_bff8);
+  wire is_msip = (addr == 24'h00_0000);
+  wire is_mtimecmpl = (addr == 24'h00_4000);
+  wire is_mtimecmph = (addr == 24'h00_4004);
+  wire is_mtimel = (addr == 24'h00_bff8);
+  wire is_mtimeh = (addr == 24'h00_bffc);
 
   assign is_valid = !ready && valid && (is_msip || is_mtimecmpl || is_mtimecmph || is_mtimel || is_mtimeh);
   always @(posedge clk) ready <= !resetn ? 1'b0 : is_valid;
@@ -81,11 +79,8 @@ module clint (
     endcase
   end
 
-  assign IRQ1 = 1'b0;  // ssip;
-  assign IRQ5 = (mtime >= mtimecmp);
-
-  assign IRQ3 = 1'b0;  // msip;
-  assign IRQ7 = 1'b0;  // (mtime >= mtimecmp);
+  assign IRQ3 = msip;
+  assign IRQ7 = (mtime >= mtimecmp);
 
 endmodule
 

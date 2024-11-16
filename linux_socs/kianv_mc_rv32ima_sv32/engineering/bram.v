@@ -20,8 +20,10 @@
 
 module bram #(
     parameter integer WIDTH = 8,
-    parameter INIT_FILE = "",
-    parameter SHOW_FIRMWARE = 0
+    parameter INIT_FILE0 = "",
+    parameter INIT_FILE1 = "",
+    parameter INIT_FILE2 = "",
+    parameter INIT_FILE3 = ""
 ) (
     input wire clk,
     input wire [WIDTH-1:0] addr,
@@ -31,22 +33,35 @@ module bram #(
 );
 
   localparam integer MEM_DEPTH = (1 << WIDTH);
-  reg [31:0] mem[0:MEM_DEPTH-1];
+  reg [7:0] mem0[0:MEM_DEPTH-1];
+  reg [7:0] mem1[0:MEM_DEPTH-1];
+  reg [7:0] mem2[0:MEM_DEPTH-1];
+  reg [7:0] mem3[0:MEM_DEPTH-1];
+
   integer i;
 
   initial begin
-    if (INIT_FILE != "") begin
-      $readmemh(INIT_FILE, mem, 0, MEM_DEPTH - 1);
+    if (INIT_FILE0 != "") begin
+      $readmemh(INIT_FILE0, mem0, 0, MEM_DEPTH - 1);
+    end
+    if (INIT_FILE1 != "") begin
+      $readmemh(INIT_FILE1, mem1, 0, MEM_DEPTH - 1);
+    end
+    if (INIT_FILE2 != "") begin
+      $readmemh(INIT_FILE2, mem2, 0, MEM_DEPTH - 1);
+    end
+    if (INIT_FILE3 != "") begin
+      $readmemh(INIT_FILE3, mem3, 0, MEM_DEPTH - 1);
     end
   end
 
   always @(posedge clk) begin
-    for (i = 0; i < 4; i = i + 1) begin
-      if (wmask[i]) mem[addr][8*i+:8] <= wdata[8*i+:8];
-    end
+    if (wmask[0]) mem0[addr] <= wdata[7:0];
+    if (wmask[1]) mem1[addr] <= wdata[15:8];
+    if (wmask[2]) mem2[addr] <= wdata[23:16];
+    if (wmask[3]) mem3[addr] <= wdata[31:24];
 
-    rdata <= mem[addr];
+    rdata <= {mem3[addr], mem2[addr], mem1[addr], mem0[addr]};
   end
 
 endmodule
-

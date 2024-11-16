@@ -52,7 +52,7 @@ firmware.hex: firmware.elf
 
 # Main target to generate hex file
 firmware: firmware.hex
-	cp firmware.hex bootloader.hex
+	./split_firmware.py
 
 # Clean up generated files
 clean:

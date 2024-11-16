@@ -55,7 +55,7 @@ module spi #(
 
   genvar i;
   generate
-    for (i = 0; i < 4; i = i + 1) begin
+    for (i = 0; i < 4; i = i + 1) begin : SIO_BIDIRECTION_CTRL
       assign sio[i] = sio_oe[i] ? sio_out[i] : 1'bz;
     end
   endgenerate

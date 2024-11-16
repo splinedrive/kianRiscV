@@ -19,7 +19,7 @@
 `ifndef KIANV_SOC
 `define KIANV_SOC
 
-//`define SYSTEM_CLK 60_000_000 // defined in Makefile
+`define SYSTEM_CLK 60_000_000
 `define KIANV_SPI_CTRL0_FREQ 35_000_000 // sdcard
 `define SYSTEM_CLK_MHZ (`SYSTEM_CLK / 1_000_000)
 `define ENABLE_ACCESS_FAULT (1'b1) // It will slow down the design when is enabled
@@ -35,6 +35,7 @@
 
 `define DIV_ADDR 32'h 10_000_010
 `define CPU_FREQ_REG_ADDR 32'h 10_000_014
+`define CPU_MEMSIZE_REG_ADDR 32'h 10_000_018
 `define KIANV_GPIO_DIR 32'h 10_000_700
 `define KIANV_GPIO_OUTPUT 32'h 10_000_704
 `define KIANV_GPIO_INPUT 32'h 10_000_708
@@ -77,17 +78,20 @@
 `define KIANV_AUDIO_PWM_BUFFER (1 << 16)
 
 `define SDRAM_MEM_ADDR_START 32'h 80_000_000
-`define SDRAM_SIZE (1024*1024*32)
 `define SDRAM_MEM_ADDR_END ((`SDRAM_MEM_ADDR_START) + (`SDRAM_SIZE))
 
 `define QUAD_SPI_FLASH_MODE 1'b1
 `define SPI_NOR_MEM_ADDR_START 32'h 20_000_000
 `define SPI_MEMORY_OFFSET (1024*1024*1)
 `define SPI_NOR_MEM_ADDR_END ((`SPI_NOR_MEM_ADDR_START) + (16*1024*1024))
+//`define RESET_ADDR (`SPI_NOR_MEM_ADDR_START + `SPI_MEMORY_OFFSET)
 
 `define HAS_BRAM
-`define RESET_ADDR 0 //(`SPI_NOR_MEM_ADDR_START + `SPI_MEMORY_OFFSET)
-`define FIRMWARE_BRAM "bootloader/bootloader.hex"
+`define RESET_ADDR 0
+`define BOOTLOADER_BRAM0 "bootloader/bootloader0.hex"
+`define BOOTLOADER_BRAM1 "bootloader/bootloader1.hex"
+`define BOOTLOADER_BRAM2 "bootloader/bootloader2.hex"
+`define BOOTLOADER_BRAM3 "bootloader/bootloader3.hex"
 `define BRAM_WORDS (1024*4)
 
 `endif  // KIANV_SOC

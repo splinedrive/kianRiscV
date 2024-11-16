@@ -54,7 +54,7 @@ module icache #(
 
   genvar i;
   generate
-    for (i = 0; i < WAYS; i = i + 1) begin
+    for (i = 0; i < WAYS; i = i + 1) begin : CACHE_TAG_RAM_WAYS
       tag_ram #(
           .TAG_RAM_ADDR_WIDTH(ICACHE_ENTRIES_PER_WAY_WIDTH),
           .TAG_WIDTH(TAG_WIDTH),

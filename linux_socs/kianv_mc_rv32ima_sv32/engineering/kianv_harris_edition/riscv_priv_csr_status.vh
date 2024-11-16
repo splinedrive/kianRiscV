@@ -1,7 +1,7 @@
 /*
  *  kianv harris multicycle RISC-V rv32im
  *
- *  copyright (c) 2023 hirosh dabui <hirosh@dabui.de>
+ *  copyright (c) 2023/2024 hirosh dabui <hirosh@dabui.de>
  *
  *  permission to use, copy, modify, and/or distribute this software for any
  *  purpose with or without fee is hereby granted, provided that the above
@@ -53,11 +53,11 @@
 `define XIE_SSIE_MASK      (1<< `XIE_SSIE_BIT)
 `define XIE_STIE_MASK      (1<< `XIE_STIE_BIT)
 
-`define XIP_SSIP_MASK      (1<< `XIP_SSIP_BIT)
 `define MIP_MEIP_MASK      (1<< `MIP_MEIP_BIT)
 `define MIP_MSIP_MASK      (1<< `MIP_MSIP_BIT)
 `define MIP_MTIP_MASK      (1<< `MIP_MTIP_BIT)
 `define XIP_SEIP_MASK      (1<< `XIP_SEIP_BIT)
+`define XIP_SSIP_MASK      (1<< `XIP_SSIP_BIT)
 `define XIP_STIP_MASK      (1<< `XIP_STIP_BIT)
 
 `define XSTATUS_SIE_BIT 1
@@ -140,6 +140,12 @@
 `define SET_XSTATUS_SIE(value)  ((value) << `XSTATUS_SIE_BIT)
 `define SET_XSTATUS_SPIE(value) ((value) << `XSTATUS_SPIE_BIT)
 `define SET_XSTATUS_SPP(value)  ((value) << `XSTATUS_SPP_BIT)
+
+`define GET_MENVCFGH_STCE(menvcfgh) ((menvcfgh >> 31) & 1)
+`define GET_MCOUNTEREN_TM(mcounteren) ((mcounteren >> 1) & 1)
+`define CHECK_SSTC_TM_AND_CMP(timer_counter, stimecmph, stimecmp, menvcfgh, mcounteren) \
+    (timer_counter >= {stimecmph, stimecmp} && \
+    (`GET_MENVCFGH_STCE(menvcfgh) && `GET_MCOUNTEREN_TM(mcounteren)))
 
 `define IS_EBREAK(opcode, funct3, funct7, rs1, rs2, rd) ({funct7, rs2, rs1, funct3, rd, opcode} == 32'h00100073)
 `define IS_ECALL(opcode, funct3, funct7, rs1, rs2, rd) ({funct7, rs2, rs1, funct3, rd, opcode} == 32'h00000073)

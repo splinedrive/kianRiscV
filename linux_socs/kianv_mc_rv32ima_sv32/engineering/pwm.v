@@ -60,7 +60,9 @@ module pwm #(
 
   // https://www.fpga4fun.com/PWM_DAC_3.html
   reg [8:0] pwm_accumulator;
-  always @(posedge clk) pwm_accumulator <= pwm_accumulator[7:0] + fifo_out;
+  reg [7:0] fifo_out_r;
+  always @(posedge clk) fifo_out_r <= !resetn || fifo_empty ? 0 : fifo_out;
+  always @(posedge clk) pwm_accumulator <= pwm_accumulator[7:0] + fifo_out_r;
 
   assign pwm_o = pwm_accumulator[8];
 

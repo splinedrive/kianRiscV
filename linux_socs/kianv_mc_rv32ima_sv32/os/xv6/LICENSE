@@ -1,0 +1,60 @@
+# License and Acknowledgments
+
+## Derived Work Acknowledgment
+
+This project is derived and inspired by:
+
+1. **xv6-riscv-fpga** (https://gitlab.com/x653/xv6-riscv-fpga/)  xv6-riscv-fpga
+is an FPGA implementation of a RISC-V CPU (rv32ia_zicsr) based on the Olimex
+iCE40HX8K-EVB development board capable of running UNIX xv6
+(https://pdos.csail.mit.edu/6.828/2022/xv6.html), using only FOSS (free and
+open-source hardware and software).  Copyright 2023 Michael Schröder  
+
+2. **xv6-riscv** (https://github.com/mit-pdos/xv6-riscv/)  This port is based
+on commit
+[de247db5e6384b138f270e0a7c745989b5a9c23b](https://github.com/mit-pdos/xv6-riscv/commit/de247db5e6384b138f270e0a7c745989b5a9c23b)
+of the official xv6-riscv repository by the MIT PDOS group. This commit
+represents the most recent upstream changes integrated into this project.
+
+## Modifications and Extensions
+
+This project includes:
+- Porting of the **latest xv6** (with supervisor SSTC) to the Kianv RISC-V SoC.
+- Adjustments and enhancements to the SoC code, informed by the work done in
+  xv6-riscv-fpga and xv6-riscv, tailored to the specific architecture of the
+  Kianv SoC.
+- Integration of features from the referenced xv6-riscv commit, extended to
+  support the specific peripherals and constraints of the Kianv SoC.
+
+## Copyright Notice
+
+This project is copyright © 2024 Hirosh Dabui  GitHub:
+[splinedrive/kianvRiscV](https://github.com/splinedrive/kianvRiscV)
+
+## License
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:
+
+1. The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software. 2. Attribution must be
+provided to:
+   - The original xv6-riscv-fpga project by Michael Schröder
+     (https://gitlab.com/x653/xv6-riscv-fpga/)
+   - The official xv6-riscv project by the MIT PDOS group
+     (https://github.com/mit-pdos/xv6-riscv/) and its commit
+     [de247db5e6384b138f270e0a7c745989b5a9c23b](https://github.com/mit-pdos/xv6-riscv/commit/de247db5e6384b138f270e0a7c745989b5a9c23b)
+   - This derived work (https://github.com/splinedrive/kianvRiscV/)
+   
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM,
+OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+

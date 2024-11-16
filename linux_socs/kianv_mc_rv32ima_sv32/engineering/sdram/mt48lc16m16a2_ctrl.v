@@ -57,13 +57,13 @@ module mt48lc16m16a2_ctrl #(
   localparam ONE_MICROSECOND = SDRAM_CLK_FREQ;
   localparam WAIT_100US = 100 * ONE_MICROSECOND;  // 64 * 1/64e6 = 1us => 100 * 1us
   // command period; PRE to ACT in ns, e.g. 20ns
-  localparam TRP = $rtoi((TRP_NS * ONE_MICROSECOND / 1000) + 1);
+  localparam TRP = ((TRP_NS * ONE_MICROSECOND / 1000) + 1);
   // tRC command period (REF to REF/ACT TO ACT) in ns
-  localparam TRC = $rtoi((TRC_NS * ONE_MICROSECOND / 1000) + 1);  //
+  localparam TRC = ((TRC_NS * ONE_MICROSECOND / 1000) + 1);  //
   // tRCD active command to read/write command delay; row-col-delay in ns
-  localparam TRCD = $rtoi((TRCD_NS * ONE_MICROSECOND / 1000) + 1);
+  localparam TRCD = ((TRCD_NS * ONE_MICROSECOND / 1000) + 1);
   // tCH command hold time
-  localparam TCH = $rtoi((TCH_NS * ONE_MICROSECOND / 1000) + 1);
+  localparam TCH = ((TCH_NS * ONE_MICROSECOND / 1000) + 1);
 
   initial begin
     $display("Clk frequence: %d MHz", SDRAM_CLK_FREQ);

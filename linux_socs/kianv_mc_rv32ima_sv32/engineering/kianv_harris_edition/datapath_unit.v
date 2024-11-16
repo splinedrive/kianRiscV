@@ -90,18 +90,18 @@ module datapath_unit #(
     input  wire        selectPC,
 
     input wire IRQ1,
-    input wire IRQ5,
     input wire IRQ3,
+    input wire IRQ5,
     input wire IRQ7,
-    input wire IRQ11,
     input wire IRQ9,
+    input wire IRQ11,
 
     output wire IRQ_TO_CPU_CTRL1,
     output wire IRQ_TO_CPU_CTRL3,
     output wire IRQ_TO_CPU_CTRL5,
     output wire IRQ_TO_CPU_CTRL7,
-    output wire IRQ_TO_CPU_CTRL11,
-    output wire IRQ_TO_CPU_CTRL9
+    output wire IRQ_TO_CPU_CTRL9,
+    output wire IRQ_TO_CPU_CTRL11
 );
 
 
@@ -433,14 +433,14 @@ module datapath_unit #(
       .IRQ3             (IRQ3),
       .IRQ5             (IRQ5),
       .IRQ7             (IRQ7),
-      .IRQ11            (IRQ11),
       .IRQ9             (IRQ9),
+      .IRQ11            (IRQ11),
       .IRQ_TO_CPU_CTRL1 (IRQ_TO_CPU_CTRL1),   // SSIP
       .IRQ_TO_CPU_CTRL3 (IRQ_TO_CPU_CTRL3),   // MSIP
       .IRQ_TO_CPU_CTRL5 (IRQ_TO_CPU_CTRL5),   // STIP
       .IRQ_TO_CPU_CTRL7 (IRQ_TO_CPU_CTRL7),   // MTIP
-      .IRQ_TO_CPU_CTRL11(IRQ_TO_CPU_CTRL11),  // MEIP
-      .IRQ_TO_CPU_CTRL9 (IRQ_TO_CPU_CTRL9)    // SEIP
+      .IRQ_TO_CPU_CTRL9 (IRQ_TO_CPU_CTRL9),   // SEIP
+      .IRQ_TO_CPU_CTRL11(IRQ_TO_CPU_CTRL11)   // MEIP
   );
 
 endmodule

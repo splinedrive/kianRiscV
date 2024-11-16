@@ -1,7 +1,7 @@
 /*
  *  kianv harris multicycle RISC-V rv32ima
  *
- *  copyright (c) 2023 hirosh dabui <hirosh@dabui.de>
+ *  copyright (c) 2023/2024 hirosh dabui <hirosh@dabui.de>
  *
  *  permission to use, copy, modify, and/or distribute this software for any
  *  purpose with or without fee is hereby granted, provided that the above
@@ -146,6 +146,11 @@ module csr_exception_handler #(
   reg  [31:0] mie;
   reg  [31:0] mip;
 
+  reg  [31:0] menvcfg;
+  reg  [31:0] menvcfgh;
+  reg  [31:0] mcounteren;
+  reg  [31:0] mcountinhibit;
+
   reg  [31:0] mtimecmp_nxt;
   reg  [31:0] mtimecmph_nxt;
 
@@ -160,6 +165,12 @@ module csr_exception_handler #(
   reg  [31:0] medeleg_nxt;
   reg  [31:0] mideleg_nxt;
 
+  reg  [31:0] menvcfg_nxt;
+  reg  [31:0] menvcfgh_nxt;
+  reg  [31:0] mcounteren_nxt;
+  reg  [31:0] mcountinhibit_nxt;
+
+
   // Supervisor Trap setup
   reg  [31:0] sscratch;
   reg  [31:0] stvec;
@@ -167,12 +178,20 @@ module csr_exception_handler #(
   reg  [31:0] scause;
   reg  [31:0] stval;
 
+  reg  [31:0] stimecmp;
+  reg  [31:0] stimecmph;
+  reg  [31:0] scounteren;
+
   reg  [31:0] sscratch_nxt;
   reg  [31:0] stvec_nxt;
   reg  [31:0] sepc_nxt;
   reg  [31:0] scause_nxt;
   reg  [31:0] stval_nxt;
   reg  [31:0] satp_nxt;
+
+  reg  [31:0] stimecmp_nxt;
+  reg  [31:0] stimecmph_nxt;
+  reg  [31:0] scounteren_nxt;
 
   reg  [31:0] exception_next_pc_nxt;
   reg         exception_select_nxt;
@@ -216,6 +235,11 @@ module csr_exception_handler #(
       mie <= 0;
       mip <= 0;
 
+      menvcfg <= 0;
+      menvcfgh <= 0;
+      mcounteren <= 0;
+      mcountinhibit <= 0;
+
       medeleg <= 0;
       mideleg <= 0;
 
@@ -226,6 +250,10 @@ module csr_exception_handler #(
       stval <= 0;
 
       satp <= 0;
+
+      stimecmp <= 0;
+      stimecmph <= 0;
+      scounteren <= 0;
 
       exception_next_pc <= 0;
       exception_select <= 1'b0;
@@ -243,6 +271,11 @@ module csr_exception_handler #(
       mie <= mie_nxt;
       mip <= mip_nxt;
 
+      menvcfg <= menvcfg_nxt;
+      menvcfgh <= menvcfgh_nxt;
+      mcounteren <= mcounteren_nxt;
+      mcountinhibit <= mcountinhibit_nxt;
+
       medeleg <= medeleg_nxt;
       mideleg <= mideleg_nxt;
 
@@ -253,6 +286,10 @@ module csr_exception_handler #(
       stval <= stval_nxt;
 
       satp <= satp_nxt;
+
+      stimecmp <= stimecmp_nxt;
+      stimecmph <= stimecmph_nxt;
+      scounteren <= scounteren_nxt;
 
       exception_next_pc <= exception_next_pc_nxt;
       exception_select <= exception_select_nxt;
@@ -307,6 +344,11 @@ module csr_exception_handler #(
       `CSR_MCAUSE:   rdata = mcause;
       `CSR_MTVAL:    rdata = mtval;
 
+      `CSR_MENVCFG: rdata = menvcfg;
+      `CSR_MENVCFGH: rdata = menvcfgh;
+      `CSR_MCOUNTEREN: rdata = mcounteren;
+      `CSR_MCOUNTINHIBIT: rdata = mcountinhibit;
+
       `CSR_MEDELEG: rdata = medeleg & `MEDELEG_MASK;
       `CSR_MIDELEG: rdata = mideleg & `MIDELEG_MASK;
 
@@ -323,6 +365,9 @@ module csr_exception_handler #(
       `CSR_SCAUSE: rdata = scause;
       `CSR_STVAL: rdata = stval;
       `CSR_SATP: rdata = satp;
+      `CSR_STIMECMP: rdata = stimecmp;
+      `CSR_STIMECMPH: rdata = stimecmph;
+      `CSR_SCOUNTEREN: rdata = scounteren;
 
       default: begin
         csr_not_exist = 1'b1;
@@ -372,6 +417,7 @@ module csr_exception_handler #(
   /* verilator lint_off WIDTHTRUNC */
   wire [`MSTATUS_MPP_WIDTH -1:0] y;
   assign y = `GET_MSTATUS_MPP(mstatus);
+
   always @(*) begin
     mstatus_nxt = mstatus;
     mscratch_nxt = mscratch;
@@ -381,6 +427,11 @@ module csr_exception_handler #(
     mepc_nxt = mepc;
     mcause_nxt = mcause;
     mtval_nxt = mtval;
+
+    menvcfg_nxt = menvcfg;
+    menvcfgh_nxt = menvcfgh;
+    mcounteren_nxt = mcounteren;
+    mcountinhibit_nxt = mcountinhibit;
 
     medeleg_nxt = medeleg;
     mideleg_nxt = mideleg;
@@ -395,6 +446,10 @@ module csr_exception_handler #(
     scause_nxt = scause;
     stval_nxt = stval;
     satp_nxt = satp;
+
+    stimecmp_nxt = stimecmp;
+    stimecmph_nxt = stimecmph;
+    scounteren_nxt = scounteren;
 
     deleg = 0;
     mask = 0;
@@ -413,7 +468,7 @@ module csr_exception_handler #(
       mask  = 1 << `GET_MCAUSE_CAUSE(cause);
       deleg = `IS_MCAUSE_INTERRUPT(cause) ? mideleg : medeleg;
 
-      if ((`IS_USER(privilege_mode) || `IS_SUPERVISOR(privilege_mode)) && (deleg & mask)) begin
+      if ((`IS_USER(privilege_mode) || `IS_SUPERVISOR(privilege_mode)) && (|(deleg & mask))) begin
 
         temp_xstatus = (mstatus & ~(`XSTATUS_SIE_MASK | `XSTATUS_SPIE_MASK | `XSTATUS_SPP_MASK));
 
@@ -494,6 +549,11 @@ module csr_exception_handler #(
         `CSR_MCAUSE:   mcause_nxt = wdata_nxt;
         `CSR_MTVAL:    mtval_nxt = wdata_nxt;
 
+        `CSR_MENVCFG: menvcfg_nxt = wdata_nxt;
+        `CSR_MENVCFGH: menvcfgh_nxt = wdata_nxt;
+        `CSR_MCOUNTEREN: mcounteren_nxt = wdata_nxt;
+        `CSR_MCOUNTINHIBIT: mcountinhibit_nxt = wdata_nxt;
+
         `CSR_MEDELEG: medeleg_nxt = wdata_nxt & `MEDELEG_MASK;
         `CSR_MIDELEG: mideleg_nxt = wdata_nxt & `MIDELEG_MASK;
 
@@ -504,7 +564,7 @@ module csr_exception_handler #(
           temp_restricted = mstatus & ~(`SSTATUS_MASK);
           mstatus_nxt = temp_restricted | (wdata_nxt & `SSTATUS_MASK);
         end
-        `CSR_SSCRATCH: sscratch_nxt = wdata_nxt;
+        `CSR_SSCRATCH:   sscratch_nxt = wdata_nxt;
         `CSR_SIE: begin
           temp_restricted = mie & ~(`SIE_MASK);
           mie_nxt = temp_restricted | (wdata_nxt & `SIE_MASK);
@@ -513,33 +573,34 @@ module csr_exception_handler #(
           temp_restricted = mip & ~(`SIP_MASK);
           mip_nxt = temp_restricted | (wdata_nxt & `SIP_MASK);
         end
-        `CSR_STVEC:    stvec_nxt = wdata_nxt;
-        `CSR_SEPC:     sepc_nxt = wdata_nxt;
-        `CSR_SCAUSE:   scause_nxt = wdata_nxt;
-        `CSR_STVAL:    stval_nxt = wdata_nxt;
+        `CSR_STVEC:      stvec_nxt = wdata_nxt;
+        `CSR_SEPC:       sepc_nxt = wdata_nxt;
+        `CSR_SCAUSE:     scause_nxt = wdata_nxt;
+        `CSR_STVAL:      stval_nxt = wdata_nxt;
         `CSR_SATP: begin
           tlb_flush = 1'b1;
           satp_nxt  = wdata_nxt;
         end
+        `CSR_STIMECMP:   stimecmp_nxt = wdata_nxt;
+        `CSR_STIMECMPH:  stimecmph_nxt = wdata_nxt;
+        `CSR_SCOUNTEREN: scounteren_nxt = wdata_nxt;
 
         default: ;
         // fixme exception
       endcase
 
     end else begin
-      temp_mip = mip & ~(`MIP_MSIP_MASK | `MIP_MTIP_MASK | `MIP_MEIP_MASK | `XIP_SSIP_MASK | `XIP_STIP_MASK | `XIP_SEIP_MASK);
+      temp_mip = mip & ~(`MIP_MTIP_MASK | `MIP_MEIP_MASK | `XIP_SEIP_MASK | `XIP_STIP_MASK);
       mip_nxt = temp_mip |
-      `SET_MIP_MSIP(IRQ3)
+      `SET_XIP_STIP(`CHECK_SSTC_TM_AND_CMP(
+                    timer_counter, stimecmph, stimecmp, menvcfgh, mcounteren))
       |
       `SET_MIP_MTIP(IRQ7)
       |
       `SET_MIP_MEIP(IRQ11)
       |
-      `SET_XIP_SSIP(IRQ1)
-      |
-      `SET_XIP_STIP(IRQ5)
-      |
       `SET_XIP_SEIP(IRQ9);
+
     end
 
     pending_irqs = mip & mie;
@@ -560,7 +621,6 @@ module csr_exception_handler #(
     IRQ_TO_CPU_CTRL7 = `GET_MIP_MTIP(interrupts);
     IRQ_TO_CPU_CTRL9 = `GET_XIP_SEIP(interrupts);
     IRQ_TO_CPU_CTRL11 = `GET_MIP_MEIP(interrupts);
-
     /* verilator lint_on WIDTHEXPAND */
     /* verilator lint_on WIDTHTRUNC */
 

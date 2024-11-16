@@ -87,45 +87,32 @@ GN17, MOSI <-> GN16, MISO <-> GN15, SCLK <-> GN14, and INTERRUPT <-> GP17.
 
 Generating gateware
 ---------------------
-Currently, two FPGA boards are supported: the ULX3S (12k, 85k, 25k, 12k, um-85k) and the IceSugarPro. They are built as follows:
+The project now supports a structured directory for FPGA boards. Use the provided Makefiles in specific folders for board-specific builds:
 ```
-cd engineerig
-./build_ulx3s.sh [12k, 85k, 25k, 12k, um-85k] # default is 85k
-```
-or
-
-```
-cd engineerig
-./build_icesugar.sh
-```
-IceSugar takes the soc_minimal.v but can also be expanded to the enterprise version. The IOs must be mapped accordingly in the LPF file.
-The clock rates are included in the Makefile and can be changed; multiple synthesis runs are needed.
-70 MHz should also be feasible, but I have kept it conservative. It's about 8 times faster than a VAX.
-
-
-Installation Demo Image for SD Card:
------------------------------------
-Please use very good SD cards. I'm overclocking the SPI bus to 35MHz.
-```
-zcat kianv_sv32_full_os_sd.img.gz | dd of=/dev/sdaX status=progress
-```
-FPGA Bitstream:
----------------
-```
-openFPGALoader -f --board=ulx3s soc_x.bit  # ulx3s
-icesprog soc.bit # icesugarpro
+cd engineering/boards
+ls
+colorlighti5  colorlighti9plus  cyc1000  icesugar_pro  ulx3s  wukong
 ```
 
-Build operating system everything from scratch
------------------------------------------------
+Build Operating System (Linux and XV6) from Scratch
+---------------------------------------------------
+Linux Build Instructions
+========================
 ```
-cd buildroot-kianv-soc
+cd os/linux/buildroot-kianv-soc
 # make NETWORK_CHIP=[enc28j60 (default), encx24j600, w5500]
 make -j $(nproc) # build full operating system
 make flash_os DEVICE=/dev/sdx # flash full operating system
 #make flash_rootfs DEVICE=/dev/sdx # flash only rootfs
 #make flash_kernel DEVICE=/dev/sdx # flash kernel
 ```
+XV6 Build Instructions
+======================
+```
+cd os/xv6/
+./build.sh /dev/sdx
+```
+
 
 In this photo, you can see the ULX3S along with all the PMODs that are
 supported both on the hardware and kernel side. It's also possible to operate
