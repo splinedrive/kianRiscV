@@ -1,4 +1,4 @@
-make -f Makefile.colorlighti5 clean
-make -f Makefile.colorlighti5
+make -f Makefile clean
+make -f Makefile
 openFPGALoader --board=colorlight-i5 -f soc.bit
 

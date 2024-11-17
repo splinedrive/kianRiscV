@@ -91,7 +91,7 @@ The project now supports a structured directory for FPGA boards. Use the provide
 ```
 cd engineering/boards
 ls
-colorlighti5  colorlighti9plus  cyc1000  icesugar_pro  ulx3s  wukong
+colorlighti5  colorlighti9 colorlighti9plus  cyc1000  icesugar_pro  ulx3s  wukong
 ```
 
 Build Operating System (Linux and XV6) from Scratch
