@@ -4,6 +4,6 @@
 
 DEVICE=${1:-85k}
 make -f Makefile clean
-make -f Makefiles DEVICE=$DEVICE
+make -f Makefile DEVICE=$DEVICE
 openFPGALoader -f --board=ulx3s soc.bit
 
