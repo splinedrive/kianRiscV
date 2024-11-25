@@ -18,7 +18,6 @@
 # - `clean`: Removes temporary files and directories created by Vivado
 #
 ###################################################################
-
 NUM_CPUS := $(shell nproc)
 PROJ = soc
 SYSTEM_FREQUENCY ?= 60000000
@@ -26,12 +25,17 @@ SYSTEM_FREQUENCY ?= 60000000
 # Vivado Paths
 VIVADO = vivado
 VIVADO_FLAGS = -mode batch -source
-PROJECT_DIR = $(PWD)
-DEFINES=-verilog_define SOC_IS_ARTIX7 -verilog_define SOC_HAS_AUDIO -verilog_define SOC_HAS_NETWORK -verilog_define SOC_HAS_GPIO -verilog_define SOC_HAS_SDRAM_MT48LC16M16A2 -verilog_define SOC_HAS_1LED
-DEFINES +=-verilog_define SDRAM_SIZE=$$((1024*1024*32))
+PROJECT_DIR := $(shell pwd)
+DEFINES := -verilog_define SOC_IS_ARTIX7 \
+           -verilog_define SOC_HAS_AUDIO \
+           -verilog_define SOC_HAS_NETWORK \
+           -verilog_define SOC_HAS_GPIO \
+           -verilog_define SOC_HAS_SDRAM_MT48LC16M16A2 \
+           -verilog_define SOC_HAS_1LED \
+           -verilog_define SDRAM_SIZE=$$((1024*1024*32))
 
 # Verilog Files
-VERILOG_FILES := ../../pll_xc7.v \
+VERILOG_FILES := ./pll_xc7.v \
                  ../../soc.v \
                  ../../bram.v \
                  ../../tx_uart.v \
@@ -39,12 +43,12 @@ VERILOG_FILES := ../../pll_xc7.v \
                  ../../fifo.v \
                  ../../qqspi.v \
                  ../../clint.v \
-								 ../../plic.v \
+                 ../../plic.v \
                  ../../spi.v \
                  ../../icache.v \
                  ../../cache.v \
-								 ../../gpio.v \
-								 ../../pwm.v \
+                 ../../gpio.v \
+                 ../../pwm.v \
                  ../../sdram/mt48lc16m16a2_ctrl.v \
                  ../../kianv_harris_edition/kianv_harris_mc_edition.v \
                  ../../kianv_harris_edition/control_unit.v \
@@ -77,14 +81,14 @@ VERILOG_FILES := ../../pll_xc7.v \
 PART = xc7a100tfgg676-1
 CONSTRAINTS = wukong_v3.xdc
 
-# Bitstream target
-all: ${PROJ}.bit
+# Bitstream Target
+all: $(PROJ).bit
 
 # Synthesis, Implementation, and Bitstream Generation
-%.bit: project.tcl $(VERILOG_FILES) $(CONSTRAINTS)
+$(PROJ).bit: project.tcl $(VERILOG_FILES) $(CONSTRAINTS)
 	$(VIVADO) $(VIVADO_FLAGS) project.tcl -tclargs $(PART) $(PROJ) $(CONSTRAINTS)
 
-# TCL script to generate the Vivado project and run the flow
+# Generate project.tcl Script
 project.tcl:
 	echo "set_param general.maxThreads $(NUM_CPUS)" > project.tcl
 	echo "read_verilog $(VERILOG_FILES)" >> project.tcl
@@ -93,14 +97,10 @@ project.tcl:
 	echo "opt_design" >> project.tcl
 	echo "place_design" >> project.tcl
 	echo "route_design" >> project.tcl
-	echo "write_bitstream -force ${PROJ}.bit" >> project.tcl
+	echo "write_bitstream -force $(PROJ).bit" >> project.tcl
 	echo "exit" >> project.tcl
 
-
+# Clean Target
 .PHONY: clean
 clean:
-	$(RM) -r project.tcl
-	$(RM) -r .Xil  # Add '-r' to recursively remove the .Xil directory
-	$(RM) *.bit *.jou *.log *.str project.tcl vivado*
-
-
+	rm -rf project.tcl .Xil *.bit *.jou *.log *.str vivado*
