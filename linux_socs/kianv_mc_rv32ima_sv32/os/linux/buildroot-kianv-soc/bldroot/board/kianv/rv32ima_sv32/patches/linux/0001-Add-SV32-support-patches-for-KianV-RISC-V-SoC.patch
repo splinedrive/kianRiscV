@@ -773,7 +773,7 @@ index 000000000000..eea253df4c45
 +	int ret;
 +	u32 val;
 +
-+	master = spi_alloc_master(&pdev->dev, sizeof(*hw));
++	master = spi_alloc_host(&pdev->dev, sizeof(*hw));
 +	if (!master)
 +		return -ENOMEM;
 +
@@ -928,7 +928,7 @@ index 000000000000..02dc1be1f17b
 +	int ret;
 +	u32 val;
 +
-+	master = spi_alloc_master(&pdev->dev, sizeof(*hw));
++	master = spi_alloc_host(&pdev->dev, sizeof(*hw));
 +	if (!master)
 +		return -ENOMEM;
 +
@@ -1083,7 +1083,7 @@ index 000000000000..00bc1b55f3ea
 +	int ret;
 +	u32 val;
 +
-+	master = spi_alloc_master(&pdev->dev, sizeof(*hw));
++	master = spi_alloc_host(&pdev->dev, sizeof(*hw));
 +	if (!master)
 +		return -ENOMEM;
 +
