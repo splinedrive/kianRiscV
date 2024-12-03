@@ -25,7 +25,9 @@
 			status = "okay";
 			compatible = "kianv\0riscv";
 			riscv,isa = "rv32ima";
-			mmu-type = "riscv,sv32";
+      riscv,isa-base = "rv32i";
+      riscv,isa-extensions = "i", "m", "a", "sstc", "zicntr", "zicsr", "zifencei";
+      mmu-type = "riscv,sv32";
 			uarch = "KianV,sv32";
 
 			interrupt-controller {
