@@ -8,9 +8,9 @@ and it was a good opportunity to play around with it.
 
 The SoC is operating with the most recent stable kernel version,
 and offers support for the following PMODs (as shown in the photo): GPIO (input, output),
-Network PMOD (Digilent PMOD NIC100), a second UART (PMOD UART by Digilent), and an OLED display (Digilent OLEDrgb 64x96, 16-bit).
+Network PMOD (Digilent PMOD NIC100), a second UART (PMOD UART by Digilent), and an OLED display (Digilent OLEDrgb 64x96, 16-bit, ....).
 The board is capable of functioning without these PMODs, with the kernel adjusting accordingly.
-
+You can also enjoy X11 with a larger 320x240 display, but you'll need 64 MiB of SDRAM. I have a ULX3S board with that kind of memory.
 If no PMODs are available, you can still enjoy music as a consolation (only enterprise soc). Simply
 navigate to the /root/music directory and execute
 
@@ -118,10 +118,10 @@ In this photo, you can see the ULX3S along with all the PMODs that are
 supported both on the hardware and kernel side. It's also possible to operate
 the SoC without these PMODs using the same image, though it might be less fun.
 However, listening to audio and experimenting is still enjoyable.
-![kianV RV32IMA zicntr SV32](console.png "KianV RV32IMA zicntr SV32")
-![kianV RV32IMA zicntr SV32](kianv_sv32_rv32ima.png "KianV RV32IMA zicntr SV32")
-![kianV RV32IMA zicntr SV32](enterprise_soc.jpg "KianV RV32IMA zicntr SV32")
-![kianV RV32IMA zicntr SV32](network_chips.jpg "KianV RV32IMA zicntr SV32")
+![kianV RV32IMA zicntr SV32](console.png "KianV RV32IMA zicntr zicsr zifencei sstc SV32")
+![kianV RV32IMA zicntr SV32](kianv_sv32_rv32ima.png "KianV RV32IMA zicntr zicsr zifencei sstc SV32")
+![kianV RV32IMA zicntr SV32](enterprise_soc.jpg "KianV RV32IMA zicntr zicsr zifencei sstc SV32")
+![kianV RV32IMA zicntr SV32](network_chips.jpg "KianV RV32IMA zicntr zicsr zifencei sstc SV32")
 
 best,
 Hirosh
