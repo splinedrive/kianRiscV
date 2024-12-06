@@ -119,6 +119,7 @@ supported both on the hardware and kernel side. It's also possible to operate
 the SoC without these PMODs using the same image, though it might be less fun.
 However, listening to audio and experimenting is still enjoyable.
 ![kianV RV32IMA zicntr SV32](console.png "KianV RV32IMA zicntr zicsr zifencei sstc SV32")
+![kianV RV32IMA zicntr SV32](xv6_console.png "KianV RV32IMA zicntr zicsr zifencei sstc SV32")
 ![kianV RV32IMA zicntr SV32](kianv_sv32_rv32ima.png "KianV RV32IMA zicntr zicsr zifencei sstc SV32")
 ![kianV RV32IMA zicntr SV32](enterprise_soc.jpg "KianV RV32IMA zicntr zicsr zifencei sstc SV32")
 ![kianV RV32IMA zicntr SV32](network_chips.jpg "KianV RV32IMA zicntr zicsr zifencei sstc SV32")
