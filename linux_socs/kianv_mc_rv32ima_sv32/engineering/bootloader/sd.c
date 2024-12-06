@@ -46,7 +46,7 @@
 #define CMD_START_OF_BLOCK 0xFE
 #define CMD_DATA_ACCEPTED 0x05
 
-#define MAX_RETRIES 2
+#define MAX_RETRIES 8
 
 //-----------------------------------------------------------------
 // Locals
