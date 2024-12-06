@@ -1,7 +1,7 @@
 /*
  *  kianv harris multicycle RISC-V rv32ima
  *
- *  copyright (c) 2023/2024 hirosh dabui <hirosh@dabui.de>
+ *  copyright (c) 2023 hirosh dabui <hirosh@dabui.de>
  *
  *  permission to use, copy, modify, and/or distribute this software for any
  *  purpose with or without fee is hereby granted, provided that the above
@@ -49,9 +49,7 @@ module csr_exception_handler #(
     output reg [31:0] satp,
     output reg tlb_flush,
 
-    input wire IRQ1,
     input wire IRQ3,
-    input wire IRQ5,
     input wire IRQ7,
     input wire IRQ9,
     input wire IRQ11,
@@ -84,7 +82,6 @@ module csr_exception_handler #(
 
   // CSR
   // csr rdcycle[H], rdtime[H], rdinstret[H]
-  //wire [63:0] timer_counter;
   wire [63:0] instr_counter;
 
   wire increase_instruction;
@@ -590,8 +587,13 @@ module csr_exception_handler #(
       endcase
 
     end else begin
-      temp_mip = mip & ~(`MIP_MTIP_MASK | `MIP_MEIP_MASK | `XIP_SEIP_MASK | `XIP_STIP_MASK);
+      temp_mip = mip & ~(`MIP_MTIP_MASK | `MIP_MEIP_MASK | `XIP_SEIP_MASK | (
+      `CHECK_SSTC_CONDITIONS(menvcfgh, mcounteren)
+      << `XIP_STIP_BIT));
+
       mip_nxt = temp_mip |
+      `SET_MIP_MSIP(IRQ3)
+      |
       `SET_XIP_STIP(`CHECK_SSTC_TM_AND_CMP(
                     timer_counter, stimecmph, stimecmp, menvcfgh, mcounteren))
       |

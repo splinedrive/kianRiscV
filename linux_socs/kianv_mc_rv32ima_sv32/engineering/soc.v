@@ -120,11 +120,15 @@ module soc #(
     `UART_RX_ADDR0, `UART_RX_ADDR1
   };  //, `UART_RX_ADDR2, `UART_RX_ADDR3};//, `UART_RX_ADDR4};
 
+  wire clk;
+  // reset
+  reg [7:0] rst_cnt = 0;
+  wire resetn = rst_cnt[7];
+
 `ifdef SOC_HAS_EXT_OLED
   assign gp = {resetn, 1'b1, 1'b1};
 `endif
 
-  wire clk;
 
   wire [31:0] PC  /* verilator public_flat_rw */;
 
@@ -195,25 +199,8 @@ module soc #(
   //////////////////////////////////////////////////////////////////////////////
   /* SYSCON */
 
-  wire is_reboot_addr = (cpu_mem_addr == `REBOOT_ADDR);
-  wire is_reboot_data = (cpu_mem_wdata[15:0] == `REBOOT_DATA);
-  wire is_reboot = is_reboot_addr || is_reboot_data;
-
-  wire is_reboot_valid = cpu_mem_valid && is_reboot_addr && is_reboot_data && wr;
-  reg  is_reboot_valid_r;
-  always @(posedge clk) is_reboot_valid_r <= !resetn ? 1'b0 : is_reboot_valid;
-
-  // reset
-  reg [7:0] rst_cnt = 0;
-  wire resetn = rst_cnt[7];
-
-  always @(posedge clk) begin
-    if (!locked || is_reboot_valid_r) rst_cnt <= 0;
-    else rst_cnt <= rst_cnt + {7'b0, !resetn};
-  end
 
   // cpu
-  wire [31:0] pc;
   wire is_instruction;
   wire [5:0] ctrl_state;
 
@@ -225,9 +212,34 @@ module soc #(
   wire [31:0] cpu_mem_wdata  /* verilator public_flat_rw */;
   wire [31:0] cpu_mem_rdata  /* verilator public_flat_rw */;
 
+  // RISC-V is byte-addressable, alignment memory devices word organized
+  // memory interface
+  wire wr = |cpu_mem_wstrb;
+  wire rd = ~wr;
+
+  wire [31:0] cache_addr_o;
+  wire [31:0] cache_din_o;
+  wire [3:0] cache_wmask_o;
+  wire cache_valid_o;
+  wire [31:0] cache_dout_i;
+
+
   wire [31:0] bram_rdata;
   reg bram_ready;
   wire bram_valid;
+
+  wire is_reboot_addr = (cpu_mem_addr == `REBOOT_ADDR);
+  wire is_reboot_data = (cpu_mem_wdata[15:0] == `REBOOT_DATA);
+  wire is_reboot = is_reboot_addr || is_reboot_data;
+
+  wire is_reboot_valid = cpu_mem_valid && is_reboot_addr && is_reboot_data && wr;
+  reg  is_reboot_valid_r;
+  always @(posedge clk) is_reboot_valid_r <= !resetn ? 1'b0 : is_reboot_valid;
+
+  always @(posedge clk) begin
+    if (!locked || is_reboot_valid_r) rst_cnt <= 0;
+    else rst_cnt <= rst_cnt + {7'b0, !resetn};
+  end
 
   // uart tx
   wire [NUM_UARTS-1:0] uart_tx_valid;
@@ -268,11 +280,6 @@ module soc #(
   // divider
   wire div_valid;
   reg div_ready;
-
-  // RISC-V is byte-addressable, alignment memory devices word organized
-  // memory interface
-  wire wr = |cpu_mem_wstrb;
-  wire rd = ~wr;
 
   wire [29:0] word_aligned_addr = {cpu_mem_addr[31:2]};
 
@@ -660,12 +667,6 @@ module soc #(
   );
 `endif
 
-  wire [31:0] cache_addr_o;
-  wire [31:0] cache_din_o;
-  wire [3:0] cache_wmask_o;
-  wire cache_valid_o;
-  wire [31:0] cache_dout_i;
-
   cache #(
       .ICACHE_ENTRIES_PER_WAY(`ICACHE_ENTRIES_PER_WAY)
   ) cache_I (
@@ -716,8 +717,6 @@ module soc #(
 
 
   /////////////////////////////////////////////////////////////////////////////
-  wire IRQ1;
-  wire IRQ5;
   wire IRQ3;
   wire IRQ7;
   wire clint_valid;
@@ -769,10 +768,8 @@ module soc #(
   );
 
   /////////////////////////////////////////////////////////////////////////////
-  wire [31:0] satp;
-  wire [1:0] privilege_mode;
-  /////////////////////////////////////////////////////////////////////////////
   reg access_fault_ready;
+  wire is_io = (cpu_mem_addr >= 32'h10_000_000 && cpu_mem_addr <= 32'h12_000_000) || (is_plic || is_clint);
   wire non_instruction_invalid_access = !is_instruction && !(is_io || is_bram || is_sdram || is_flash || is_reboot);
   wire instruction_invalid_access = is_instruction && !(is_sdram || is_bram || is_flash);
   wire access_fault_valid = `ENABLE_ACCESS_FAULT && (!access_fault_ready && cpu_mem_valid && (non_instruction_invalid_access || instruction_invalid_access));
@@ -798,8 +795,6 @@ module soc #(
       .access_fault  (access_fault_ready),
       .timer_counter (timer_counter),
       .is_instruction(is_instruction),
-      .IRQ1          (1'b0),
-      .IRQ5          (1'b0),
       .IRQ3          (IRQ3),
       .IRQ7          (IRQ7),
       .IRQ9          (interrupt_request_ctx1),
@@ -809,7 +804,6 @@ module soc #(
 
   /////////////////////////////////////////////////////////////////////////////
   //wire is_io = (cpu_mem_addr >= 32'h10_000_000 && cpu_mem_addr <= 32'h12_000_000);
-  wire is_io = (cpu_mem_addr >= 32'h10_000_000 && cpu_mem_addr <= 32'h12_000_000) || (is_plic || is_clint);
   wire [NUM_UARTS-1:0] match_lsr, match_tx, match_rx;
 
   generate

@@ -34,8 +34,6 @@ module kianv_harris_mc_edition #(
     input  wire [31:0] mem_rdata,
     output wire [31:0] PC,
     input  wire        access_fault,
-    input  wire        IRQ1,
-    input  wire        IRQ5,
     input  wire        IRQ3,
     input  wire        IRQ7,
     input  wire        IRQ9,
@@ -275,9 +273,7 @@ module kianv_harris_mc_edition #(
       .selectPC        (selectPC),
 
 
-      .IRQ1(IRQ1),
       .IRQ3(IRQ3),
-      .IRQ5(IRQ5),
       .IRQ7(IRQ7),
       .IRQ9(IRQ9),
       .IRQ11(IRQ11),

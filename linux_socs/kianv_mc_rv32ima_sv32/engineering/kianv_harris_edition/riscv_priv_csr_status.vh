@@ -1,7 +1,7 @@
 /*
  *  kianv harris multicycle RISC-V rv32im
  *
- *  copyright (c) 2023/2024 hirosh dabui <hirosh@dabui.de>
+ *  copyright (c) 2023 hirosh dabui <hirosh@dabui.de>
  *
  *  permission to use, copy, modify, and/or distribute this software for any
  *  purpose with or without fee is hereby granted, provided that the above
@@ -84,9 +84,6 @@
 `define MSTATUS_MPP_MASK (((1 << `MSTATUS_MPP_WIDTH) - 1) << `MSTATUS_MPP_BIT)
 `define MSTATUS_MPRV_MASK (1 << `MSTATUS_MPRV_BIT)
 
-`define MEDELEG_MASK (32'hff_ff)
-`define MIDELEG_MASK (32'hff_ff)
-
 `define SSTATUS_SIE_BIT   (1 << 1)
 `define SSTATUS_SPIE_BIT  (1 << 5)
 `define SSTATUS_UBE_BIT   (1 << 6)
@@ -101,6 +98,42 @@
 `define SSTATUS_MASK (`SSTATUS_SIE_BIT | `SSTATUS_SPIE_BIT | `SSTATUS_UBE_BIT | \
                       `SSTATUS_SPP_BIT | `SSTATUS_VS_BIT | `SSTATUS_FS_BIT | `SSTATUS_XS_BIT | `SSTATUS_SUM_BIT | \
                       `SSTATUS_MXR_BIT | `SSTATUS_SD_BIT)
+
+
+`define MEDELEG_INST_ADDR_MISALIGNED  'h0001
+`define MEDELEG_INST_ACCESS_FAULT     'h0002
+`define MEDELEG_ILLEGAL_INST          'h0004
+`define MEDELEG_BREAKPOINT            'h0008
+`define MEDELEG_LOAD_ADDR_MISALIGNED  'h0010
+`define MEDELEG_LOAD_ACCESS_FAULT     'h0020
+`define MEDELEG_STORE_ADDR_MISALIGNED 'h0040
+`define MEDELEG_STORE_ACCESS_FAULT    'h0080
+`define MEDELEG_ECALL_U               'h0100
+`define MEDELEG_ECALL_S               'h0200
+`define MEDELEG_INSTR_PAGE_FAULT      'h1000
+`define MEDELEG_LOAD_PAGE_FAULT       'h2000
+`define MEDELEG_STORE_PAGE_FAULT      'h8000
+
+`define MEDELEG_ECALL_M               'h0800
+
+`define MEDELEG_MASK (`MEDELEG_INST_ADDR_MISALIGNED | `MEDELEG_INST_ACCESS_FAULT | \
+                      `MEDELEG_ILLEGAL_INST | `MEDELEG_BREAKPOINT | \
+                      `MEDELEG_LOAD_ADDR_MISALIGNED | `MEDELEG_LOAD_ACCESS_FAULT | \
+                      `MEDELEG_STORE_ADDR_MISALIGNED | `MEDELEG_STORE_ACCESS_FAULT | \
+                      `MEDELEG_ECALL_U | `MEDELEG_ECALL_S | \
+                      `MEDELEG_INSTR_PAGE_FAULT | `MEDELEG_LOAD_PAGE_FAULT | \
+                      `MEDELEG_STORE_PAGE_FAULT)
+
+`define MIDELEG_SUPERVISOR_SOFT_INTR   'h002
+`define MIDELEG_SUPERVISOR_TIMER_INTR  'h020
+`define MIDELEG_SUPERVISOR_EXT_INTR    'h200
+
+`define MIDELEG_MACHINE_SOFT_INTR      'h008
+`define MIDELEG_MACHINE_TIMER_INTR     'h080
+`define MIDELEG_MACHINE_EXT_INTR       'h800
+
+`define MIDELEG_MASK (`MIDELEG_SUPERVISOR_SOFT_INTR | `MIDELEG_SUPERVISOR_TIMER_INTR | \
+                      `MIDELEG_SUPERVISOR_EXT_INTR)
 
 `define SIP_MASK (`XIP_SSIP_MASK | `XIP_SEIP_MASK | `XIP_STIP_MASK)
 `define SIE_MASK (`XIE_SSIE_MASK | `XIE_SEIE_MASK | `XIE_STIE_MASK)
@@ -143,9 +176,14 @@
 
 `define GET_MENVCFGH_STCE(menvcfgh) ((menvcfgh >> 31) & 1)
 `define GET_MCOUNTEREN_TM(mcounteren) ((mcounteren >> 1) & 1)
+
+`define CHECK_SSTC_CONDITIONS(menvcfgh, mcounteren) \
+    (`GET_MENVCFGH_STCE(menvcfgh) && `GET_MCOUNTEREN_TM(mcounteren))
+
 `define CHECK_SSTC_TM_AND_CMP(timer_counter, stimecmph, stimecmp, menvcfgh, mcounteren) \
     (timer_counter >= {stimecmph, stimecmp} && \
-    (`GET_MENVCFGH_STCE(menvcfgh) && `GET_MCOUNTEREN_TM(mcounteren)))
+    `CHECK_SSTC_CONDITIONS(menvcfgh, mcounteren))
+
 
 `define IS_EBREAK(opcode, funct3, funct7, rs1, rs2, rd) ({funct7, rs2, rs1, funct3, rd, opcode} == 32'h00100073)
 `define IS_ECALL(opcode, funct3, funct7, rs1, rs2, rd) ({funct7, rs2, rs1, funct3, rd, opcode} == 32'h00000073)
