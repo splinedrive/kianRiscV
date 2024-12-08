@@ -43,7 +43,7 @@ module gpio #(
   genvar i;
   // Assigning output values
   generate
-    for (i = 0; i < GPIO_NR; i = i + 1) begin
+    for (i = 0; i < GPIO_NR; i = i + 1) begin : GPIO_GEN
       assign gpio[i] = gpio_out_en[i] ? gpio_out_val[i] : 1'bz;
     end
   endgenerate
