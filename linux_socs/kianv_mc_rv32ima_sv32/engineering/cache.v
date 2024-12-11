@@ -46,7 +46,6 @@ module cache #(
   wire icache_cpu_ready_o;
   reg icache_cpu_valid_i;
   reg [31:0] icache_cpu_addr_i;
-  reg [31:0] icache_cpu_din_i;
   wire icache_ram_valid_o;
   reg icache_ram_ready_i;
 
@@ -61,7 +60,6 @@ module cache #(
     cpu_ready_o = 0;
 
     icache_cpu_addr_i = 0;
-    icache_cpu_din_i = 0;
     icache_cpu_valid_i = 0;
     icache_ram_rdata_i = 0;
     icache_ram_ready_i = 0;

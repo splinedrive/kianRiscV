@@ -268,7 +268,7 @@ module w9864g6jt_ctrl #(
           command_nxt = CMD_REF;
           saddr_nxt = 0;
           ba_nxt = 0;
-          wait_states_nxt = 3;  //TRC;
+          wait_states_nxt = TRC;
           ret_state_nxt = IDLE;
           update_ready_nxt = 1'b0;
           state_nxt = WAIT_STATE;

@@ -42,7 +42,6 @@ module tx_uart (
   wire [15:0] CYCLES_PER_SYMBOL;
   assign CYCLES_PER_SYMBOL = div;
 
-
   always @(posedge clk) begin
 
     if (resetn == 1'b0) begin

@@ -20,7 +20,7 @@
 
 module icache #(
     parameter ICACHE_ENTRIES_PER_WAY = 64,
-    WAYS = 2
+    parameter WAYS = 2
 ) (
     input wire clk,
     input wire resetn,
@@ -148,4 +148,7 @@ module icache #(
     endcase
   end
 
+  initial begin
+    //    $monitor("%b | %b", clk, resetn);
+  end
 endmodule

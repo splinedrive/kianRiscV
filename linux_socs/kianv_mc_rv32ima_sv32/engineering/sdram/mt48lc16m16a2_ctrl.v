@@ -26,9 +26,9 @@
 // ===============================
 module mt48lc16m16a2_ctrl #(
     parameter SDRAM_CLK_FREQ = 64,
-    parameter TRP_NS = 20,
-    parameter TRC_NS = 66,
-    parameter TRCD_NS = 20,
+    parameter TRP_NS = 15,
+    parameter TRC_NS = 60,
+    parameter TRCD_NS = 15,
     parameter TCH_NS = 2,
     parameter CAS = 3'd2
 ) (
@@ -65,6 +65,13 @@ module mt48lc16m16a2_ctrl #(
   // tCH command hold time
   localparam TCH = ((TCH_NS * ONE_MICROSECOND / 1000) + 1);
 
+  localparam BURST_LENGTH = 3'b001;  // 000=1, 001=2, 010=4, 011=8
+  localparam ACCESS_TYPE = 1'b0;  // 0=sequential, 1=interleaved
+  localparam CAS_LATENCY = CAS;  // 2/3 allowed, tRCD=20ns -> 3 cycles@128MHz
+  localparam OP_MODE = 2'b00;  // only 00 (standard operation) allowed
+  localparam NO_WRITE_BURST = 1'b0;  // 0= write burst enabled, 1=only single access write
+  localparam sdram_mode = {1'b0, NO_WRITE_BURST, OP_MODE, CAS_LATENCY, ACCESS_TYPE, BURST_LENGTH};
+
   initial begin
     $display("Clk frequence: %d MHz", SDRAM_CLK_FREQ);
     $display("WAIT_100US: %d cycles", WAIT_100US);
@@ -75,12 +82,6 @@ module mt48lc16m16a2_ctrl #(
     $display("CAS_LATENCY: %d cycles", CAS_LATENCY);
   end
 
-  localparam BURST_LENGTH = 3'b001;  // 000=1, 001=2, 010=4, 011=8
-  localparam ACCESS_TYPE = 1'b0;  // 0=sequential, 1=interleaved
-  localparam CAS_LATENCY = CAS;  // 2/3 allowed, tRCD=20ns -> 3 cycles@128MHz
-  localparam OP_MODE = 2'b00;  // only 00 (standard operation) allowed
-  localparam NO_WRITE_BURST = 1'b0;  // 0= write burst enabled, 1=only single access write
-  localparam sdram_mode = {1'b0, NO_WRITE_BURST, OP_MODE, CAS_LATENCY, ACCESS_TYPE, BURST_LENGTH};
   //
   // ISSI-IS425 datasheet page 16
   // (CS, RAS, CAS, WE)
@@ -148,10 +149,11 @@ module mt48lc16m16a2_ctrl #(
 
   reg [15:0] dq;
   reg [15:0] dq_nxt;
-  assign sdram_dq = oe ? dq : 16'hz;
-
   reg oe;
   reg oe_nxt;
+
+  assign sdram_dq = oe ? dq : 16'hz;
+
 
   always @(posedge clk) begin
     if (~resetn) begin
@@ -263,7 +265,7 @@ module mt48lc16m16a2_ctrl #(
           command_nxt = CMD_REF;
           saddr_nxt = 0;
           ba_nxt = 0;
-          wait_states_nxt = 3;  //TRC;
+          wait_states_nxt = TRC;
           ret_state_nxt = IDLE;
           update_ready_nxt = 1'b0;
           state_nxt = WAIT_STATE;

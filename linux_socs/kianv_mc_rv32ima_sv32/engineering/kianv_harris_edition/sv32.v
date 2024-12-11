@@ -54,7 +54,8 @@
 `include "riscv_defines.vh"
 
 module sv32 #(
-    parameter NUM_ENTRIES_PER_TLB = 64
+    parameter NUM_ENTRIES_ITLB = 64,
+    parameter NUM_ENTRIES_DTLB = 64
 ) (
     input wire clk,
     input wire resetn,
@@ -241,7 +242,8 @@ module sv32 #(
   assign trans_data_to_phy_walk_ready = !is_instruction && walk_ready;
 
   sv32_table_walk #(
-      .TLB_ENTRY_COUNT(NUM_ENTRIES_PER_TLB)
+      .NUM_ENTRIES_ITLB(`NUM_ENTRIES_ITLB),
+      .NUM_ENTRIES_DTLB(`NUM_ENTRIES_DTLB)
   ) sv32_table_walk_I (
       .clk    (clk),
       .resetn (resetn),

@@ -38,8 +38,6 @@ module bram #(
   reg [7:0] mem2[0:MEM_DEPTH-1];
   reg [7:0] mem3[0:MEM_DEPTH-1];
 
-  integer i;
-
   initial begin
     if (INIT_FILE0 != "") begin
       $readmemh(INIT_FILE0, mem0, 0, MEM_DEPTH - 1);

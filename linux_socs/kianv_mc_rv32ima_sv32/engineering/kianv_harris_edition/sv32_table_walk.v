@@ -20,7 +20,8 @@
 
 `include "riscv_defines.vh"
 module sv32_table_walk #(
-    parameter TLB_ENTRY_COUNT = 64
+    parameter NUM_ENTRIES_ITLB = 64,
+    parameter NUM_ENTRIES_DTLB = 64
 ) (
     input  wire        clk,
     input  wire        resetn,
@@ -38,56 +39,70 @@ module sv32_table_walk #(
     output reg  [31:0] walk_mem_addr,
     input  wire [31:0] walk_mem_rdata
 );
-  localparam TLB_ENTRY_COUNT_WIDTH = $clog2(TLB_ENTRY_COUNT);
+  localparam ITLB_ENTRY_COUNT_WIDTH = $clog2(NUM_ENTRIES_ITLB);
+  localparam DTLB_ENTRY_COUNT_WIDTH = $clog2(NUM_ENTRIES_DTLB);
   localparam S0 = 0, S1 = 1, S2 = 2, S_LAST = 3;
 
+  wire is_itlb = !is_instruction;
   reg [$clog2(S_LAST) -1:0] state, next_state;
 
 
-  reg  [                      31:0] base;
-  reg  [                      31:0] base_nxt;
-  reg  [                       3:0] vpn_shift;
-  reg  [                       9:0] idx;
-  reg  [                      31:0] ppn;
-  reg  [                       9:0] pte_flags;
-  reg  [                      20:0] vpn;
+  reg  [                       31:0] base;
+  reg  [                       31:0] base_nxt;
+  reg  [                        3:0] vpn_shift;
+  reg  [                        9:0] idx;
+  reg  [                       31:0] ppn;
+  reg  [                        9:0] pte_flags;
+  reg  [                       20:0] vpn;
 
-  reg  [                      31:0] pte_nxt;
+  reg  [                       31:0] pte_nxt;
 
-  reg                               ready_nxt;
+  reg                                ready_nxt;
 
-  reg  [                       1:0] level;
-  reg  [                       1:0] level_nxt;
-  reg  [                      19:0] tag;
+  reg  [                        1:0] level;
+  reg  [                        1:0] level_nxt;
+  reg  [                       19:0] tag;
 
 
-  reg  [TLB_ENTRY_COUNT_WIDTH -1:0] tlb_idx;
-  reg                               tlb_we;
-  reg                               tlb_valid [1:0];
-  wire                              tlb_hit   [1:0];
-  reg  [                      31:0] tlb_pte_i;
-  wire [                      31:0] tlb_pte_o [1:0];
+  reg  [ITLB_ENTRY_COUNT_WIDTH -1:0] itlb_idx;
+  reg  [DTLB_ENTRY_COUNT_WIDTH -1:0] dtlb_idx;
+  reg                                tlb_we;
+  reg                                tlb_valid [1:0];
+  wire                               tlb_hit   [1:0];
+  reg  [                       31:0] tlb_pte_i;
+  wire [                       31:0] tlb_pte_o [1:0];
 
-  genvar i;
-  generate
-    for (i = 0; i < 2; i = i + 1) begin : gen_tlb_I
-      tag_ram #(
-          .TAG_RAM_ADDR_WIDTH(TLB_ENTRY_COUNT_WIDTH),
-          .TAG_WIDTH(20),
-          .PAYLOAD_WIDTH(32)
-      ) tlb_I (
-          .clk      (clk),
-          .resetn   (resetn && !tlb_flush),
-          .idx      (tlb_idx),
-          .tag      (tag),
-          .we       (tlb_we),
-          .valid_i  (tlb_valid[i]),
-          .hit_o    (tlb_hit[i]),
-          .payload_i(tlb_pte_i),
-          .payload_o(tlb_pte_o[i])
-      );
-    end
-  endgenerate
+  tag_ram #(
+      .TAG_RAM_ADDR_WIDTH(ITLB_ENTRY_COUNT_WIDTH),
+      .TAG_WIDTH(20),
+      .PAYLOAD_WIDTH(32)
+  ) itlb_I (
+      .clk      (clk),
+      .resetn   (resetn && !tlb_flush),
+      .idx      (itlb_idx),
+      .tag      (tag),
+      .we       (tlb_we),
+      .valid_i  (tlb_valid[0]),
+      .hit_o    (tlb_hit[0]),
+      .payload_i(tlb_pte_i),
+      .payload_o(tlb_pte_o[0])
+  );
+
+  tag_ram #(
+      .TAG_RAM_ADDR_WIDTH(DTLB_ENTRY_COUNT_WIDTH),
+      .TAG_WIDTH(20),
+      .PAYLOAD_WIDTH(32)
+  ) dtlb_I (
+      .clk      (clk),
+      .resetn   (resetn && !tlb_flush),
+      .idx      (dtlb_idx),
+      .tag      (tag),
+      .we       (tlb_we),
+      .valid_i  (tlb_valid[1]),
+      .hit_o    (tlb_hit[1]),
+      .payload_i(tlb_pte_i),
+      .payload_o(tlb_pte_o[1])
+  );
 
   always @(posedge clk) state <= !resetn ? S0 : next_state;
 
@@ -117,7 +132,7 @@ module sv32_table_walk #(
 
     case (state)
       S0: next_state = mmu_translate_enable && valid && !ready ? S1 : S0;
-      S1: next_state = tlb_hit[is_instruction] ? S0 : (!(&level) ? S2 : S0);
+      S1: next_state = tlb_hit[is_itlb] ? S0 : (!(&level) ? S2 : S0);
       S2: next_state = !walk_mem_ready ? S2 : (!ready_nxt ? S1 : S0);
       default: next_state = S0;
     endcase
@@ -144,7 +159,8 @@ module sv32_table_walk #(
     /* verilator lint_off WIDTHEXPAND */
     /* verilator lint_off WIDTHTRUNC */
     tag = address >> (`SV32_PAGE_OFFSET_BITS);
-    tlb_idx = tag & (TLB_ENTRY_COUNT - 1);
+    itlb_idx = tag & (NUM_ENTRIES_ITLB - 1);
+    dtlb_idx = tag & (NUM_ENTRIES_DTLB - 1);
 
     vpn_shift = level ? `SV32_VPN0_BITS : 0;
     idx = (tag >> vpn_shift) & ((1 << `SV32_VPN0_BITS) - 1);
@@ -169,9 +185,9 @@ module sv32_table_walk #(
       end
 
       S1: begin
-        tlb_valid[is_instruction] = 1'b1;
-        if (tlb_hit[is_instruction]) begin
-          pte_nxt   = tlb_pte_o[is_instruction];
+        tlb_valid[is_itlb] = 1'b1;
+        if (tlb_hit[is_itlb]) begin
+          pte_nxt   = tlb_pte_o[is_itlb];
           ready_nxt = 1'b1;
         end else begin
           walk_mem_valid = 1'b1;
@@ -209,7 +225,7 @@ module sv32_table_walk #(
               pte_nxt = ((level ? (ppn | vpn & ((1 << `SV32_VPN0_SHIFT) - 1)) : ppn) << `SV32_PAGE_OFFSET_BITS) | pte_flags;
               level_nxt = 1;
               ready_nxt = 1'b1;
-              tlb_valid[is_instruction] = 1'b1;
+              tlb_valid[is_itlb] = 1'b1;
               tlb_we = 1'b1;
               tlb_pte_i = pte_nxt;
             end

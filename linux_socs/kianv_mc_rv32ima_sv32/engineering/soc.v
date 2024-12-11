@@ -164,7 +164,7 @@ module soc #(
   wire locked;
 `ifdef SOC_IS_ECP5
   pll #(
-      .freq(`SYSTEM_CLK_MHZ)
+      .freq(`SYSTEM_CLK / 1_000_000)
   ) pll_I0 (
       clk_osc,
       clk,
@@ -178,7 +178,7 @@ module soc #(
       clk_osc
   );
 `endif
-`ifdef SOC_IS_CYC1000
+`ifdef SOC_IS_CYCLONE10
   pll pll_I0 (
       clk_osc,
       clk,
@@ -595,7 +595,12 @@ module soc #(
 
 `ifdef SOC_HAS_SDRAM_MT48LC16M16A2
   mt48lc16m16a2_ctrl #(
-      .SDRAM_CLK_FREQ(`SYSTEM_CLK_MHZ / 1_000_000)
+    .SDRAM_CLK_FREQ(`SYSTEM_CLK / 1_000_000),
+    .TRP_NS         (`TRP_NS        ),
+    .TRC_NS         (`TRC_NS        ),
+    .TRCD_NS        (`TRCD_NS       ),
+    .TCH_NS         (`TCH_NS        ),
+    .CAS            (`CAS           )
   ) sdram_i (
       .clk   (clk),
       .resetn(resetn),
@@ -619,7 +624,12 @@ module soc #(
   );
 `elsif SOC_HAS_SDRAM_M12L64322A
   m12l64322a_ctrl #(
-      .SDRAM_CLK_FREQ(`SYSTEM_CLK_MHZ / 1_000_000)
+    .SDRAM_CLK_FREQ(`SYSTEM_CLK / 1_000_000),
+    .TRP_NS         (`TRP_NS        ),
+    .TRC_NS         (`TRC_NS        ),
+    .TRCD_NS        (`TRCD_NS       ),
+    .TCH_NS         (`TCH_NS        ),
+    .CAS            (`CAS           )
   ) sdram_i (
       .clk   (clk),
       .resetn(resetn),
@@ -643,7 +653,12 @@ module soc #(
   );
 `elsif SOC_HAS_SDRAM_W9864G6JT
   w9864g6jt_ctrl #(
-      .SDRAM_CLK_FREQ(`SYSTEM_CLK_MHZ / 1_000_000)
+    .SDRAM_CLK_FREQ(`SYSTEM_CLK / 1_000_000),
+    .TRP_NS         (`TRP_NS        ),
+    .TRC_NS         (`TRC_NS        ),
+    .TRCD_NS        (`TRCD_NS       ),
+    .TCH_NS         (`TCH_NS        ),
+    .CAS            (`CAS           )
   ) sdram_i (
       .clk   (clk),
       .resetn(resetn),
@@ -779,7 +794,8 @@ module soc #(
   kianv_harris_mc_edition #(
       .RESET_ADDR(`RESET_ADDR),
       .SYSTEM_CLK(`SYSTEM_CLK),
-      .NUM_ENTRIES_PER_TLB(`NUM_ENTRIES_PER_TLB)
+      .NUM_ENTRIES_ITLB(`NUM_ENTRIES_ITLB),
+      .NUM_ENTRIES_DTLB(`NUM_ENTRIES_DTLB)
   ) kianv_I (
       .clk           (clk),
       .resetn        (resetn),

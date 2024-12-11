@@ -19,15 +19,10 @@
 `ifndef KIANV_SOC
 `define KIANV_SOC
 
-`define SYSTEM_CLK 60_000_000
 `define KIANV_SPI_CTRL0_FREQ 35_000_000 // sdcard
-`define SYSTEM_CLK_MHZ (`SYSTEM_CLK / 1_000_000)
-`define ENABLE_ACCESS_FAULT (1'b1) // It will slow down the design when is enabled
+`define ENABLE_ACCESS_FAULT (1'b1)
 
 `define FPGA_MULTIPLIER
-// Defines the number of entries for both instruction and data TLB
-`define NUM_ENTRIES_PER_TLB 64
-`define ICACHE_ENTRIES_PER_WAY 64
 
 `define REBOOT_ADDR 32'h 11_100_000
 `define REBOOT_DATA 16'h 7777

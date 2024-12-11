@@ -346,8 +346,10 @@ module csr_exception_handler #(
       `CSR_MCOUNTEREN: rdata = mcounteren;
       `CSR_MCOUNTINHIBIT: rdata = mcountinhibit;
 
+      /* verilator lint_off WIDTHEXPAND */
       `CSR_MEDELEG: rdata = medeleg & `MEDELEG_MASK;
       `CSR_MIDELEG: rdata = mideleg & `MIDELEG_MASK;
+      /* verilator lint_on WIDTHEXPAND */
 
       `CSR_MTIMECMP:  rdata = mtimecmp;
       `CSR_MTIMECMPH: rdata = mtimecmph;

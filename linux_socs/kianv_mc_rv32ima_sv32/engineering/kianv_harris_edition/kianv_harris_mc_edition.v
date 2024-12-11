@@ -22,7 +22,8 @@
 module kianv_harris_mc_edition #(
     parameter RESET_ADDR = 0,
     parameter SYSTEM_CLK = 50_000_000,
-    parameter NUM_ENTRIES_PER_TLB = 64
+    parameter NUM_ENTRIES_ITLB = 64,
+    parameter NUM_ENTRIES_DTLB = 64
 ) (
     input  wire        clk,
     input  wire        resetn,
@@ -286,7 +287,8 @@ module kianv_harris_mc_edition #(
   );
 
   sv32 #(
-      .NUM_ENTRIES_PER_TLB(NUM_ENTRIES_PER_TLB)
+      .NUM_ENTRIES_ITLB(`NUM_ENTRIES_ITLB),
+      .NUM_ENTRIES_DTLB(`NUM_ENTRIES_DTLB)
   ) mmu_I (
       .clk   (clk),
       .resetn(resetn),

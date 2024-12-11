@@ -32,7 +32,7 @@ module tag_ram #(
     input wire we,
     input wire valid_i,
     output reg hit_o,
-    output wire [PAYLOAD_WIDTH -1:0] payload_o
+    output reg [PAYLOAD_WIDTH -1:0] payload_o
 );
   localparam LINES = 2 ** TAG_RAM_ADDR_WIDTH;
   reg [TAG_WIDTH -1:0] tags[0:LINES -1];
@@ -42,6 +42,7 @@ module tag_ram #(
   always @(*) begin
     /* verilator lint_off WIDTHTRUNC */
     hit_o = tag == tags[idx] && v[idx];
+    payload_o = hit_o ? payloads[idx] : 0;
     /* verilator lint_on WIDTHTRUNC */
   end
 
@@ -60,8 +61,5 @@ module tag_ram #(
       end
     end
   end
-  /* verilator lint_off WIDTHTRUNC */
-  assign payload_o = hit_o ? payloads[idx] : 0;
-  /* verilator lint_on WIDTHTRUNC */
 endmodule
 

@@ -23,7 +23,12 @@
 
 // ugly hack
 module m12l64322a_ctrl #(
-    parameter SDRAM_CLK_FREQ = 64
+    parameter SDRAM_CLK_FREQ = 64,
+    parameter TRP_NS = 15,
+    parameter TRC_NS = 60,
+    parameter TRCD_NS = 15,
+    parameter TCH_NS = 2,
+    parameter CAS = 3'd2
 ) (
     input wire clk,
     input wire resetn,
@@ -73,7 +78,7 @@ module m12l64322a_ctrl #(
 
   genvar i;
   generate
-    for (i = 0; i < 4; i = i + 1) begin
+    for (i = 0; i < 4; i = i + 1) begin : DOUT_DQM_GEN
       assign dout_dqm[i*8+7:i*8] = !wmask[i] ? dout[i*8+7:i*8] : din[i*8+7:i*8];
     end
   endgenerate
@@ -90,23 +95,18 @@ module m12l64322a_ctrl #(
   REF = 4'b0001,  // auto refresh (cke=H), selfrefresh assign cke=L
   NOP = 4'b0111, DSEL = 4'b1xxx;
 
-  localparam WAIT_100US = 100 * SDRAM_CLK_FREQ,  // 64 * 1/64e6 = 1us => 100 * 1us
-  // command period, PRE to ACT in ns, e.g. 20ns
-  TRP = $rtoi(
-      (20.0 * SDRAM_CLK_FREQ / 1000.0) + 1
-  ),
+  localparam ONE_MICROSECOND = SDRAM_CLK_FREQ;
+  localparam WAIT_100US = 100 * ONE_MICROSECOND;  // 64 * 1/64e6 = 1us => 100 * 1us
+  // command period; PRE to ACT in ns, e.g. 20ns
+  localparam TRP = ((TRP_NS * ONE_MICROSECOND / 1000) + 1);
   // tRC command period (REF to REF/ACT TO ACT) in ns
-  TRC = $rtoi(
-      (66.0 * SDRAM_CLK_FREQ / 1000.0) + 1
-  ),  //
-  // tRCD active command to read/write command delay, row-col-delay in ns
-  TRCD = $rtoi(
-      (20.0 * SDRAM_CLK_FREQ / 1000.0) + 1
-  ),
+  localparam TRC = ((TRC_NS * ONE_MICROSECOND / 1000) + 1);  //
+  // tRCD active command to read/write command delay; row-col-delay in ns
+  localparam TRCD = ((TRCD_NS * ONE_MICROSECOND / 1000) + 1);
   // tCH command hold time
-  TCH = 1;
+  localparam TCH = ((TCH_NS * ONE_MICROSECOND / 1000) + 1);
 
-  /*
+
   initial begin
     $display("Clk frequence: %d MHz", SDRAM_CLK_FREQ);
     $display("WAIT_100US: %d cycles", WAIT_100US);
@@ -116,7 +116,6 @@ module m12l64322a_ctrl #(
     $display("TCH: %d cycles", TCH);
     $display("CAS_LATENCY: %d cycles", CAS_LATENCY);
   end
-  */
 
   localparam
     RESET                   = 5'd0,

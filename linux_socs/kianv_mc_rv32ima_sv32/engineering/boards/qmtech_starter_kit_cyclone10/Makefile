@@ -1,67 +1,30 @@
 ###################################################################
 # Makefile for KianV RISC-V SoC on CYC1000 (Cyclone 10 LP)
-#
-# This Makefile automates the synthesis, fitting, assembly, timing
-# analysis, and programming for the KianV RISC-V SoC on an Altera
-# Cyclone 10 LP FPGA (CYC1000). It uses Quartus tools to compile
-# the design and create a bitstream for the target FPGA.
-#
-# Key Variables:
-# - PROJECT: Project name (default: cyc1000-KianV-RV32IMA-SV32-xv6)
-# - TOP_LEVEL_ENTITY: Top module name in the Verilog design
-# - FAMILY, PART: FPGA device family and part number
-# - VERILOG_DEFINE: Defines specific project options and parameters
-# - SRCS: List of Verilog source files for the SoC
-#
-# Key Targets:
-# - `all`: Builds the entire project and generates the .rbf bitstream file
-# - `clean`: Removes generated files and resets the project environment
-# - `program`: Programs the FPGA with the generated .sof file
-# - `program-pof`: Programs the FPGA with a .pof configuration file
-#
-# Required Tools:
-# - Quartus Prime software (path configurable with QUARTUS_PATH)
-# - Quartus executables (quartus_map, quartus_fit, quartus_asm, etc.)
-#
-# Usage:
-# - Configure the PROJECT, PART, and source files (SRCS) as needed.
-# - Run `make all` to build the bitstream, `make clean` to clean the
-#   directory, and `make program` to load the design onto the FPGA.
-#
 ###################################################################
 
-PROJECT = cyc1000-KianV-RV32IMA-SV32-xv6
+PROJECT = qmtech_start_kit_cyclone10-KianV-RV32IMA-SV32
 TOP_LEVEL_ENTITY = soc
 ASSIGNMENT_FILES = $(PROJECT).qpf $(PROJECT).qsf
 
 VERILOG_DEFINE = -verilog_macro "SOC_IS_CYCLONE10"
-VERILOG_DEFINE += -verilog_macro "SOC_HAS_8LEDS"
-VERILOG_DEFINE += -verilog_macro "SYSTEM_CLK=45000000"
-VERILOG_DEFINE += -verilog_macro "SOC_HAS_SDRAM_W9864G6JT"
-VERILOG_DEFINE += -verilog_macro SDRAM_SIZE=$(shell echo $$((1024*1024*8)))
-VERILOG_DEFINE += -verilog_macro NUM_ENTRIES_ITLB=64
-VERILOG_DEFINE += -verilog_macro NUM_ENTRIES_DTLB=64
-VERILOG_DEFINE += -verilog_macro ICACHE_ENTRIES_PER_WAY=64
-VERILOG_DEFINE += -verilog_macro TRP_NS=20
-VERILOG_DEFINE += -verilog_macro TRC_NS=20
-VERILOG_DEFINE += -verilog_macro TRCD_NS=20
+#VERILOG_DEFINE = -verilog_macro "SOC_HAS_1LED"
+VERILOG_DEFINE += -verilog_macro "SYSTEM_CLK=50000000"
+VERILOG_DEFINE += -verilog_macro "SOC_HAS_SDRAM_MT48LC16M16A2"
+VERILOG_DEFINE += -verilog_macro "SOC_HAS_NETWORK"
+VERILOG_DEFINE += -verilog_macro "SOC_HAS_GPIO"
+VERILOG_DEFINE += -verilog_macro SDRAM_SIZE=$(shell echo $$((1024*1024*32)))
+VERILOG_DEFINE += -verilog_macro NUM_ENTRIES_ITLB=32
+VERILOG_DEFINE += -verilog_macro NUM_ENTRIES_DTLB=32
+VERILOG_DEFINE += -verilog_macro ICACHE_ENTRIES_PER_WAY=32
+VERILOG_DEFINE += -verilog_macro TRP_NS=15
+VERILOG_DEFINE += -verilog_macro TRC_NS=60
+VERILOG_DEFINE += -verilog_macro TRCD_NS=15
 VERILOG_DEFINE += -verilog_macro TCH_NS=2
 VERILOG_DEFINE += -verilog_macro CAS=2
 
-###################################################################
-# Part, Family, Boardfile DE1 or DE2
 FAMILY = "Cyclone 10 LP"
-PART = 10CL025YU256C8G
-BOARDFILE = cyc1000Pins
-###################################################################
-
-###################################################################
-# Setup your sources here
-#SRCS = $(wildcard ../fpga/*.sv) \
-#  $(wildcard ../fpga/*.v) \
-#  $(wildcard ../fpga/*.vhdl) \
-#  $(wildcard ../fpga/*.vhd) \
-#  $(wildcard ../fpga/*.qsys)
+PART = 10CL016YU484C8G
+BOARDFILE = qmtech_start_kit_cyclone10.pins
 
 include ../sources.mk
 
@@ -76,7 +39,7 @@ include ../sources.mk
 all: smart.log $(PROJECT).asm.rpt $(PROJECT).sta.rpt $(PROJECT).rbf
 
 clean:
-	$(RM) -rf *.rpt *.chg smart.log *.htm *.eqn *.pin *.sof *.pof *.rbf db incremental_db *.summary *.smsg *.jdi $(ASSIGNMENT_FILES)
+	$(RM) -rf *.rpt *.chg smart.log *.htm *.eqn *.pin *.sof *.pof *.rbf db incremental_db *.summary *.smsg *.jdi *.sld $(ASSIGNMENT_FILES)
 
 map: smart.log $(PROJECT).map.rpt
 fit: smart.log $(PROJECT).fit.rpt
@@ -142,7 +105,7 @@ smart.log: $(ASSIGNMENT_FILES)
 	$(QUARTUS_SH) $(SH_ARGS) --determine_smart_action $(PROJECT) > smart.log
 
 $(PROJECT).rbf: $(PROJECT).sof
-	$(QUARTUS_CPF) -c output_files/$(PROJECT).sof $(PROJECT).rbf
+	$(QUARTUS_CPF) -c $(PROJECT).sof $(PROJECT).rbf
 
 ###################################################################
 # Project initialization
@@ -174,4 +137,3 @@ program: $(PROJECT).sof
 
 program-pof: $(PROJECT).pof
 	$(QUARTUS_PGM) $(PGM_ARGS) -o "BVP;$(PROJECT).pof"
-

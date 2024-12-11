@@ -40,9 +40,9 @@ module spi #(
     inout  wire sio3
 );
 
-  wire in_xfer = |xfer_cycles;
-  assign rdata = ctrl ? rx_data : {in_xfer, 30'b0, spi_cen};
-
+  reg [5:0] xfer_cycles;
+  reg [31:0] rx_data;
+  reg [31:0] rx_data_next;
   reg spi_cen;
   reg spi_cen_nxt;
 
@@ -50,8 +50,25 @@ module spi #(
   reg [3:0] sio_out;
   wire [3:0] sio_in;
 
+  reg [0:0] state, next_state;
+  reg [7:0] spi_buf;
+  reg is_quad;
+
+  reg sclk_next;
+  reg [3:0] sio_oe_next;
+  reg [3:0] sio_out_next;
+  reg [7:0] spi_buf_next;
+  reg is_quad_next;
+  reg [5:0] xfer_cycles_next;
+  reg ready_xfer_next;
+  reg ready_xfer;
+
   wire [3:0] sio;
   assign {sio3, sio2, sio1_so_miso, sio0_si_mosi} = sio;
+
+  wire in_xfer = |xfer_cycles;
+  assign rdata = ctrl ? rx_data : {in_xfer, 30'b0, spi_cen};
+
 
   genvar i;
   generate
@@ -62,10 +79,11 @@ module spi #(
 
   assign sio_in = {sio3, sio2, sio1_so_miso, sio0_si_mosi};
 
-  assign ready = ready_xfer || ready_ctrl;
-  assign cen = spi_cen;
   reg ready_ctrl;
   reg ready_ctrl_next;
+
+  assign ready = ready_xfer || ready_ctrl;
+  assign cen   = spi_cen;
   always @(posedge clk) begin
     if (!resetn) begin
       spi_cen <= 1'b1;
@@ -89,22 +107,8 @@ module spi #(
   localparam [0:0] S0_IDLE = 0;
   localparam [0:0] S1_WAIT_FOR_XFER_DONE = 1;
 
-  reg [0:0] state, next_state;
-  reg [7:0] spi_buf;
-  reg [5:0] xfer_cycles;
-  reg is_quad;
-
-  reg [31:0] rx_data;
-  reg [31:0] rx_data_next;
-
-  reg sclk_next;
-  reg [3:0] sio_oe_next;
-  reg [3:0] sio_out_next;
-  reg [7:0] spi_buf_next;
-  reg is_quad_next;
-  reg [5:0] xfer_cycles_next;
-  reg ready_xfer_next;
-  reg ready_xfer;
+  reg [17:0] tick_cnt;
+  wire tick = tick_cnt == ({2'b0, div} - 1);
 
   always @(posedge clk) begin
     if (!resetn) begin
@@ -193,8 +197,6 @@ module spi #(
 
   end
 
-  reg [17:0] tick_cnt;
-  wire tick = tick_cnt == ({2'b0, div} - 1);
   always @(posedge clk) begin
     if (!resetn || tick || ~in_xfer) begin
       tick_cnt <= 0;
