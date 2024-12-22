@@ -1,0 +1,37 @@
+BR2_riscv=y
+BR2_riscv_custom=y
+BR2_RISCV_ISA_RVM=y
+BR2_RISCV_32=y
+# BR2_RISCV_USE_MMU is not set
+BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_6_5=y
+BR2_PTHREADS_NONE=y
+# BR2_UCLIBC_INSTALL_UTILS is not set
+BR2_TARGET_OPTIMIZATION="-Os"
+BR2_TARGET_LDFLAGS="-s"
+BR2_WGET="wget --passive-ftp -nd -t 3"
+BR2_BACKUP_SITE="http://sources.buildroot.net"
+BR2_GNU_MIRROR="http://ftpmirror.gnu.org"
+BR2_CPAN_MIRROR="http://cpan.metacpan.org"
+BR2_OPTIMIZE_S=y
+BR2_ENABLE_LTO=y
+#BR2_GLOBAL_PATCH_DIR="board/kianv/rv32ima/patches"
+BR2_GLOBAL_PATCH_DIR="board/qemu/riscv32-virt/nommu/patches"                                                                                                                                                                                        
+
+BR2_TARGET_GENERIC_ISSUE="Welcome to KianV ASIC Buildroot"
+# BR2_TARGET_ENABLE_ROOT_LOGIN is not set
+# BR2_TARGET_GENERIC_GETTY is not set
+BR2_ROOTFS_OVERLAY="rootfs-overlay"
+BR2_ROOTFS_POST_IMAGE_SCRIPT="board/qemu/post-image.sh"
+BR2_ROOTFS_POST_SCRIPT_ARGS="$(BR2_DEFCONFIG)"
+BR2_LINUX_KERNEL=y
+BR2_LINUX_KERNEL_CUSTOM_VERSION=y
+BR2_LINUX_KERNEL_CUSTOM_VERSION_VALUE="6.8-rc1"
+BR2_LINUX_KERNEL_USE_CUSTOM_CONFIG=y
+BR2_LINUX_KERNEL_CUSTOM_CONFIG_FILE="board/kianv/rv32ima/linux.config"
+BR2_PACKAGE_BUSYBOX_CONFIG="package/busybox/kianv_busybox.config"
+# BR2_PACKAGE_IFUPDOWN_SCRIPTS is not set
+# BR2_PACKAGE_URANDOM_SCRIPTS is not set
+BR2_TARGET_ROOTFS_INITRAMFS=y
+# BR2_TARGET_ROOTFS_TAR is not set
+BR2_PACKAGE_HOST_E2FSPROGS=y
+BR2_PACKAGE_HOST_MKPASSWD=y

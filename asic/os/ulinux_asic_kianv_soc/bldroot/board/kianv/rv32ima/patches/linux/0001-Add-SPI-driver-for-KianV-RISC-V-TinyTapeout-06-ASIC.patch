@@ -1,0 +1,233 @@
+From 8cae8a5e44df69e1cf8b183416f747b0c6554ee0 Mon Sep 17 00:00:00 2001
+From: Hirosh Dabui <hirosh@dabui.de>
+Date: Sun, 22 Dec 2024 00:04:15 +0100
+Subject: [PATCH]  Add SPI driver for KianV RISC-V TinyTapeout 06 ASIC
+
+---
+ drivers/spi/Kconfig            |   6 ++
+ drivers/spi/Makefile           |   1 +
+ drivers/spi/spi-kianV-simple.c | 137 +++++++++++++++++++++++++++++++++
+ drivers/spi/spidev.c           |   1 +
+ include/asm-generic/param.h    |   4 +-
+ kernel/time/timeconst.bc       |   6 +-
+ 6 files changed, 150 insertions(+), 5 deletions(-)
+ create mode 100644 drivers/spi/spi-kianV-simple.c
+
+diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
+index ddae0fde7..fe702096e 100644
+--- a/drivers/spi/Kconfig
++++ b/drivers/spi/Kconfig
+@@ -661,6 +661,12 @@ config SPI_MICROCHIP_CORE_QSPI
+ 	  PolarFire SoC.
+ 	  If built as a module, it will be called spi-microchip-core-qspi.
+ 
++config SPI_KIANV_SPI_SIMPLE
++	tristate "KIANV RISC-V FPGA SPI controllers"
++	depends on SPI_MASTER
++	help
++    KIANV RISC-V FPGA SPI controller
++
+ config SPI_MT65XX
+ 	tristate "MediaTek SPI controller"
+ 	depends on ARCH_MEDIATEK || COMPILE_TEST
+diff --git a/drivers/spi/Makefile b/drivers/spi/Makefile
+index 4ff8d725b..68c646239 100644
+--- a/drivers/spi/Makefile
++++ b/drivers/spi/Makefile
+@@ -14,6 +14,7 @@ obj-$(CONFIG_SPI_SPIDEV)		+= spidev.o
+ obj-$(CONFIG_SPI_LOOPBACK_TEST)		+= spi-loopback-test.o
+ 
+ # SPI master controller drivers (bus)
++obj-$(CONFIG_SPI_KIANV_SPI_SIMPLE)      += spi-kianV-simple.o
+ obj-$(CONFIG_SPI_ALTERA)		+= spi-altera-platform.o
+ obj-$(CONFIG_SPI_ALTERA_CORE)		+= spi-altera-core.o
+ obj-$(CONFIG_SPI_ALTERA_DFL)		+= spi-altera-dfl.o
+diff --git a/drivers/spi/spi-kianV-simple.c b/drivers/spi/spi-kianV-simple.c
+new file mode 100644
+index 000000000..281bdf395
+--- /dev/null
++++ b/drivers/spi/spi-kianV-simple.c
+@@ -0,0 +1,137 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * kianV-Simple SPI controller driver
++ *
++ * Copyright (C) 2019 Antmicro Ltd. <www.antmicro.com>
++ * Copyright (C) 2021 Sylvain Munaut <tnt@246tNt.com>
++ * Copyright (C) 2023 Hirosh Dabui <hirosh@dabui.de>
++ */
++
++#include <linux/device.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/platform_device.h>
++#include <linux/spi/spi.h>
++
++#define DRIVER_NAME "kianVspi-simple"
++
++struct kianVspi_regs {
++	uint32_t ctrl;
++	uint32_t data;
++} __attribute__((packed,aligned(4)));
++
++struct kianVspi_hw {
++	struct spi_master *master;
++	volatile struct kianVspi_regs __iomem *regs;
++};
++
++static void kianVspi_set_cs(struct spi_device *spi, bool cs_n)
++{
++	struct kianVspi_hw *hw = spi_master_get_devdata(spi->master);
++
++	/* Set chip select */
++  hw->regs->ctrl = (cs_n ? 0 : BIT((int)spi->chip_select));
++}
++
++static int kianVspi_transfer_one(struct spi_master *master, struct spi_device *spi,
++			struct spi_transfer *t)
++{
++	struct kianVspi_hw *hw = spi_master_get_devdata(master);
++	const u8 *tx = t->tx_buf;
++	u8 *rx = t->rx_buf;
++	int32_t v;
++	int i;
++
++	/* Send buffer */
++	for (i = 0; i < t->len; i++) {
++		hw->regs->data = tx ? *tx++ : 0x00;
++		while ((v = hw->regs->data) < 0)
++			cpu_relax();
++		if (rx)
++			*rx++ = v;
++	}
++
++	return 0;
++}
++
++static int kianVspi_setup(struct spi_device *spi)
++{
++    return 0;
++}
++
++static int kianVspi_probe(struct platform_device *pdev)
++{
++	struct device_node *node = pdev->dev.of_node;
++	struct kianVspi_hw *hw;
++	struct spi_master *master;
++	struct resource *res;
++	int ret;
++	u32 val;
++
++	master = spi_alloc_master(&pdev->dev, sizeof(*hw));
++	if (!master)
++		return -ENOMEM;
++
++	master->dev.of_node = pdev->dev.of_node;
++	master->bus_num = pdev->id;
++	master->mode_bits = SPI_MODE_0;
++	master->bits_per_word_mask = SPI_BPW_MASK(8);
++	master->set_cs = kianVspi_set_cs;
++	master->transfer_one = kianVspi_transfer_one;
++	master->setup = kianVspi_setup;
++	master->flags = 0;
++
++	/* get sck frequency */
++	ret = of_property_read_u32(node, "kianVfpga,sck-frequency", &val);
++	if (ret)
++		goto err;
++
++	master->min_speed_hz = val;
++	master->max_speed_hz = val;
++
++	/* get num cs */
++	ret = of_property_read_u32(node, "kianVfpga,num-cs", &val);
++	if (ret)
++		goto err;
++	master->num_chipselect = val;
++
++	hw = spi_master_get_devdata(master);
++	hw->master = master;
++
++	/* get base address */
++	hw->regs = devm_platform_get_and_ioremap_resource(pdev, 0, NULL);
++	if (IS_ERR((void*)hw->regs)) {
++		ret = PTR_ERR((void*)hw->regs);
++		goto err;
++	}
++
++	/* register controller */
++	ret = devm_spi_register_master(&pdev->dev, master);
++	if (ret)
++		goto err;
++
++	return 0;
++
++err:
++	spi_master_put(master);
++	return ret;
++}
++
++static const struct of_device_id kianVspi_match[] = {
++	{ .compatible = "kianVfpga,kianVspi-simple" },
++	{}
++};
++MODULE_DEVICE_TABLE(of, kianVspi_match);
++
++static struct platform_driver kianVspi_driver = {
++	.probe = kianVspi_probe,
++	.driver = {
++		.name = DRIVER_NAME,
++		.of_match_table = of_match_ptr(kianVspi_match)
++	}
++};
++module_platform_driver(kianVspi_driver)
++
++MODULE_AUTHOR("Hirosh Dabui <hirosh@dabui.de");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:" DRIVER_NAME);
+diff --git a/drivers/spi/spidev.c b/drivers/spi/spidev.c
+index 655f2c959..b3ffbb0d6 100644
+--- a/drivers/spi/spidev.c
++++ b/drivers/spi/spidev.c
+@@ -738,6 +738,7 @@ static const struct of_device_id spidev_dt_ids[] = {
+ 	{ .compatible = "semtech,sx1301", .data = &spidev_of_check },
+ 	{ .compatible = "silabs,em3581", .data = &spidev_of_check },
+ 	{ .compatible = "silabs,si3210", .data = &spidev_of_check },
++	{ .compatible = "kianVfpga,kianVspi-simple" , .data = &spidev_of_check },
+ 	{},
+ };
+ MODULE_DEVICE_TABLE(of, spidev_dt_ids);
+diff --git a/include/asm-generic/param.h b/include/asm-generic/param.h
+index 8d3009dd2..5cb1d5e34 100644
+--- a/include/asm-generic/param.h
++++ b/include/asm-generic/param.h
+@@ -5,7 +5,7 @@
+ #include <uapi/asm-generic/param.h>
+ 
+ # undef HZ
+-# define HZ		CONFIG_HZ	/* Internal kernel timer frequency */
+-# define USER_HZ	100		/* some user interfaces are */
++# define HZ		30	/* Internal kernel timer frequency */
++# define USER_HZ	30		/* some user interfaces are */
+ # define CLOCKS_PER_SEC	(USER_HZ)       /* in "ticks" like times() */
+ #endif /* __ASM_GENERIC_PARAM_H */
+diff --git a/kernel/time/timeconst.bc b/kernel/time/timeconst.bc
+index 7ed0e0fb5..42d85532c 100644
+--- a/kernel/time/timeconst.bc
++++ b/kernel/time/timeconst.bc
+@@ -51,9 +51,9 @@ define timeconst(hz) {
+ 	print "#include <linux/param.h>\n"
+ 	print "#include <linux/types.h>\n\n"
+ 
+-	print "#if HZ != ", hz, "\n"
+-	print "#error \qinclude/generated/timeconst.h has the wrong HZ value!\q\n"
+-	print "#endif\n\n"
++#	print "#if HZ != ", hz, "\n"
++#	print "#error \qinclude/generated/timeconst.h has the wrong HZ value!\q\n"
++#	print "#endif\n\n"
+ 
+ 	if (hz < 2) {
+ 		print "#error Totally bogus HZ value!\n"
+-- 
+2.43.0
+
