@@ -19,8 +19,8 @@ jobs:
         sudo apt-get install -y build-essential device-tree-compiler cpio rsync file wget unzip bc
 
     - name: Build OS
-      working-directory: asic/os/ulinux_asic_kianv_soc
-      run: make all bootloader
+      working-directory: linux_socs/LinuxSoC/os/linux/buildroot-kianv-soc
+      run: make
 
     - name: Prepare artifact
       working-directory: linux_socs/LinuxSoC/os/linux/buildroot-kianv-soc
