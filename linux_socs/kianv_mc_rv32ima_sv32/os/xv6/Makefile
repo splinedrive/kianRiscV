@@ -1,3 +1,8 @@
+# Toolchain configuration
+TOOLCHAIN_DIR := ./riscv32ima-sv32-toolchain
+TOOLPREFIX    := $(TOOLCHAIN_DIR)/bin/riscv32-unknown-elf-
+LIBGCC        := $(shell $(TOOLPREFIX)gcc -print-libgcc-file-name)
+
 K=kernel
 U=user
 
@@ -29,10 +34,6 @@ OBJS = \
   $K/kernelvec.o \
   $K/plic.o \
   $K/sdcard.o \
-
-TOOLPREFIX = riscv32-buildroot-linux-gnu-
-LIBGCC=$(shell riscv32-buildroot-linux-gnu-gcc -print-libgcc-file-name)
-
 
 CC = $(TOOLPREFIX)gcc
 AS = $(TOOLPREFIX)gas

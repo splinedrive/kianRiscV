@@ -1,0 +1,35 @@
+name: Build OS KianV RV32IMA SV32 XV6 UNIX
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential device-tree-compiler cpio rsync file wget unzip bc gcc libgmp-dev libmpfr-dev mawk
+
+    - name: Build OS
+      working-directory: linux_socs/LinuxSoC/os/xv6
+      run: make -f Makefile.build all
+
+    - name: Prepare artifact
+      working-directory: linux_socs/LinuxSoC/os/xv6
+      run: |
+        mkdir -p artifact_files
+        cp xv6.rle artifact_files
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: xv6_unix_kianvRV32IMA_SV32_soc_firmware
+        path: linux_socs/LinuxSoC/os/xv6/artifact_files

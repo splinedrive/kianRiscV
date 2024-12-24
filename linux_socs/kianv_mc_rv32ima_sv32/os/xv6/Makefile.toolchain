@@ -1,0 +1,26 @@
+# Toolchain build configuration
+PREFIX      := $(shell pwd)/riscv32ima-sv32-toolchain
+ARCH        := rv32ima_zicntr_zicsr_zifencei_sstc
+ABI         := ilp32
+JOBS        := $(shell nproc)
+TOOLCHAIN_SRC := riscv-gnu-toolchain
+
+.PHONY: all clean
+
+all: $(PREFIX)/bin/riscv32-unknown-elf-gcc
+
+# Clone the toolchain source
+$(TOOLCHAIN_SRC):
+	git clone --recursive https://github.com/riscv/riscv-gnu-toolchain.git $@
+
+# Configure and build the toolchain
+$(PREFIX)/bin/riscv32-unknown-elf-gcc: $(TOOLCHAIN_SRC)
+	cd $(TOOLCHAIN_SRC) && \
+	./configure --prefix=$(PREFIX) --with-arch=$(ARCH) --with-abi=$(ABI) && \
+	make -j$(JOBS) && \
+	make install
+
+# Clean up build artifacts
+clean:
+	rm -rf $(PREFIX) $(TOOLCHAIN_SRC)
+

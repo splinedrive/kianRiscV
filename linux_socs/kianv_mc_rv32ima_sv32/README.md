@@ -110,7 +110,18 @@ XV6 Build Instructions
 ======================
 ```
 cd os/xv6/
-./build.sh /dev/sdx
+os/xv6 $ make -f Makefile.build help
+Makefile targets:
+  all          - Build toolchain, kernel, and compress the kernel.
+  build_toolchain - Build the RISC-V toolchain.
+  kernel       - Clean and build the kernel and filesystem.
+  compress     - Compress the kernel using RLE.
+  burn         - Write the filesystem and kernel to the specified device.
+                 Usage: make burn DEVICE=/dev/sdX
+  clean        - Remove build artifacts.
+  help         - Display this help message.
+
+os/xv6 $ make -f Makefile.build all
 ```
 
 
