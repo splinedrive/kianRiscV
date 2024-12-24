@@ -4,3 +4,6 @@
 [submodule "asic/tt05_kianV_rv32ima_ulinux_soc"]
 	path = asic/tt05_kianV_rv32ima_ulinux_soc
 	url = https://github.com/splinedrive/KianV_rv32ia_uLinux_SoC
+[submodule "asic/tt06_KianV-RV32IMA-RISC-V-uLinux-SoC"]
+	path = asic/tt06_KianV-RV32IMA-RISC-V-uLinux-SoC
+	url = https://github.com/splinedrive/KianV-RV32IMA-RISC-V-uLinux-SoC
