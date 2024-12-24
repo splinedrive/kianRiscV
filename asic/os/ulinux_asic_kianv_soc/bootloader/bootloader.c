@@ -57,7 +57,7 @@ int main() {
 #endif
 #endif
 
-  printf("\nKianV RISC-V uLinux ASIC Tinytapeout SOC\n");
+  printf("\nKianV RISC-V uLinux ASIC Tiny Tapeout SOC\n");
   printf("-----------------------------------------\n");
 
 
