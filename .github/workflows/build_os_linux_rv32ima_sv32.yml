@@ -1,4 +1,4 @@
-name: Build OS
+name: Build OS KianV RV32IMA SV32 Linux
 
 on:
   push:

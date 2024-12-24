@@ -1,4 +1,4 @@
-name: Build OS
+name: Build OS KianV RV32IMA ASIC Tinytaepout uLinux
 
 on:
   push:
