@@ -16,7 +16,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential device-tree-compiler cpio rsync file wget unzip bc gcc libgmp-dev libmpfr-dev mawk
+        sudo apt-get install -y build-essential device-tree-compiler cpio rsync file wget unzip bc gcc libgmp-dev libmpfr-dev gawk
 
     - name: Build OS
       working-directory: linux_socs/LinuxSoC/os/xv6

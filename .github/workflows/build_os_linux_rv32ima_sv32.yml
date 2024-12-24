@@ -20,13 +20,15 @@ jobs:
 
     - name: Build OS
       working-directory: linux_socs/LinuxSoC/os/linux/buildroot-kianv-soc
-      run: make
+      run: |
+        make
+        make fw_payload.rle
 
     - name: Prepare artifact
       working-directory: linux_socs/LinuxSoC/os/linux/buildroot-kianv-soc
       run: |
         mkdir -p artifact_files
-        cp buildroot/output/images/fw_payload.bin artifact_files
+        cp buildroot/output/images/rootfs.ext2 fw_payload.rle artifact_files
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
