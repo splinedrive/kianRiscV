@@ -1,7 +1,7 @@
 # To use, run the following commands in this directory:
 # 
 # docker build -t ulinux_asic_kianv_soc_builder .
-# docker run -v `pwd`:`pwd` ulinux_asic_kianv_soc_builder kian-build make -C `pwd` all
+# docker run -v `pwd`:`pwd` ulinux_asic_kianv_soc_builder make -C `pwd` all
 
 FROM ubuntu:24.04
 
