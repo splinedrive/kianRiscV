@@ -18,7 +18,7 @@ DTS_FILE ?= bldroot/board/kianv/rv32ima/kianv.dts
 OUTPUT_DTS_FILE ?= bldroot/board/kianv/rv32ima/kianv_updated.dts
 OUTPUT_DTB_FILE ?= ./kianv.dtb
 
-.PHONY: all bootloader build clone-buildroot customize_buildroot clean-bootloader clean help
+.PHONY: all bootloader build clone-buildroot customize_buildroot clean-bootloader clean help sim
 
 all: update-dts build buildroot
 	@echo "Build process completed."
@@ -30,6 +30,7 @@ help:
 	@echo "  all               Build everything (bootloader and Buildroot)"
 	@echo "  bootloader        Build the bootloader with configurable parameters"
 	@echo "  update-dts        Update the DTS file and generate a DTB file"
+	@echo "  sim               Run the QEMU simulation with the generated system image"
 	@echo "  clean             Clean all generated files"
 	@echo "  help              Display this help message"
 	@echo ""
@@ -86,6 +87,9 @@ update-dts: $(DTS_FILE)
 	@echo "Generating DTB file..."
 	@dtc -I dts -O dtb -o $(OUTPUT_DTB_FILE) $(OUTPUT_DTS_FILE)
 	@echo "DTB file generated: $(OUTPUT_DTB_FILE)"
+
+sim:
+	@qemu-system-riscv32 -M virt -bios none -kernel Image -append "rootwait root=/dev/vda ro"  -nographic -cpu rv32,mmu=off
 
 clean-bootloader:
 	@echo "Cleaning bootloader..."

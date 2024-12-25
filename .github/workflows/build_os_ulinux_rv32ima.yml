@@ -1,4 +1,4 @@
-name: Build OS KianV RV32IMA ASIC Tinytaepout uLinux
+name: Build OS KianV RV32IMA ASIC Tiny Tapeout uLinux
 
 on:
   push:
@@ -10,26 +10,55 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential device-tree-compiler cpio rsync file wget unzip bc
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential device-tree-compiler cpio rsync file wget unzip bc
 
-    - name: Build OS
-      working-directory: asic/os/ulinux_asic_kianv_soc
-      run: make all bootloader
+      - name: Build OS
+        working-directory: asic/os/ulinux_asic_kianv_soc
+        run: make all bootloader
 
-    - name: Prepare artifact
-      working-directory: asic/os/ulinux_asic_kianv_soc
-      run: |
-        mkdir -p artifact_files
-        cp kianv.dtb bootloader/bootloader.bin buildroot/output/images/Image artifact_files
+      - name: Prepare artifact
+        working-directory: asic/os/ulinux_asic_kianv_soc
+        run: |
+          mkdir -p artifact_files
+          cp kianv.dtb bootloader/bootloader.bin buildroot/output/images/Image artifact_files
 
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: ulinux_asic_kianv_soc_firmware
-        path: asic/os/ulinux_asic_kianv_soc/artifact_files
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ulinux_asic_kianv_soc_firmware
+          path: asic/os/ulinux_asic_kianv_soc/artifact_files
+
+  simulate:
+    runs-on: ubuntu-24.04
+    needs: build
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-system-misc expect
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ulinux_asic_kianv_soc_firmware
+          path: asic/os/ulinux_asic_kianv_soc/artifact_files
+
+      - name: Copy system image
+        working-directory: asic/os/ulinux_asic_kianv_soc
+        run: |
+          rm Image
+          cp artifact_files/Image Image
+
+      - name: Run simulation
+        working-directory: asic/os/ulinux_asic_kianv_soc
+        run: expect test_system.tcl
