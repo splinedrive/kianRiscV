@@ -7,6 +7,16 @@ design, motivated to learn. My goal was to implement a RISC-V Linux SoC because 
 Linux. Now, that goal has come true. In the future, I aim to work on advanced
 designs and improvements, step by step.
 
+## Star History
+
+<a href="https://star-history.com/#splinedrive/kianRiscV&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=splinedrive/kianRiscV&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=splinedrive/kianRiscV&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=splinedrive/kianRiscV&type=Date" />
+ </picture>
+</a>
+
 **RISC-V ASIC/FPGA uLinux/MMU Linux/XV6 SoCs:**
 ===========================================
 Explore the **KianV SV32 (MMU) RV32IMA Zicntr Zicsr Zifencei SSTC Linux/XV6
