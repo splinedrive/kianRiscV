@@ -176,7 +176,7 @@ module sv32_table_walk #(
         base_nxt = `GET_SATP_PPN(satp) << `SV32_PAGE_OFFSET_BITS;
         // bare mode
         if (!`GET_SATP_MODE(satp) && valid && !ready) begin
-          pte_nxt = `PTE_V_MASK | `PTE_R_MASK | `PTE_W_MASK | `PTE_X_MASK | ((address >> `SV32_OFFSET_BITS) << `SV32_OFFSET_BITS);
+          pte_nxt = `PTE_V_MASK | `PTE_R_MASK | `PTE_W_MASK | `PTE_X_MASK | ((address >> `SV32_PAGE_OFFSET_BITS) << `SV32_PAGE_OFFSET_BITS);
           ready_nxt = 1'b1;
         end else begin
           ready_nxt = 1'b0;
@@ -222,7 +222,7 @@ module sv32_table_walk #(
               pte_flags = pte_nxt & `PTE_FLAGS;
               // idx for pte
               vpn = address >> `SV32_PAGE_OFFSET_BITS;
-              pte_nxt = ((level ? (ppn | vpn & ((1 << `SV32_VPN0_SHIFT) - 1)) : ppn) << `SV32_PAGE_OFFSET_BITS) | pte_flags;
+              pte_nxt = ((level ? (ppn | vpn & ((1 << `SV32_VPN0_SHIFT) - 1)) : ppn) << `SV32_PTE_ALIGNED_PPN_SHIFT) | pte_flags;
               level_nxt = 1;
               ready_nxt = 1'b1;
               tlb_valid[is_itlb] = 1'b1;

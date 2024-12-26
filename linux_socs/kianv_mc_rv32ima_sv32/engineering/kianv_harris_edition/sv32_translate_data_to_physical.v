@@ -157,7 +157,7 @@ module sv32_translate_data_to_physical (
         end
 
         page_offset = address & (`SV32_PAGE_SIZE - 1);
-        pagebase_addr = (pte >> `SV32_PAGE_OFFSET_BITS) << `SV32_PAGE_OFFSET_BITS;
+        pagebase_addr = (pte >> `SV32_PTE_ALIGNED_PPN_SHIFT) << `SV32_PTE_ALIGNED_PPN_SHIFT;
         physical_address_nxt = page_fault_nxt ? 32'hffff_ffff : (pagebase_addr | page_offset);
         ready_nxt = 1'b1;
       end

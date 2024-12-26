@@ -32,6 +32,7 @@
 `define SV32_PTE_D_SHIFT 7  // Dirty bit position
 `define SV32_PTE_RSW_SHIFT 8  // Reserved for Software use
 `define SV32_PTE_PPN_SHIFT 10  // Physical Page Number bit position
+`define SV32_PTE_ALIGNED_PPN_SHIFT (`SV32_PTE_PPN_SHIFT + 2)
 
 `define SV32_PTE_PPN_BITS 22  // Number of bits for Physical Page Number
 `define SV32_PAGE_SIZE 4096  // Page size in bytes (4 KiB for Sv32)
