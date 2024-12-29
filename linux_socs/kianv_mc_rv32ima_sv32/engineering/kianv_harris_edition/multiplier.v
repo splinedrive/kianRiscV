@@ -22,10 +22,10 @@
 module multiplier (
     input  wire                        clk,
     input  wire                        resetn,
-    input  wire [              31 : 0] factor1,
-    input  wire [              31 : 0] factor2,
+    input  wire [              31 : 0] multiplicand_op,
+    input  wire [              31 : 0] multiplier_op,
     input  wire [`MUL_OP_WIDTH -1 : 0] MULop,
-    output wire [              31 : 0] product,
+    output wire [              31 : 0] result,
     input  wire                        valid,
     output reg                         ready
 );
@@ -40,17 +40,16 @@ module multiplier (
   wire is_mulu;
   assign is_mulu = MULop == `MUL_OP_MULU;
 
-  wire factor1_is_signed;
-  assign factor1_is_signed = is_mulh | is_mulsu;
+  wire multiplicand_op_is_signed;
+  assign multiplicand_op_is_signed = is_mulh | is_mulsu;
 
-  wire factor2_is_signed;
-  assign factor2_is_signed = is_mulh;
+  wire multiplier_op_is_signed;
+  assign multiplier_op_is_signed = is_mulh;
 
   // multiplication
   reg [63:0] rslt;
-  reg [31:0] factor1_abs;
-  reg [31:0] factor2_abs;
-  reg [ 4:0] bit_idx;
+  reg [31:0] multiplicand_op_abs;
+  reg [31:0] multiplier_op_abs;
 
   localparam IDLE_BIT = 0;
   localparam CALC_BIT = 1;
@@ -71,7 +70,6 @@ module multiplier (
     if (!resetn) begin
       state   <= IDLE;
       ready   <= 1'b0;
-      bit_idx <= 0;
     end else begin
 
       (* parallel_case, full_case *)
@@ -80,9 +78,8 @@ module multiplier (
         state[IDLE_BIT]: begin
           ready <= 1'b0;
           if (!ready && valid) begin
-            factor1_abs <= (factor1_is_signed & factor1[31]) ? ~factor1 + 1 : factor1;
-            factor2_abs <= (factor2_is_signed & factor2[31]) ? ~factor2 + 1 : factor2;
-            bit_idx <= 0;
+            multiplicand_op_abs <= (multiplicand_op_is_signed & multiplicand_op[31]) ? ~multiplicand_op + 1 : multiplicand_op;
+            multiplier_op_abs <= (multiplier_op_is_signed & multiplier_op[31]) ? ~multiplier_op + 1 : multiplier_op;
             rslt <= 0;
             state <= CALC;
           end
@@ -91,21 +88,25 @@ module multiplier (
         state[CALC_BIT]: begin
 `ifndef FPGA_MULTIPLIER
           /* verilator lint_off WIDTH */
-          rslt <= rslt + ((factor1_abs & {32{factor2_abs[bit_idx]}}) << bit_idx);
+          if (multiplier_op_abs & 1'b1) begin
+            rslt <= rslt + multiplicand_op_abs;
+          end
+          multiplicand_op_abs <= multiplicand_op_abs << 1;
+          multiplier_op_abs   <= multiplier_op_abs >> 1;
+
           /* verilator lint_on WIDTH */
-          bit_idx <= bit_idx + 1'b1;
-          if (&bit_idx) begin
+          if (|multiplier_op_abs) begin
             state <= READY;
           end
 `else
-          rslt  <= factor1_abs * factor2_abs;
+          rslt  <= multiplicand_op_abs * multiplier_op_abs;
           state <= READY;
 `endif
         end
 
         state[READY_BIT]: begin
           /* verilator lint_off WIDTH */
-          rslt <= ((factor1[31] & factor1_is_signed ^ factor2[31] & factor2_is_signed)) ? ~rslt + 1 : rslt;
+          rslt <= ((multiplicand_op[31] & multiplicand_op_is_signed ^ multiplier_op[31] & multiplier_op_is_signed)) ? ~rslt + 1 : rslt;
           /* verilator lint_on WIDTH */
 
           ready <= 1'b1;
@@ -118,6 +119,6 @@ module multiplier (
 
   end
 
-  assign product = rslt_upper_low;
+  assign result = rslt_upper_low;
 
 endmodule
