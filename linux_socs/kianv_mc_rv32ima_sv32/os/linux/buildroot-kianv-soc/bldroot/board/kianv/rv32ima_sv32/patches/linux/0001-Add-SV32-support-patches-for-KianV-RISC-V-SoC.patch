@@ -1,28 +1,30 @@
-From 7a2ddc3d0289abcfdc3b3cda399a8a42307ffc49 Mon Sep 17 00:00:00 2001
+From 92331ef6eef37b23e0a909ebe9a27bd5e0f7384b Mon Sep 17 00:00:00 2001
 From: Hirosh Dabui <hirosh@dabui.de>
 Date: Sun, 21 Apr 2024 13:58:21 +0200
 Subject: [PATCH] Add SV32 support patches for KianV RISC-V SoC
 
 ---
- drivers/gpio/Kconfig                        |   8 ++
+ drivers/gpio/Kconfig                        |   8 +
  drivers/gpio/Makefile                       |   2 +
- drivers/gpio/gpio-kianv.c                   | 124 ++++++++++++++++
- drivers/net/ethernet/microchip/enc28j60.c   | 141 ++++++++++++++++++
- drivers/net/ethernet/microchip/encx24j600.c |  92 ++++++++++++
- drivers/net/ethernet/wiznet/w5100.c         |  66 ++++++++-
- drivers/spi/Kconfig                         |  18 +++
+ drivers/gpio/gpio-kianv.c                   | 124 ++++++++++++++
+ drivers/net/ethernet/microchip/enc28j60.c   | 149 ++++++++++++++++
+ drivers/net/ethernet/microchip/encx24j600.c | 100 ++++++++++-
+ drivers/net/ethernet/wiznet/w5100.c         |  70 +++++++-
+ drivers/spi/Kconfig                         |  18 ++
  drivers/spi/Makefile                        |   3 +
- drivers/spi/spi-kianV-simple.c              | 149 ++++++++++++++++++++
- drivers/spi/spi-kianV-simple2.c             | 149 ++++++++++++++++++++
- drivers/spi/spi-kianV-simple3.c             | 149 ++++++++++++++++++++
+ drivers/spi/spi-kianV-simple.c              | 149 ++++++++++++++++
+ drivers/spi/spi-kianV-simple2.c             | 149 ++++++++++++++++
+ drivers/spi/spi-kianV-simple3.c             | 180 ++++++++++++++++++++
  drivers/staging/fbtft/fb_ssd1331.c          |  38 ++++-
- drivers/staging/fbtft/fbtft-core.c          |  38 ++++-
+ drivers/staging/fbtft/fbtft-bus.c           |   9 +-
+ drivers/staging/fbtft/fbtft-core.c          |  34 +++-
+ include/linux/spi/spi.h                     |   1 +
  sound/Kconfig                               |   2 +
  sound/Makefile                              |   3 +-
  sound/kianv/Kconfig                         |   4 +
  sound/kianv/Makefile                        |   1 +
- sound/kianv/kianv-snd.c                     | 111 +++++++++++++++
- 18 files changed, 1086 insertions(+), 12 deletions(-)
+ sound/kianv/kianv-snd.c                     | 111 ++++++++++++
+ 20 files changed, 1141 insertions(+), 14 deletions(-)
  create mode 100644 drivers/gpio/gpio-kianv.c
  create mode 100644 drivers/spi/spi-kianV-simple.c
  create mode 100644 drivers/spi/spi-kianV-simple2.c
@@ -32,10 +34,10 @@ Subject: [PATCH] Add SV32 support patches for KianV RISC-V SoC
  create mode 100644 sound/kianv/kianv-snd.c
 
 diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index 1c28a48915bb..86c0d215feb3 100644
+index 93ee3aa092f8..a3d244ca56ca 100644
 --- a/drivers/gpio/Kconfig
 +++ b/drivers/gpio/Kconfig
-@@ -800,6 +800,14 @@ config GPIO_XILINX
+@@ -801,6 +801,14 @@ config GPIO_XILINX
  	help
  	  Say yes here to support the Xilinx FPGA GPIO device.
  
@@ -51,10 +53,10 @@ index 1c28a48915bb..86c0d215feb3 100644
  	tristate "Cavium ThunderX2 GPIO support"
  	depends on ARCH_THUNDER2 || COMPILE_TEST
 diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index e2a53013780e..7aad19e91b82 100644
+index af3ba4d81b58..d9495777cf25 100644
 --- a/drivers/gpio/Makefile
 +++ b/drivers/gpio/Makefile
-@@ -200,3 +200,5 @@ obj-$(CONFIG_GPIO_XTENSA)		+= gpio-xtensa.o
+@@ -206,3 +206,5 @@ obj-$(CONFIG_GPIO_XTENSA)		+= gpio-xtensa.o
  obj-$(CONFIG_GPIO_ZEVIO)		+= gpio-zevio.o
  obj-$(CONFIG_GPIO_ZYNQ)			+= gpio-zynq.o
  obj-$(CONFIG_GPIO_ZYNQMP_MODEPIN)	+= gpio-zynqmp-modepin.o
@@ -191,7 +193,7 @@ index 000000000000..d50a8771173e
 +MODULE_LICENSE("GPL");
 +
 diff --git a/drivers/net/ethernet/microchip/enc28j60.c b/drivers/net/ethernet/microchip/enc28j60.c
-index d6c9491537e4..6a614f07a7f5 100644
+index d6c9491537e4..cfdaf606f500 100644
 --- a/drivers/net/ethernet/microchip/enc28j60.c
 +++ b/drivers/net/ethernet/microchip/enc28j60.c
 @@ -4,6 +4,7 @@
@@ -346,22 +348,30 @@ index d6c9491537e4..6a614f07a7f5 100644
  
  /*
   * Hardware transmit function.
-@@ -1356,6 +1487,14 @@ static int enc28j60_net_open(struct net_device *dev)
+@@ -1356,6 +1487,22 @@ static int enc28j60_net_open(struct net_device *dev)
  	 * the queueing layer of the networking.
  	 */
  	netif_start_queue(dev);
 +        printk(KERN_INFO "enc28j60: Creating thread\n");
-+        net_kianv_thread = kthread_run(net_kianv_thread_function, dev, "net_kianv_thread");
-+        if (net_kianv_thread) {
-+            printk(KERN_INFO "Thread created successfully\n");
-+        } else {
-+            printk(KERN_ERR "Thread creation failed\n");
-+        }
++
++	/* Check if the thread is already running */
++	if (!net_kianv_thread || IS_ERR(net_kianv_thread)) {
++		printk(KERN_INFO "encx24j600: Creating thread\n");
++		net_kianv_thread = kthread_run(net_kianv_thread_function, dev, "net_kianv_thread");
++		if (!IS_ERR(net_kianv_thread)) {
++			printk(KERN_INFO "Thread created successfully\n");
++		} else {
++			printk(KERN_ERR "Thread creation failed\n");
++			net_kianv_thread = NULL; // Reset in case of failure
++		}
++	} else {
++		printk(KERN_INFO "Thread is already running\n");
++	}
 +
  
  	return 0;
  }
-@@ -1561,6 +1700,7 @@ static int enc28j60_probe(struct spi_device *spi)
+@@ -1561,6 +1708,7 @@ static int enc28j60_probe(struct spi_device *spi)
  	/* Board setup must set the relevant edge trigger type;
  	 * level triggers won't currently work.
  	 */
@@ -369,7 +379,7 @@ index d6c9491537e4..6a614f07a7f5 100644
  	ret = request_threaded_irq(spi->irq, NULL, enc28j60_irq, IRQF_ONESHOT,
  				   DRV_NAME, priv);
  	if (ret < 0) {
-@@ -1569,6 +1709,7 @@ static int enc28j60_probe(struct spi_device *spi)
+@@ -1569,6 +1717,7 @@ static int enc28j60_probe(struct spi_device *spi)
  				spi->irq, ret);
  		goto error_irq;
  	}
@@ -378,7 +388,7 @@ index d6c9491537e4..6a614f07a7f5 100644
  	dev->if_port = IF_PORT_10BASET;
  	dev->irq = spi->irq;
 diff --git a/drivers/net/ethernet/microchip/encx24j600.c b/drivers/net/ethernet/microchip/encx24j600.c
-index b011bf5c2305..8d484cf9ea54 100644
+index b011bf5c2305..ad204e4f40c1 100644
 --- a/drivers/net/ethernet/microchip/encx24j600.c
 +++ b/drivers/net/ethernet/microchip/encx24j600.c
 @@ -4,6 +4,7 @@
@@ -497,7 +507,7 @@ index b011bf5c2305..8d484cf9ea54 100644
  	int ret = request_threaded_irq(priv->ctx.spi->irq, NULL, encx24j600_isr,
  				       IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
  				       DRV_NAME, priv);
-@@ -777,12 +860,21 @@ static int encx24j600_open(struct net_device *dev)
+@@ -777,13 +860,28 @@ static int encx24j600_open(struct net_device *dev)
  			   priv->ctx.spi->irq, ret);
  		return ret;
  	}
@@ -508,19 +518,27 @@ index b011bf5c2305..8d484cf9ea54 100644
  	encx24j600_hw_enable(priv);
  	netif_start_queue(dev);
  
-+        printk(KERN_INFO "encx24j600: Creating thread\n");
-+        net_kianv_thread = kthread_run(net_kianv_thread_function, dev, "net_kianv_thread");
-+        if (net_kianv_thread) {
-+            printk(KERN_INFO "Thread created successfully\n");
-+        } else {
-+            printk(KERN_ERR "Thread creation failed\n");
-+        }
+-	return 0;
++  /* Check if the thread is already running */
++  if (!net_kianv_thread || IS_ERR(net_kianv_thread)) {
++      printk(KERN_INFO "encx24j600: Creating thread\n");
++      net_kianv_thread = kthread_run(net_kianv_thread_function, dev, "net_kianv_thread");
++      if (!IS_ERR(net_kianv_thread)) {
++          printk(KERN_INFO "Thread created successfully\n");
++      } else {
++          printk(KERN_ERR "Thread creation failed\n");
++          net_kianv_thread = NULL; // Reset in case of failure
++      }
++  } else {
++      printk(KERN_INFO "Thread is already running\n");
++  }
 +
- 	return 0;
++    return 0;
  }
  
+ static int encx24j600_stop(struct net_device *dev)
 diff --git a/drivers/net/ethernet/wiznet/w5100.c b/drivers/net/ethernet/wiznet/w5100.c
-index b26fd15c25ae..50395a546213 100644
+index b77f096eaf99..5082595a0b2c 100644
 --- a/drivers/net/ethernet/wiznet/w5100.c
 +++ b/drivers/net/ethernet/wiznet/w5100.c
 @@ -4,6 +4,7 @@
@@ -574,7 +592,7 @@ index b26fd15c25ae..50395a546213 100644
 +
 +        if (ir & S0_IR_RECV) {
 +          w5100_disable_intr(priv);
- 
++
 +          if (priv->ops->may_sleep)
 +            queue_work(priv->xfer_wq, &priv->rx_work);
 +          else
@@ -585,7 +603,7 @@ index b26fd15c25ae..50395a546213 100644
 +
 +    msleep(20);
 +  } while (!kthread_should_stop());
-+
+ 
 +  return 0;
 +}
 +
@@ -609,25 +627,30 @@ index b26fd15c25ae..50395a546213 100644
  	if (ops->may_sleep) {
  		err = request_threaded_irq(priv->irq, NULL, w5100_interrupt,
  					   IRQF_TRIGGER_LOW | IRQF_ONESHOT,
-@@ -1179,7 +1229,16 @@ int w5100_probe(struct device *dev, const struct w5100_ops *ops,
+@@ -1179,7 +1229,22 @@ int w5100_probe(struct device *dev, const struct w5100_ops *ops,
  	}
  	if (err)
  		goto err_hw;
--
 +#endif
-+        printk(KERN_INFO "w5100: Creating thread\n");
-+        net_kianv_thread = kthread_run(net_kianv_thread_function, ndev, "net_kianv_thread");
-+        if (net_kianv_thread) {
-+            printk(KERN_INFO "Thread created successfully\n");
-+        } else {
-+            printk(KERN_ERR "Thread creation failed\n");
-+        }
-+
++	/* Check if the thread is already running */
++	if (!net_kianv_thread || IS_ERR(net_kianv_thread)) {
++		printk(KERN_INFO "encx24j600: Creating thread\n");
++		net_kianv_thread = kthread_run(net_kianv_thread_function, dev, "net_kianv_thread");
++		if (!IS_ERR(net_kianv_thread)) {
++			printk(KERN_INFO "Thread created successfully\n");
++		} else {
++			printk(KERN_ERR "Thread creation failed\n");
++			net_kianv_thread = NULL; // Reset in case of failure
++		}
++	} else {
++		printk(KERN_INFO "Thread is already running\n");
++	}
+ 
 +#if 0
  	if (gpio_is_valid(priv->link_gpio)) {
  		char *link_name = devm_kzalloc(dev, 16, GFP_KERNEL);
  
-@@ -1195,11 +1254,12 @@ int w5100_probe(struct device *dev, const struct w5100_ops *ops,
+@@ -1195,11 +1260,12 @@ int w5100_probe(struct device *dev, const struct w5100_ops *ops,
  					    link_name, priv->ndev) < 0)
  			priv->link_gpio = -EINVAL;
  	}
@@ -643,10 +666,10 @@ index b26fd15c25ae..50395a546213 100644
  	destroy_workqueue(priv->xfer_wq);
  err_wq:
 diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
-index a2c99ff33e0a..f806efab5f03 100644
+index f51f9466e518..f7218d433307 100644
 --- a/drivers/spi/Kconfig
 +++ b/drivers/spi/Kconfig
-@@ -672,6 +672,24 @@ config SPI_MICROCHIP_CORE_QSPI
+@@ -689,6 +689,24 @@ config SPI_MICROCHIP_CORE_QSPI
  	  PolarFire SoC.
  	  If built as a module, it will be called spi-microchip-core-qspi.
  
@@ -672,7 +695,7 @@ index a2c99ff33e0a..f806efab5f03 100644
  	tristate "MediaTek SPI controller"
  	depends on ARCH_MEDIATEK || COMPILE_TEST
 diff --git a/drivers/spi/Makefile b/drivers/spi/Makefile
-index e694254dec04..5ee224dd9f82 100644
+index aea5e54de195..ad1e0b7a2802 100644
 --- a/drivers/spi/Makefile
 +++ b/drivers/spi/Makefile
 @@ -15,6 +15,9 @@ obj-$(CONFIG_SPI_LOOPBACK_TEST)		+= spi-loopback-test.o
@@ -687,7 +710,7 @@ index e694254dec04..5ee224dd9f82 100644
  obj-$(CONFIG_SPI_ALTERA_DFL)		+= spi-altera-dfl.o
 diff --git a/drivers/spi/spi-kianV-simple.c b/drivers/spi/spi-kianV-simple.c
 new file mode 100644
-index 000000000000..eea253df4c45
+index 000000000000..6d22be1c0796
 --- /dev/null
 +++ b/drivers/spi/spi-kianV-simple.c
 @@ -0,0 +1,149 @@
@@ -842,7 +865,7 @@ index 000000000000..eea253df4c45
 +MODULE_ALIAS("platform:" DRIVER_NAME);
 diff --git a/drivers/spi/spi-kianV-simple2.c b/drivers/spi/spi-kianV-simple2.c
 new file mode 100644
-index 000000000000..02dc1be1f17b
+index 000000000000..1de3da4e72ff
 --- /dev/null
 +++ b/drivers/spi/spi-kianV-simple2.c
 @@ -0,0 +1,149 @@
@@ -997,10 +1020,10 @@ index 000000000000..02dc1be1f17b
 +MODULE_ALIAS("platform:" DRIVER_NAME);
 diff --git a/drivers/spi/spi-kianV-simple3.c b/drivers/spi/spi-kianV-simple3.c
 new file mode 100644
-index 000000000000..00bc1b55f3ea
+index 000000000000..4c0fc6a476b6
 --- /dev/null
 +++ b/drivers/spi/spi-kianV-simple3.c
-@@ -0,0 +1,149 @@
+@@ -0,0 +1,180 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * kianV-Simple SPI controller driver
@@ -1021,7 +1044,7 @@ index 000000000000..00bc1b55f3ea
 +struct kianVspi_regs {
 +	uint32_t ctrl;
 +	uint32_t data;
-+} __attribute__((packed,aligned(4)));
++} __attribute__((packed, aligned(4)));
 +
 +struct kianVspi_hw {
 +	struct spi_controller *master;
@@ -1036,42 +1059,75 @@ index 000000000000..00bc1b55f3ea
 +	hw->regs->ctrl = (cs_n ? 0 : BIT(spi->chip_select[0]));
 +}
 +
-+static int kianVspi_transfer_one(struct spi_controller *ctrl, struct spi_device *spi,
-+                                 struct spi_transfer *t)
++static int kianVspi_transfer_one(struct spi_controller *ctrl,
++				 struct spi_device *spi, struct spi_transfer *t)
 +{
-+    struct kianVspi_hw *hw = spi_controller_get_devdata(ctrl);
-+    const u8 *tx = t->tx_buf;
-+    u8 *rx = t->rx_buf;
-+    int i;
-+    unsigned long timeout;
++	struct kianVspi_hw *hw = spi_controller_get_devdata(ctrl);
++	const u8 *tx = t->tx_buf;
++	u8 *rx = t->rx_buf;
++	int i;
 +
-+    if (!hw || !t) {
-+        return -EINVAL;
-+    }
++	if (!hw || !t) {
++		return -EINVAL;
++	}
 +
-+    for (i = 0; i < t->len; i++) {
-+        while ((hw->regs->ctrl & 0x80000000) != 0) {
-+            cpu_relax();
-+        }
++	if (spi->kianv_spi_data_width == 8) {
++		for (i = 0; i < t->len; i++) {
++			while ((hw->regs->ctrl & 0x80000000) != 0) {
++				cpu_relax();
++			}
 +
-+        hw->regs->data = tx ? *tx++ : 0x00;
++			hw->regs->data = tx ? *tx++ : 0x00;
 +
-+        timeout = jiffies + msecs_to_jiffies(100);
-+        while ((hw->regs->ctrl & 0x80000000) != 0) {
-+            cpu_relax();
-+        }
++			while ((hw->regs->ctrl & 0x80000000) != 0) {
++				cpu_relax();
++			}
 +
-+        if (rx) {
-+            *rx++ = hw->regs->data;
-+        }
-+    }
++			if (rx) {
++				*rx++ = hw->regs->data;
++			}
++		}
++	} else /* 16 */ {
++		for (i = 0; i < t->len; i += 2) {
++			uint16_t data_to_send = 0;
 +
-+    return 0;
++			data_to_send = *(uint16_t *)tx;
++			data_to_send = htons(data_to_send);
++
++			tx += 2;
++
++			uint8_t high_byte = (data_to_send >> 8) & 0xFF;
++			uint8_t low_byte = data_to_send & 0xFF;
++
++			while ((hw->regs->ctrl & 0x80000000) != 0) {
++				cpu_relax();
++			}
++			hw->regs->data = low_byte;
++
++			while ((hw->regs->ctrl & 0x80000000) != 0) {
++				cpu_relax();
++			}
++			if (rx) {
++				*rx++ = hw->regs->data;
++			}
++
++			hw->regs->data = high_byte;
++
++			while ((hw->regs->ctrl & 0x80000000) != 0) {
++				cpu_relax();
++			}
++			if (rx) {
++				*rx++ = hw->regs->data;
++			}
++		}
++	}
++	spi->kianv_spi_data_width = 8;
++	return 0;
 +}
 +
 +static int kianVspi_setup(struct spi_device *spi)
 +{
-+    return 0;
++	return 0;
 +}
 +
 +static int kianVspi_probe(struct platform_device *pdev)
@@ -1115,8 +1171,8 @@ index 000000000000..00bc1b55f3ea
 +
 +	/* get base address */
 +	hw->regs = devm_platform_get_and_ioremap_resource(pdev, 0, NULL);
-+	if (IS_ERR((void*)hw->regs)) {
-+		ret = PTR_ERR((void*)hw->regs);
++	if (IS_ERR((void *)hw->regs)) {
++		ret = PTR_ERR((void *)hw->regs);
 +		goto err;
 +	}
 +
@@ -1140,10 +1196,8 @@ index 000000000000..00bc1b55f3ea
 +
 +static struct platform_driver kianVspi_driver = {
 +	.probe = kianVspi_probe,
-+	.driver = {
-+		.name = DRIVER_NAME,
-+		.of_match_table = of_match_ptr(kianVspi_match)
-+	}
++	.driver = { .name = DRIVER_NAME,
++		    .of_match_table = of_match_ptr(kianVspi_match) }
 +};
 +module_platform_driver(kianVspi_driver)
 +
@@ -1151,7 +1205,7 @@ index 000000000000..00bc1b55f3ea
 +MODULE_LICENSE("GPL");
 +MODULE_ALIAS("platform:" DRIVER_NAME);
 diff --git a/drivers/staging/fbtft/fb_ssd1331.c b/drivers/staging/fbtft/fb_ssd1331.c
-index ec5eced7f8cb..4bfd3ddecbca 100644
+index 06b7056d6c71..29927b4cc1c0 100644
 --- a/drivers/staging/fbtft/fb_ssd1331.c
 +++ b/drivers/staging/fbtft/fb_ssd1331.c
 @@ -40,7 +40,7 @@ static int init_display(struct fbtft_par *par)
@@ -1225,8 +1279,32 @@ index ec5eced7f8cb..4bfd3ddecbca 100644
  	va_end(args);
  }
  
+diff --git a/drivers/staging/fbtft/fbtft-bus.c b/drivers/staging/fbtft/fbtft-bus.c
+index 30e436ff19e4..d69483768b57 100644
+--- a/drivers/staging/fbtft/fbtft-bus.c
++++ b/drivers/staging/fbtft/fbtft-bus.c
+@@ -221,14 +221,15 @@ int fbtft_write_vmem8_bus8(struct fbtft_par *par, size_t offset, size_t len)
+ }
+ EXPORT_SYMBOL(fbtft_write_vmem8_bus8);
+ 
+-/* 16 bit pixel over 16-bit databus */
+ int fbtft_write_vmem16_bus16(struct fbtft_par *par, size_t offset, size_t len)
+ {
+-	u16 *vmem16;
++    u16 *vmem16;
+ 
+ 	vmem16 = (u16 *)(par->info->screen_buffer + offset);
+ 
+-	/* no need for buffered write with 16-bit bus */
+-	return fbtft_write_buf_dc(par, vmem16, len, 1);
++    // No need for buffered write with 16-bit bus
++    par->spi->kianv_spi_data_width = 16;
++    return fbtft_write_buf_dc(par, vmem16, len, 1);
+ }
+ EXPORT_SYMBOL(fbtft_write_vmem16_bus16);
++
 diff --git a/drivers/staging/fbtft/fbtft-core.c b/drivers/staging/fbtft/fbtft-core.c
-index c8d52c63d79f..a0fbcc0cc6ff 100644
+index 4cfa494243b9..e61e046f9b6f 100644
 --- a/drivers/staging/fbtft/fbtft-core.c
 +++ b/drivers/staging/fbtft/fbtft-core.c
 @@ -34,11 +34,39 @@ static unsigned long debug;
@@ -1270,19 +1348,7 @@ index c8d52c63d79f..a0fbcc0cc6ff 100644
  
  	ret = par->fbtftops.write(par, buf, len);
  	if (ret < 0)
-@@ -627,9 +655,9 @@ struct fb_info *fbtft_framebuffer_alloc(struct fbtft_display *display,
- 	info->var.nonstd =         1;
- 
- 	/* RGB565 */
--	info->var.red.offset =     11;
-+	info->var.red.offset =     3;
- 	info->var.red.length =     5;
--	info->var.green.offset =   5;
-+	info->var.green.offset =   8;
- 	info->var.green.length =   6;
- 	info->var.blue.offset =    0;
- 	info->var.blue.length =    5;
-@@ -1058,7 +1086,7 @@ static int fbtft_verify_gpios(struct fbtft_par *par)
+@@ -1054,7 +1082,7 @@ static int fbtft_verify_gpios(struct fbtft_par *par)
  	    !par->gpio.dc) {
  		dev_err(par->info->device,
  			"Missing info about 'dc' gpio. Aborting.\n");
@@ -1291,7 +1357,7 @@ index c8d52c63d79f..a0fbcc0cc6ff 100644
  	}
  
  	if (!par->pdev)
-@@ -1072,7 +1100,7 @@ static int fbtft_verify_gpios(struct fbtft_par *par)
+@@ -1068,7 +1096,7 @@ static int fbtft_verify_gpios(struct fbtft_par *par)
  		if (!par->gpio.db[i]) {
  			dev_err(par->info->device,
  				"Missing 'db%02d' gpio. Aborting.\n", i);
@@ -1300,8 +1366,20 @@ index c8d52c63d79f..a0fbcc0cc6ff 100644
  		}
  	}
  
+diff --git a/include/linux/spi/spi.h b/include/linux/spi/spi.h
+index 8497f4747e24..093e1527343a 100644
+--- a/include/linux/spi/spi.h
++++ b/include/linux/spi/spi.h
+@@ -188,6 +188,7 @@ struct spi_device {
+ 	u8			chip_select[SPI_CS_CNT_MAX];
+ 	u8			bits_per_word;
+ 	bool			rt;
++	u8			kianv_spi_data_width;
+ #define SPI_NO_TX		BIT(31)		/* No transmit wire */
+ #define SPI_NO_RX		BIT(30)		/* No receive wire */
+ 	/*
 diff --git a/sound/Kconfig b/sound/Kconfig
-index 4c036a9a420a..b069b6b17997 100644
+index 8b40205394fe..c465376143ce 100644
 --- a/sound/Kconfig
 +++ b/sound/Kconfig
 @@ -99,6 +99,8 @@ source "sound/xen/Kconfig"
