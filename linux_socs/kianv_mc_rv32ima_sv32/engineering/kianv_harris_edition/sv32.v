@@ -270,7 +270,6 @@ module sv32 #(
       .physical_address(physical_instruction_address),
       .page_fault      (page_fault_instruction),
       .privilege_mode  (privilege_mode),
-      .satp            (satp),
 
       .valid(translate_instruction_valid),
       .ready(translate_instruction_ready),
@@ -288,7 +287,6 @@ module sv32 #(
       .is_write        (|cpu_wstrb),
       .page_fault      (page_fault_data),
       .privilege_mode  (privilege_mode),
-      .satp            (satp),
       .mstatus         (mstatus),
 
       .valid(translate_data_valid),

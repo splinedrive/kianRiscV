@@ -26,7 +26,6 @@ module sv32_translate_instruction_to_physical (
     output reg  [33:0] physical_address,
     output reg         page_fault,
     input  wire [ 1:0] privilege_mode,
-    input  wire [31:0] satp,
 
     input  wire valid,
     output reg  ready,
@@ -58,7 +57,7 @@ module sv32_translate_instruction_to_physical (
   reg ready_nxt;
   reg [33:0] physical_address_nxt;
   reg [11:0] page_offset;
-  reg [31:0] pagebase_addr;
+  reg [33:0] pagebase_addr;
 
   always @(posedge clk) begin
     if (!resetn) begin
@@ -133,7 +132,7 @@ module sv32_translate_instruction_to_physical (
 
         page_offset = address & (`SV32_PAGE_SIZE - 1);
         pagebase_addr = (pte >> `SV32_PTE_ALIGNED_PPN_SHIFT) << `SV32_PTE_ALIGNED_PPN_SHIFT;
-        physical_address_nxt = page_fault_nxt ? 32'hffff_ffff : (pagebase_addr | page_offset);
+        physical_address_nxt = page_fault_nxt ? ~0 : (pagebase_addr | page_offset);
         ready_nxt = 1'b1;
       end
       default: ;
