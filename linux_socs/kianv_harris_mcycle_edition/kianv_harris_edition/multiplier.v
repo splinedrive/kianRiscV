@@ -16,98 +16,109 @@
  *  or in connection with the use or performance of this software.
  *
  */
-`default_nettype none `timescale 1 ns / 100 ps
+`default_nettype none
 
 `include "riscv_defines.vh"
 module multiplier (
-        input  wire                        clk,
-        input  wire                        resetn,
-        input  wire [              31 : 0] factor1,
-        input  wire [              31 : 0] factor2,
-        input  wire [`MUL_OP_WIDTH -1 : 0] MULop,
-        output wire [              31 : 0] product,
-        input  wire                        valid,
-        output reg                         ready
-    );
+    input  wire                        clk,
+    input  wire                        resetn,
+    input  wire [              31 : 0] multiplicand_op,
+    input  wire [              31 : 0] multiplier_op,
+    input  wire [`MUL_OP_WIDTH -1 : 0] MULop,
+    output wire [              31 : 0] result,
+    input  wire                        valid,
+    output reg                         ready
+);
 
-    wire is_mulh = MULop == `MUL_OP_MULH;
-    wire is_mulsu = MULop == `MUL_OP_MULSU;
-    wire is_mulu = MULop == `MUL_OP_MULU;
 
-    wire factor1_is_signed = is_mulh | is_mulsu;
-    wire factor2_is_signed = is_mulh;
+  wire is_mulh;
+  assign is_mulh = MULop == `MUL_OP_MULH;
 
-    // multiplication
-    reg [63:0] rslt;
-    reg [31:0] factor1_abs;
-    reg [31:0] factor2_abs;
-    reg [4:0] bit_idx;
+  wire is_mulsu;
+  assign is_mulsu = MULop == `MUL_OP_MULSU;
 
-    localparam IDLE_BIT = 0;
-    localparam CALC_BIT = 1;
-    localparam READY_BIT = 2;
+  wire is_mulu;
+  assign is_mulu = MULop == `MUL_OP_MULU;
 
-    localparam IDLE = 1 << IDLE_BIT;
-    localparam CALC = 1 << CALC_BIT;
-    localparam READY = 1 << READY_BIT;
+  wire multiplicand_op_is_signed;
+  assign multiplicand_op_is_signed = is_mulh | is_mulsu;
 
-    localparam NR_STATES = 3;
+  wire multiplier_op_is_signed;
+  assign multiplier_op_is_signed = is_mulh;
 
-    (* onehot *)
-    reg [NR_STATES-1:0] state;
+  // multiplication
+  reg [63:0] rslt;
+  reg [31:0] multiplicand_op_abs;
+  reg [31:0] multiplier_op_abs;
 
-    wire [31:0] rslt_upper_low = (is_mulh | is_mulu | is_mulsu) ? rslt[63:32] : rslt[31:0];
-    always @(posedge clk) begin
-        if (!resetn) begin
-            state   <= IDLE;
-            ready   <= 1'b0;
-            bit_idx <= 0;
-        end else begin
+  localparam IDLE_BIT = 0;
+  localparam CALC_BIT = 1;
+  localparam READY_BIT = 2;
 
-            (* parallel_case, full_case *)
-            case (1'b1)
+  localparam IDLE = 1 << IDLE_BIT;
+  localparam CALC = 1 << CALC_BIT;
+  localparam READY = 1 << READY_BIT;
 
-                state[IDLE_BIT]: begin
-                    ready <= 1'b0;
-                    if (!ready && valid) begin
-                        factor1_abs <= (factor1_is_signed & factor1[31]) ? ~factor1 + 1 : factor1;
-                        factor2_abs <= (factor2_is_signed & factor2[31]) ? ~factor2 + 1 : factor2;
-                        bit_idx <= 0;
-                        rslt <= 0;
-                        state <= CALC;
-                    end
-                end
+  localparam NR_STATES = 3;
 
-                state[CALC_BIT]: begin
-`ifndef FAKE_MULTIPLIER
-                    /* verilator lint_off WIDTH */
-                    rslt <= rslt + ((factor1_abs & {32{factor2_abs[bit_idx]}}) << bit_idx);
-                    /* verilator lint_on WIDTH */
-                    bit_idx <= bit_idx + 1'b1;
-                    if (&bit_idx) begin
-                        state <= READY;
-                    end
-`else
-                    rslt  <= factor1_abs * factor2_abs;
-                    state <= READY;
-`endif
-                end
+  (* onehot *)
+  reg [NR_STATES-1:0] state;
 
-                state[READY_BIT]: begin
-                    /* verilator lint_off WIDTH */
-                    rslt <= ((factor1[31] & factor1_is_signed ^ factor2[31] & factor2_is_signed)) ? ~rslt + 1 : rslt;
-                    /* verilator lint_on WIDTH */
+  wire [31:0] rslt_upper_low;
+  assign rslt_upper_low = (is_mulh | is_mulu | is_mulsu) ? rslt[63:32] : rslt[31:0];
+  always @(posedge clk) begin
+    if (!resetn) begin
+      state   <= IDLE;
+      ready   <= 1'b0;
+    end else begin
 
-                    ready <= 1'b1;
-                    state <= IDLE;
-                end
+      (* parallel_case, full_case *)
+      case (1'b1)
 
-            endcase
-
+        state[IDLE_BIT]: begin
+          ready <= 1'b0;
+          if (!ready && valid) begin
+            multiplicand_op_abs <= (multiplicand_op_is_signed & multiplicand_op[31]) ? ~multiplicand_op + 1 : multiplicand_op;
+            multiplier_op_abs <= (multiplier_op_is_signed & multiplier_op[31]) ? ~multiplier_op + 1 : multiplier_op;
+            rslt <= 0;
+            state <= CALC;
+          end
         end
+
+        state[CALC_BIT]: begin
+`ifndef FAKE_MULTIPLIER
+          /* verilator lint_off WIDTH */
+          if (multiplier_op_abs & 1'b1) begin
+            rslt <= rslt + multiplicand_op_abs;
+          end
+          multiplicand_op_abs <= multiplicand_op_abs << 1;
+          multiplier_op_abs   <= multiplier_op_abs >> 1;
+
+          /* verilator lint_on WIDTH */
+          if (|multiplier_op_abs) begin
+            state <= READY;
+          end
+`else
+          rslt  <= multiplicand_op_abs * multiplier_op_abs;
+          state <= READY;
+`endif
+        end
+
+        state[READY_BIT]: begin
+          /* verilator lint_off WIDTH */
+          rslt <= ((multiplicand_op[31] & multiplicand_op_is_signed ^ multiplier_op[31] & multiplier_op_is_signed)) ? ~rslt + 1 : rslt;
+          /* verilator lint_on WIDTH */
+
+          ready <= 1'b1;
+          state <= IDLE;
+        end
+
+      endcase
 
     end
 
-    assign product = rslt_upper_low;
+  end
+
+  assign result = rslt_upper_low;
 
 endmodule
