@@ -154,7 +154,7 @@ module main_fsm (
                     jal     = 7'b 110_1111,  // j-type
   jalr = 7'b110_0111,  // implicit i-type
   branch = 7'b110_0011, lui = 7'b011_0111,  // u-type
-  aupic = 7'b001_0111,  // u-type
+  auipc = 7'b001_0111,  // u-type
   amo = 7'b010_1111;
 
   // Determine if the instruction is a CSR type using assign statement
@@ -171,7 +171,7 @@ module main_fsm (
   wire is_jalr = op == jalr;
   wire is_branch = op == branch;
   wire is_lui = op == lui;
-  wire is_aupic = op == aupic;
+  wire is_auipc = op == auipc;
   wire is_amo = `RV32_IS_AMO_INSTRUCTION(op, funct3);
   wire is_amoadd_w = `RV32_IS_AMOADD_W(funct5);
   wire is_amoswap_w = `RV32_IS_AMOSWAP_W(funct5);
@@ -229,7 +229,7 @@ module main_fsm (
       is_itype | is_jalr | is_load | is_csr: ImmSrc = `IMMSRC_ITYPE;
       is_store:                              ImmSrc = `IMMSRC_STYPE;
       is_branch:                             ImmSrc = `IMMSRC_BTYPE;
-      is_lui | is_aupic:                     ImmSrc = `IMMSRC_UTYPE;
+      is_lui | is_auipc:                     ImmSrc = `IMMSRC_UTYPE;
       is_jal:                                ImmSrc = `IMMSRC_JTYPE;
       default:                               ImmSrc = 3'bxxx;
     endcase
@@ -282,7 +282,7 @@ module main_fsm (
           is_jalr: state_nxt = S11;
           is_branch: state_nxt = S10;
           is_lui: state_nxt = S12;
-          is_aupic: state_nxt = S13;
+          is_auipc: state_nxt = S13;
           is_csr: state_nxt = S16;
           is_amo: state_nxt = S18;
           is_sfence_vma: state_nxt = S0;
