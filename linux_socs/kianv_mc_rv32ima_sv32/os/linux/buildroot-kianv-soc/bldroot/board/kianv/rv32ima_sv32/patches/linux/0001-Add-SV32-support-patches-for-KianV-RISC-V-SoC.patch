@@ -356,7 +356,7 @@ index d6c9491537e4..cfdaf606f500 100644
 +
 +	/* Check if the thread is already running */
 +	if (!net_kianv_thread || IS_ERR(net_kianv_thread)) {
-+		printk(KERN_INFO "encx24j600: Creating thread\n");
++		printk(KERN_INFO "enc28j60: Creating thread\n");
 +		net_kianv_thread = kthread_run(net_kianv_thread_function, dev, "net_kianv_thread");
 +		if (!IS_ERR(net_kianv_thread)) {
 +			printk(KERN_INFO "Thread created successfully\n");
@@ -634,8 +634,8 @@ index b77f096eaf99..5082595a0b2c 100644
 +#endif
 +	/* Check if the thread is already running */
 +	if (!net_kianv_thread || IS_ERR(net_kianv_thread)) {
-+		printk(KERN_INFO "encx24j600: Creating thread\n");
-+		net_kianv_thread = kthread_run(net_kianv_thread_function, dev, "net_kianv_thread");
++		printk(KERN_INFO "w5100: Creating thread\n");
++		net_kianv_thread = kthread_run(net_kianv_thread_function, ndev, "net_kianv_thread");
 +		if (!IS_ERR(net_kianv_thread)) {
 +			printk(KERN_INFO "Thread created successfully\n");
 +		} else {

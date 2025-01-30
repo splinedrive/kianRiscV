@@ -147,7 +147,7 @@
 			#size-cells = <0x01>;
 			reg = <0x00>;
 			spi-max-frequency = <0xb71b00>;
-			status = "okay";
+			status = "disabled";
 		};
 
 		enc28j60@0 {
@@ -165,7 +165,7 @@
 			#size-cells = <0x01>;
 			reg = <0x00>;
 			spi-max-frequency = <0xb71b00>;
-			status = "disabled";
+			status = "okay";
 		};
 	};
 
