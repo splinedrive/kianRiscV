@@ -7,3 +7,18 @@
 [submodule "asic/tt06_KianV-RV32IMA-RISC-V-uLinux-SoC"]
 	path = asic/tt06_KianV-RV32IMA-RISC-V-uLinux-SoC
 	url = https://github.com/splinedrive/KianV-RV32IMA-RISC-V-uLinux-SoC
+[submodule "asic/tt07-KianV-RV32E-Baremetal-Audio-SoC"]
+	path = asic/tt07-KianV-RV32E-Baremetal-Audio-SoC
+	url = https://github.com/splinedrive/RISCV-KianV-BareMetalStyle
+[submodule "asic/tt07-kian-binary-8bcounterby8yrs"]
+	path = asic/tt07-kian-binary-8bcounterby8yrs
+	url = https://github.com/splinedrive/tt07-kian-binary-8bcounterby8yrs
+[submodule "asic/tinytapeout-verilog-4x4-multiplier"]
+	path = asic/tinytapeout-verilog-4x4-multiplier
+	url = https://github.com/splinedrive/tinytapeout-verilog-4x4-multiplier
+[submodule "asic/74hc595"]
+	path = asic/74hc595
+	url = https://github.com/splinedrive/74hc595
+[submodule "asic/thunderbird_taillight_1965"]
+	path = asic/thunderbird_taillight_1965
+	url = https://github.com/splinedrive/thunderbird_taillight_1965
