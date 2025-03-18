@@ -27,6 +27,7 @@ jobs:
       run: |
         mkdir -p artifact_files
         cp xv6.rle artifact_files
+        cp fs.img artifact_files
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
