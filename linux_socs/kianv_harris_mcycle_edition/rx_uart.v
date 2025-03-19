@@ -31,7 +31,7 @@ module rx_uart #(
 
     localparam SYSTEM_CYCLES = SYSTEM_CLK;
     localparam WAITSTATES_BIT_WIDTH = $clog2(SYSTEM_CLK);
-    localparam [WAITSTATES_BIT_WIDTH-1:0] CYCLES_PER_SYMBOL = ($rtoi(real(SYSTEM_CYCLES) / real(BAUDRATE)));
+    localparam [WAITSTATES_BIT_WIDTH-1:0] CYCLES_PER_SYMBOL = ($rtoi((SYSTEM_CYCLES) / (BAUDRATE)));
     localparam [WAITSTATES_BIT_WIDTH-1:0] HALF_CYCLES_PER_SYMBOL = CYCLES_PER_SYMBOL >> 1;
 
     initial begin

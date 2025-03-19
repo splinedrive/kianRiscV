@@ -90,5 +90,5 @@ module alu (
     endcase
   end
 
-  assign zero = result == 32'b0;
+  assign zero = !result[0];
 endmodule

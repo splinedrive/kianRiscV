@@ -36,7 +36,7 @@ module clint #(
 
     /* verilator lint_off WIDTHTRUNC */
     localparam CLOCK_TICK_BIT_WIDTH = $clog2(CLOCK_TICK);
-    localparam [CLOCK_TICK_BIT_WIDTH -1:0] CYCLES_TO_TICK = ($rtoi(real(SYSTEM_CLK) / real(CLOCK_TICK)));
+    localparam [CLOCK_TICK_BIT_WIDTH -1:0] CYCLES_TO_TICK = ($rtoi((SYSTEM_CLK) / (CLOCK_TICK)));
     /* verilator lint_on WIDTHTRUNC */
     wire is_msip = (addr == 32'h1100_0000);
     wire is_mtimecmpl = (addr == 32'h1100_4000);

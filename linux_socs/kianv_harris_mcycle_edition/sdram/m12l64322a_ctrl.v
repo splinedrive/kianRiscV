@@ -94,15 +94,15 @@ module m12l64322a_ctrl #(
   localparam WAIT_100US = 100 * SDRAM_CLK_FREQ,  // 64 * 1/64e6 = 1us => 100 * 1us
   // command period, PRE to ACT in ns, e.g. 20ns
   TRP = $rtoi(
-      (20 * real(SDRAM_CLK_FREQ) / 1000) + 1
+      (20 * (SDRAM_CLK_FREQ) / 1000) + 1
   ),
   // tRC command period (REF to REF/ACT TO ACT) in ns
   TRC = $rtoi(
-      (66 * real(SDRAM_CLK_FREQ) / 1000) + 1
+      (66 * (SDRAM_CLK_FREQ) / 1000) + 1
   ),  //
   // tRCD active command to read/write command delay, row-col-delay in ns
   TRCD = $rtoi(
-      (20 * real(SDRAM_CLK_FREQ) / 1000) + 1
+      (20 * (SDRAM_CLK_FREQ) / 1000) + 1
   ),
   // tCH command hold time
   TCH = 1;

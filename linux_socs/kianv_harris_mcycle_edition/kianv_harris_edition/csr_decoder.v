@@ -19,92 +19,92 @@
 `default_nettype none `timescale 1 ns / 100 ps
 `include "riscv_defines.vh"
 module csr_decoder (
-    input wire [2:0] funct3,
-    input wire [4:0] Rs1Uimm,
-    input wire [4:0] Rd,
-    input wire valid,
-    output wire CSRwe,
-    output wire CSRre,
-    output reg [`CSR_OP_WIDTH -1:0] CSRop
-);
+        input wire [2:0] funct3,
+        input wire [4:0] Rs1Uimm,
+        input wire [4:0] Rd,
+        input wire valid,
+        output wire CSRwe,
+        output wire CSRre,
+        output reg [`CSR_OP_WIDTH -1:0] CSRop
+    );
 
-  wire is_csrrw = funct3 == 3'b001;
-  wire is_csrrs = funct3 == 3'b010;
-  wire is_csrrc = funct3 == 3'b011;
+    wire is_csrrw = funct3 == 3'b001;
+    wire is_csrrs = funct3 == 3'b010;
+    wire is_csrrc = funct3 == 3'b011;
 
-  wire is_csrrwi = funct3 == 3'b101;
-  wire is_csrrsi = funct3 == 3'b110;
-  wire is_csrrci = funct3 == 3'b111;
+    wire is_csrrwi = funct3 == 3'b101;
+    wire is_csrrsi = funct3 == 3'b110;
+    wire is_csrrci = funct3 == 3'b111;
 
-  reg we;
-  reg re;
+    reg we;
+    reg re;
 
-  assign CSRwe = we && valid;
-  assign CSRre = re && valid;
+    assign CSRwe = we && valid;
+    assign CSRre = re && valid;
 
-  always @(*) begin
-    we = 1'b0;
-    re = 1'b0;
-    case (1'b1)
-      // Instruction rd rs1 read CSR? write CSR?
-      // CSRRW       x0  -       no      yes
-      // CSRRW      !x0  -       yes     yes
-      is_csrrw: begin
-        we = 1'b1;
-        //      re = |Rs1Uimm; // rd todo
-        re = |Rd;
-        CSRop = `CSR_OP_CSRRW;
-      end
-      // Instruction rd rs1 read CSR? write CSR?
-      // CSRRS/C      -  x0      yes     no
-      // CSRRS/C      - !x0      yes     yes
-      is_csrrs: begin
-        we = |Rs1Uimm;
-        re = 1'b1;
-        CSRop = `CSR_OP_CSRRS;
-      end
-      // Instruction rd rs1 read CSR? write CSR?
-      // CSRRS/C      -  x0      yes     no
-      // CSRRS/C      - !x0      yes     yes
-      is_csrrc: begin
-        we = |Rs1Uimm;
-        re = 1'b1;
-        CSRop = `CSR_OP_CSRRC;
-      end
-
-      // Instruction rd uimm read CSR? write CSR?
-      // CSRRWI      x0   -      no       yes
-      // CSRRWI     !x0   -      yes      yes
-      is_csrrwi: begin
-        we = 1'b1;
-        //re = |Rs1Uimm;
-        re = |Rd;
-        CSRop = `CSR_OP_CSRRWI;
-      end
-      // Instruction rd uimm read CSR? write CSR?
-      // CSRRS/CI     -   0      yes      no
-      // CSRRS/CI     -  !0      yes      yes
-      is_csrrsi: begin
-        we = |Rs1Uimm;
-        re = 1'b1;
-        CSRop = `CSR_OP_CSRRSI;
-      end
-      // Instruction rd uimm read CSR? write CSR?
-      // CSRRS/CI     -   0      yes      no
-      // CSRRS/CI     -  !0      yes      yes
-      is_csrrci: begin
-        we = |Rs1Uimm;
-        re = 1'b1;
-        CSRop = `CSR_OP_CSRRCI;
-      end
-
-      default: begin
+    always @(*) begin
         we = 1'b0;
         re = 1'b0;
-        CSRop = `CSR_OP_NA;
-      end
-    endcase
-  end
+        case (1'b1)
+            // Instruction rd rs1 read CSR? write CSR?
+            // CSRRW       x0  -       no      yes
+            // CSRRW      !x0  -       yes     yes
+            is_csrrw: begin
+                we = 1'b1;
+                //      re = |Rs1Uimm; // rd todo
+                re = |Rd;
+                CSRop = `CSR_OP_CSRRW;
+            end
+            // Instruction rd rs1 read CSR? write CSR?
+            // CSRRS/C      -  x0      yes     no
+            // CSRRS/C      - !x0      yes     yes
+            is_csrrs: begin
+                we = |Rs1Uimm;
+                re = 1'b1;
+                CSRop = `CSR_OP_CSRRS;
+            end
+            // Instruction rd rs1 read CSR? write CSR?
+            // CSRRS/C      -  x0      yes     no
+            // CSRRS/C      - !x0      yes     yes
+            is_csrrc: begin
+                we = |Rs1Uimm;
+                re = 1'b1;
+                CSRop = `CSR_OP_CSRRC;
+            end
+
+            // Instruction rd uimm read CSR? write CSR?
+            // CSRRWI      x0   -      no       yes
+            // CSRRWI     !x0   -      yes      yes
+            is_csrrwi: begin
+                we = 1'b1;
+                //re = |Rs1Uimm;
+                re = |Rd;
+                CSRop = `CSR_OP_CSRRWI;
+            end
+            // Instruction rd uimm read CSR? write CSR?
+            // CSRRS/CI     -   0      yes      no
+            // CSRRS/CI     -  !0      yes      yes
+            is_csrrsi: begin
+                we = |Rs1Uimm;
+                re = 1'b1;
+                CSRop = `CSR_OP_CSRRSI;
+            end
+            // Instruction rd uimm read CSR? write CSR?
+            // CSRRS/CI     -   0      yes      no
+            // CSRRS/CI     -  !0      yes      yes
+            is_csrrci: begin
+                we = |Rs1Uimm;
+                re = 1'b1;
+                CSRop = `CSR_OP_CSRRCI;
+            end
+
+            default: begin
+                we = 1'b0;
+                re = 1'b0;
+                CSRop = `CSR_OP_NA;
+            end
+        endcase
+    end
 
 endmodule
 //  imm[11:0] rs1 funct3 rd opcode analog to I-type
