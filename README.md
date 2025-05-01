@@ -1,5 +1,3 @@
-<img src="logic_anarchy.jpeg" alt="Logic Anarchy"/>
-
 **RISC-V Linux/XV6 SoCs**
 ================================
 **KianV SV32 (MMU) RV32IMA Zicntr Zicsr Zifencei SSTC Linux/XV6
