@@ -1,6 +1,7 @@
 # Toolchain configuration
 TOOLCHAIN_DIR := ./riscv32ima-sv32-toolchain
 TOOLPREFIX    := $(TOOLCHAIN_DIR)/bin/riscv32-unknown-elf-
+
 LIBGCC        := $(shell $(TOOLPREFIX)gcc -print-libgcc-file-name)
 
 K=kernel
