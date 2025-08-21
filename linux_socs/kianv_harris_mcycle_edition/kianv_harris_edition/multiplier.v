@@ -1,5 +1,9 @@
 /*
- *  kianv harris multicycle RISC-V rv32im
+ *  kianv harris multicycle RISC-V rv32im – divider (early-exit, no barrel-shift preload)
+ *
+ *  This version keeps the CLZ-based early-exit, but avoids the large
+ *  one-cycle variable left shift. Instead, it indexes bits from the
+ *  latched |dividend| with a 32:1 mux and builds the quotient separately.
  *
  *  copyright (c) 2022 hirosh dabui <hirosh@dabui.de>
  *
@@ -16,109 +20,216 @@
  *  or in connection with the use or performance of this software.
  *
  */
-`default_nettype none
 
+`default_nettype none
 `include "riscv_defines.vh"
+
 module multiplier (
-    input  wire                        clk,
-    input  wire                        resetn,
-    input  wire [              31 : 0] multiplicand_op,
-    input  wire [              31 : 0] multiplier_op,
-    input  wire [`MUL_OP_WIDTH -1 : 0] MULop,
-    output wire [              31 : 0] result,
-    input  wire                        valid,
-    output reg                         ready
+    input  wire                     clk,
+    input  wire                     resetn,
+    input  wire [             31:0] multiplicand_op,
+    input  wire [             31:0] multiplier_op,
+    input  wire [`MUL_OP_WIDTH-1:0] MULop,
+    output wire [             31:0] result,
+    input  wire                     valid,
+    output reg                      ready
 );
 
 
-  wire is_mulh;
-  assign is_mulh = MULop == `MUL_OP_MULH;
+  reg [31:0] a_q, b_q;
+  reg  [`MUL_OP_WIDTH-1:0] MULop_q;
 
-  wire is_mulsu;
-  assign is_mulsu = MULop == `MUL_OP_MULSU;
 
-  wire is_mulu;
-  assign is_mulu = MULop == `MUL_OP_MULU;
+  wire                     is_mulh_q = (MULop_q == `MUL_OP_MULH);
+  wire                     is_mulsu_q = (MULop_q == `MUL_OP_MULSU);
+  wire                     is_mulu_q = (MULop_q == `MUL_OP_MULU);
+  wire                     is_mul_q = ~(is_mulh_q | is_mulsu_q | is_mulu_q);
 
-  wire multiplicand_op_is_signed;
-  assign multiplicand_op_is_signed = is_mulh | is_mulsu;
+  wire                     a_signed_q = is_mulh_q | is_mulsu_q;
+  wire                     b_signed_q = is_mulh_q;
 
-  wire multiplier_op_is_signed;
-  assign multiplier_op_is_signed = is_mulh;
-
-  // multiplication
-  reg [63:0] rslt;
-  reg [31:0] multiplicand_op_abs;
-  reg [31:0] multiplier_op_abs;
 
   localparam IDLE_BIT = 0;
-  localparam CALC_BIT = 1;
-  localparam READY_BIT = 2;
+  localparam PREP_BIT = 1;
+  localparam CALC_BIT = 2;
+  localparam MUL1_BIT = 3;
+  localparam READY_BIT = 4;
+  localparam DONE_BIT = 5;
 
   localparam IDLE = 1 << IDLE_BIT;
+  localparam PREP = 1 << PREP_BIT;
   localparam CALC = 1 << CALC_BIT;
+  localparam MUL1 = 1 << MUL1_BIT;
   localparam READY = 1 << READY_BIT;
+  localparam DONE = 1 << DONE_BIT;
 
-  localparam NR_STATES = 3;
+  (* onehot *)reg  [ 5:0] state;
 
-  (* onehot *)
-  reg [NR_STATES-1:0] state;
 
-  wire [31:0] rslt_upper_low;
-  assign rslt_upper_low = (is_mulh | is_mulu | is_mulsu) ? rslt[63:32] : rslt[31:0];
+  reg  [63:0] acc;
+  reg  [63:0] mcand;
+  reg  [31:0] mulr;
+  reg         prod_neg_r;
+  reg  [31:0] res_q;
+
+
+  wire [31:0] a_abs = (a_signed_q && a_q[31]) ? (~a_q + 32'd1) : a_q;
+  wire [31:0] b_abs = (b_signed_q && b_q[31]) ? (~b_q + 32'd1) : b_q;
+
+
+  wire [31:0] mulr_next = mulr >> 1;
+
+
+  wire [31:0] acc_lo = acc[31:0];
+  wire [31:0] acc_hi = acc[63:32];
+
+
+  wire [31:0] lo_tc = ~acc_lo + 32'd1;
+  wire        carry_to_hi = (acc_lo == 32'd0);
+  wire [31:0] hi_tc = ~acc_hi + {31'd0, carry_to_hi};
+
+
+  assign result = res_q;
+
+`ifndef FPGA_MULTIPLIER
+
+  function automatic [5:0] ctz32;
+    input [31:0] x;
+    reg [31:0] y;
+    reg [ 5:0] n;
+    begin
+      if (x == 32'b0) begin
+        ctz32 = 6'd32;
+      end else begin
+        y = x;
+        n = 6'd0;
+        if (y[15:0] == 0) begin
+          n = n + 16;
+          y = y >> 16;
+        end
+        if (y[7:0] == 0) begin
+          n = n + 8;
+          y = y >> 8;
+        end
+        if (y[3:0] == 0) begin
+          n = n + 4;
+          y = y >> 4;
+        end
+        if (y[1:0] == 0) begin
+          n = n + 2;
+          y = y >> 2;
+        end
+        if (y[0] == 0) n = n + 1;
+        ctz32 = n;
+      end
+    end
+  endfunction
+
+
+  wire [5:0] tz_b_abs = ctz32(b_abs);
+`else
+
+  (* keep = "true" *) reg [31:0] a_dsp, b_dsp;
+
+  (* use_dsp = "yes" *) wire [63:0] p_mul = a_dsp * b_dsp;
+`endif
+
+
   always @(posedge clk) begin
     if (!resetn) begin
-      state   <= IDLE;
-      ready   <= 1'b0;
+      state      <= IDLE;
+      ready      <= 1'b0;
+      a_q        <= 32'b0;
+      b_q        <= 32'b0;
+      MULop_q    <= {`MUL_OP_WIDTH{1'b0}};
+      acc        <= 64'b0;
+      mcand      <= 64'b0;
+      mulr       <= 32'b0;
+      prod_neg_r <= 1'b0;
+      res_q      <= 32'b0;
+`ifdef FPGA_MULTIPLIER
+      a_dsp <= 32'b0;
+      b_dsp <= 32'b0;
+`endif
     end else begin
-
-      (* parallel_case, full_case *)
       case (1'b1)
+
 
         state[IDLE_BIT]: begin
           ready <= 1'b0;
-          if (!ready && valid) begin
-            multiplicand_op_abs <= (multiplicand_op_is_signed & multiplicand_op[31]) ? ~multiplicand_op + 1 : multiplicand_op;
-            multiplier_op_abs <= (multiplier_op_is_signed & multiplier_op[31]) ? ~multiplier_op + 1 : multiplier_op;
-            rslt <= 0;
-            state <= CALC;
+          if (valid) begin
+            a_q     <= multiplicand_op;
+            b_q     <= multiplier_op;
+            MULop_q <= MULop;
+            state   <= PREP;
           end
         end
 
-        state[CALC_BIT]: begin
-`ifndef FAKE_MULTIPLIER
-          /* verilator lint_off WIDTH */
-          if (multiplier_op_abs & 1'b1) begin
-            rslt <= rslt + multiplicand_op_abs;
-          end
-          multiplicand_op_abs <= multiplicand_op_abs << 1;
-          multiplier_op_abs   <= multiplier_op_abs >> 1;
 
-          /* verilator lint_on WIDTH */
-          if (|multiplier_op_abs) begin
+        state[PREP_BIT]: begin
+          prod_neg_r <= (a_signed_q && a_q[31]) ^ (b_signed_q && b_q[31]);
+
+`ifndef FPGA_MULTIPLIER
+
+          acc <= 64'b0;
+          if (b_abs == 32'd0) begin
+            mcand <= 64'b0;
+            mulr  <= 32'd0;
             state <= READY;
+          end else begin
+
+            mcand <= ({32'b0, a_abs}) << tz_b_abs;
+            mulr  <= b_abs >> tz_b_abs;
+            state <= CALC;
           end
 `else
-          rslt  <= multiplicand_op_abs * multiplier_op_abs;
+
+          a_dsp <= a_abs;
+          b_dsp <= b_abs;
+          state <= MUL1;
+`endif
+        end
+
+
+        state[CALC_BIT]: begin
+`ifndef FPGA_MULTIPLIER
+          if (mulr[0]) acc <= acc + mcand;
+          mcand <= mcand << 1;
+          mulr  <= mulr_next;
+          if (mulr_next == 32'b0) state <= READY;
+`endif
+        end
+
+
+        state[MUL1_BIT]: begin
+`ifdef FPGA_MULTIPLIER
+          acc   <= p_mul;
           state <= READY;
 `endif
         end
 
-        state[READY_BIT]: begin
-          /* verilator lint_off WIDTH */
-          rslt <= ((multiplicand_op[31] & multiplicand_op_is_signed ^ multiplier_op[31] & multiplier_op_is_signed)) ? ~rslt + 1 : rslt;
-          /* verilator lint_on WIDTH */
 
-          ready <= 1'b1;
-          state <= IDLE;
+        state[READY_BIT]: begin
+
+          if (is_mul_q) res_q <= (prod_neg_r ? lo_tc : acc_lo);
+          else res_q <= (prod_neg_r ? hi_tc : acc_hi);
+          state <= DONE;
         end
 
+
+        state[DONE_BIT]: begin
+          ready <= 1'b1;
+          if (!valid) begin
+            ready <= 1'b0;
+            state <= IDLE;
+          end
+        end
+
+        default: begin
+          state <= IDLE;
+          ready <= 1'b0;
+        end
       endcase
-
     end
-
   end
-
-  assign result = rslt_upper_low;
-
 endmodule
