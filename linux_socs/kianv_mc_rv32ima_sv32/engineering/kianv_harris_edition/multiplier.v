@@ -35,10 +35,8 @@ module multiplier (
     output reg                      ready
 );
 
-
   reg [31:0] a_q, b_q;
   reg  [`MUL_OP_WIDTH-1:0] MULop_q;
-
 
   wire                     is_mulh_q = (MULop_q == `MUL_OP_MULH);
   wire                     is_mulsu_q = (MULop_q == `MUL_OP_MULSU);
@@ -47,7 +45,6 @@ module multiplier (
 
   wire                     a_signed_q = is_mulh_q | is_mulsu_q;
   wire                     b_signed_q = is_mulh_q;
-
 
   localparam IDLE_BIT = 0;
   localparam PREP_BIT = 1;
@@ -65,75 +62,33 @@ module multiplier (
 
   (* onehot *)reg  [ 5:0] state;
 
-
   reg  [63:0] acc;
   reg  [63:0] mcand;
   reg  [31:0] mulr;
   reg         prod_neg_r;
   reg  [31:0] res_q;
 
-
   wire [31:0] a_abs = (a_signed_q && a_q[31]) ? (~a_q + 32'd1) : a_q;
   wire [31:0] b_abs = (b_signed_q && b_q[31]) ? (~b_q + 32'd1) : b_q;
 
-
   wire [31:0] mulr_next = mulr >> 1;
-
 
   wire [31:0] acc_lo = acc[31:0];
   wire [31:0] acc_hi = acc[63:32];
-
 
   wire [31:0] lo_tc = ~acc_lo + 32'd1;
   wire        carry_to_hi = (acc_lo == 32'd0);
   wire [31:0] hi_tc = ~acc_hi + {31'd0, carry_to_hi};
 
-
   assign result = res_q;
 
 `ifndef FPGA_MULTIPLIER
-
-  function automatic [5:0] ctz32;
-    input [31:0] x;
-    reg [31:0] y;
-    reg [ 5:0] n;
-    begin
-      if (x == 32'b0) begin
-        ctz32 = 6'd32;
-      end else begin
-        y = x;
-        n = 6'd0;
-        if (y[15:0] == 0) begin
-          n = n + 16;
-          y = y >> 16;
-        end
-        if (y[7:0] == 0) begin
-          n = n + 8;
-          y = y >> 8;
-        end
-        if (y[3:0] == 0) begin
-          n = n + 4;
-          y = y >> 4;
-        end
-        if (y[1:0] == 0) begin
-          n = n + 2;
-          y = y >> 2;
-        end
-        if (y[0] == 0) n = n + 1;
-        ctz32 = n;
-      end
-    end
-  endfunction
-
-
+  `include "design_func.vh"
   wire [5:0] tz_b_abs = ctz32(b_abs);
 `else
-
   (* keep = "true" *) reg [31:0] a_dsp, b_dsp;
-
   (* use_dsp = "yes" *) wire [63:0] p_mul = a_dsp * b_dsp;
 `endif
-
 
   always @(posedge clk) begin
     if (!resetn) begin
@@ -154,7 +109,6 @@ module multiplier (
     end else begin
       case (1'b1)
 
-
         state[IDLE_BIT]: begin
           ready <= 1'b0;
           if (valid) begin
@@ -165,31 +119,26 @@ module multiplier (
           end
         end
 
-
         state[PREP_BIT]: begin
           prod_neg_r <= (a_signed_q && a_q[31]) ^ (b_signed_q && b_q[31]);
 
 `ifndef FPGA_MULTIPLIER
-
           acc <= 64'b0;
           if (b_abs == 32'd0) begin
             mcand <= 64'b0;
             mulr  <= 32'd0;
             state <= READY;
           end else begin
-
             mcand <= ({32'b0, a_abs}) << tz_b_abs;
             mulr  <= b_abs >> tz_b_abs;
             state <= CALC;
           end
 `else
-
           a_dsp <= a_abs;
           b_dsp <= b_abs;
           state <= MUL1;
 `endif
         end
-
 
         state[CALC_BIT]: begin
 `ifndef FPGA_MULTIPLIER
@@ -200,7 +149,6 @@ module multiplier (
 `endif
         end
 
-
         state[MUL1_BIT]: begin
 `ifdef FPGA_MULTIPLIER
           acc   <= p_mul;
@@ -208,14 +156,11 @@ module multiplier (
 `endif
         end
 
-
         state[READY_BIT]: begin
-
           if (is_mul_q) res_q <= (prod_neg_r ? lo_tc : acc_lo);
           else res_q <= (prod_neg_r ? hi_tc : acc_hi);
           state <= DONE;
         end
-
 
         state[DONE_BIT]: begin
           ready <= 1'b1;

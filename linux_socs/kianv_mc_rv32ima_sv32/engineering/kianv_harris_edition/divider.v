@@ -22,6 +22,7 @@
  *
  */
 
+
 `default_nettype none
 `include "riscv_defines.vh"
 
@@ -37,6 +38,10 @@ module divider (
     output reg                      ready,
     output wire                     div_by_zero_err
 );
+  `include "design_func.vh"
+
+
+
   localparam IDLE_BIT = 0;
   localparam CALC_BIT = 1;
   localparam READY_BIT = 2;
@@ -51,25 +56,17 @@ module divider (
 
   (* onehot *) reg [NR_STATES-1:0] div_state;
 
-
   reg [31:0] rem_rslt;
   reg [31:0] quo_rslt;
 
-
   reg [5:0] iter_cnt;
-
 
   reg [31:0] divident_q, divisor_q;
   reg [`DIV_OP_WIDTH-1:0] DIVop_q;
 
-
   reg [31:0] dvd_q;
-
   reg [4:0] bit_idx;
-
-
   reg [4:0] pow2_shift_q;
-
 
   wire is_div_q = (DIVop_q == `DIV_OP_DIV);
   wire is_divu_q = (DIVop_q == `DIV_OP_DIVU);
@@ -77,87 +74,14 @@ module divider (
   wire is_remu_q = (DIVop_q == `DIV_OP_REMU);
   wire is_signed_q = is_div_q | is_rem_q;
 
-
   wire [31:0] divident_abs_q = (is_signed_q & divident_q[31]) ? (~divident_q + 32'd1) : divident_q;
   wire [31:0] divisor_abs_q = (is_signed_q & divisor_q[31]) ? (~divisor_q + 32'd1) : divisor_q;
-
 
   wire is_div_in = (DIVop == `DIV_OP_DIV);
   wire is_rem_in = (DIVop == `DIV_OP_REM);
   wire is_signed_in = is_div_in | is_rem_in;
   wire [31:0] divisor_abs_in = (is_signed_in & divisor[31]) ? (~divisor + 32'd1) : divisor;
   assign div_by_zero_err = (divisor_abs_in == 32'b0);
-
-
-  function automatic [5:0] clz32;
-    input [31:0] x;
-    reg [31:0] y;
-    reg [ 5:0] n;
-    begin
-      if (x == 32'b0) begin
-        clz32 = 6'd32;
-      end else begin
-        y = x;
-        n = 6'd0;
-        if (y[31:16] == 0) begin
-          n = n + 16;
-          y = y << 16;
-        end
-        if (y[31:24] == 0) begin
-          n = n + 8;
-          y = y << 8;
-        end
-        if (y[31:28] == 0) begin
-          n = n + 4;
-          y = y << 4;
-        end
-        if (y[31:30] == 0) begin
-          n = n + 2;
-          y = y << 2;
-        end
-        if (y[31] == 0) begin
-          n = n + 1;
-        end
-        clz32 = n;
-      end
-    end
-  endfunction
-
-
-  function automatic [5:0] ctz32;
-    input [31:0] x;
-    reg [31:0] y;
-    reg [ 5:0] n;
-    begin
-      if (x == 32'b0) begin
-        ctz32 = 6'd32;
-      end else begin
-        y = x;
-        n = 6'd0;
-        if (y[15:0] == 0) begin
-          n = n + 16;
-          y = y >> 16;
-        end
-        if (y[7:0] == 0) begin
-          n = n + 8;
-          y = y >> 8;
-        end
-        if (y[3:0] == 0) begin
-          n = n + 4;
-          y = y >> 4;
-        end
-        if (y[1:0] == 0) begin
-          n = n + 2;
-          y = y >> 2;
-        end
-        if (y[0] == 0) begin
-          n = n + 1;
-        end
-        ctz32 = n;
-      end
-    end
-  endfunction
-
 
   wire [5:0] lz_divident_q = clz32(divident_abs_q);
   wire [5:0] iter_cnt_init_q = (divident_abs_q == 32'b0) ? 6'd0 : (6'd32 - lz_divident_q);
@@ -166,13 +90,10 @@ module divider (
   wire [5:0] lz_divident_in = clz32(divident_abs_in);
   wire [5:0] iter_cnt_init_in = (divident_abs_in == 32'b0) ? 6'd0 : (6'd32 - lz_divident_in);
 
-
   wire        is_pow2_in = (divisor_abs_in != 32'b0) &&
                            ((divisor_abs_in & (divisor_abs_in - 32'd1)) == 32'b0);
-
   wire [5:0] pow2_shift_full_in = ctz32(divisor_abs_in);
   wire [4:0] pow2_shift_in = pow2_shift_full_in[4:0];
-
 
   wire in_bit = dvd_q[bit_idx];
   wire [31:0] rem_rslt_next = {rem_rslt[30:0], in_bit};
@@ -180,7 +101,6 @@ module divider (
   wire [32:0] rem_rslt_sub_divident = {1'b0, rem_rslt_next} - {1'b0, divisor_abs_q};
   wire [31:0] quo_rslt_next_sub_neg = (quo_rslt << 1);
   wire [31:0] quo_rslt_next_sub_ok = (quo_rslt << 1) | 32'b1;
-
 
   always @(posedge clk) begin
     if (!resetn) begin
@@ -203,11 +123,9 @@ module divider (
       (* parallel_case, full_case *)
       case (1'b1)
 
-
         div_state[IDLE_BIT]: begin
           ready <= 1'b0;
           if (!ready && valid) begin
-
             divident_q   <= divident;
             divisor_q    <= divisor;
             DIVop_q      <= DIVop;
@@ -228,24 +146,21 @@ module divider (
           end
         end
 
-
         div_state[FAST_BIT]: begin
           rem_rslt  <= divident_abs_q & (divisor_abs_q - 32'd1);
           quo_rslt  <= divident_abs_q >> pow2_shift_q;
           div_state <= READY;
         end
 
-
         div_state[CALC_BIT]: begin
-
           if (rem_rslt_sub_divident[32]) begin
             rem_rslt <= rem_rslt_next;
             quo_rslt <= quo_rslt_next_sub_neg;
           end else begin
+
             rem_rslt <= rem_rslt_sub_divident[31:0];
             quo_rslt <= quo_rslt_next_sub_ok;
           end
-
 
           bit_idx  <= bit_idx - 5'd1;
           iter_cnt <= iter_cnt - 6'd1;
@@ -254,7 +169,6 @@ module divider (
             div_state <= READY;
           end
         end
-
 
         div_state[READY_BIT]: begin
           if (divisor_abs_q == 32'b0) begin
@@ -268,6 +182,7 @@ module divider (
               rem_rslt <= ~rem_rslt + 32'd1;
             end
           end
+
           ready     <= 1'b1;
           div_state <= IDLE;
         end
@@ -275,7 +190,6 @@ module divider (
       endcase
     end
   end
-
 
   assign divOrRemRslt = (is_div_q | is_divu_q) ? quo_rslt : rem_rslt;
 
