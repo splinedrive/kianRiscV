@@ -28,7 +28,7 @@ main()
     binit();         // buffer cache
     iinit();         // inode table
     fileinit();      // file table
-	  spi_init();
+    spi_init();
     userinit();      // first user process
     __sync_synchronize();
     started = 1;

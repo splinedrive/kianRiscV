@@ -23,7 +23,7 @@ void            consoleintr(int);
 void            consputc(int);
 
 // exec.c
-int             exec(char*, char**);
+int             kexec(char*, char**);
 
 // file.c
 struct file*    filealloc(void);
@@ -53,17 +53,12 @@ int             readi(struct inode*, int, uint32, uint, uint);
 void            stati(struct inode*, struct stat*);
 int             writei(struct inode*, int, uint32, uint, uint);
 void            itrunc(struct inode*);
-
-// ramdisk.c
-void            ramdiskinit(void);
-void            ramdiskintr(void);
-void            ramdiskrw(struct buf*);
+void            ireclaim(int);
 
 // kalloc.c
 void*           kalloc(void);
 void            kfree(void *);
 void            kinit(void);
-int             ksys_freemem(void);
 
 // log.c
 void            initlog(int, struct superblock*);
@@ -78,30 +73,29 @@ int             piperead(struct pipe*, uint32, int);
 int             pipewrite(struct pipe*, uint32, int);
 
 // printf.c
-int            printf(char*, ...) __attribute__ ((format (printf, 1, 2)));
+int             printf(char*, ...) __attribute__ ((format (printf, 1, 2)));
 void            panic(char*) __attribute__((noreturn));
 void            printfinit(void);
 
 // proc.c
 int             cpuid(void);
-void            exit(int);
-int             fork(void);
+void            kexit(int);
+int             kfork(void);
 int             growproc(int);
 void            proc_mapstacks(pagetable_t);
 pagetable_t     proc_pagetable(struct proc *);
 void            proc_freepagetable(pagetable_t, uint32);
-int             kill(int);
+int             kkill(int);
 int             killed(struct proc*);
 void            setkilled(struct proc*);
 struct cpu*     mycpu(void);
-struct cpu*     getmycpu(void);
 struct proc*    myproc();
 void            procinit(void);
 void            scheduler(void) __attribute__((noreturn));
 void            sched(void);
 void            sleep(void*, struct spinlock*);
 void            userinit(void);
-int             wait(uint32);
+int             kwait(uint32);
 void            wakeup(void*);
 void            yield(void);
 int             either_copyout(int user_dst, uint32 dst, void *src, uint32 len);
@@ -147,12 +141,12 @@ extern uint     ticks;
 void            trapinit(void);
 void            trapinithart(void);
 extern struct spinlock tickslock;
-void            usertrapret(void);
+void            prepare_return(void);
 
 // uart.c
 void            uartinit(void);
 void            uartintr(void);
-void            uartputc(int);
+void            uartwrite(char [], int);
 void            uartputc_sync(int);
 int             uartgetc(void);
 
@@ -162,7 +156,6 @@ void            kvminithart(void);
 void            kvmmap(pagetable_t, uint32, uint32, uint32, int);
 int             mappages(pagetable_t, uint32, uint32, uint32, int);
 pagetable_t     uvmcreate(void);
-void            uvmfirst(pagetable_t, uchar *, uint);
 uint32          uvmalloc(pagetable_t, uint32, uint32, int);
 uint32          uvmdealloc(pagetable_t, uint32, uint32);
 int             uvmcopy(pagetable_t, pagetable_t, uint32);
@@ -174,6 +167,8 @@ uint32          walkaddr(pagetable_t, uint32);
 int             copyout(pagetable_t, uint32, char *, uint32);
 int             copyin(pagetable_t, char *, uint32, uint32);
 int             copyinstr(pagetable_t, char *, uint32, uint32);
+int             ismapped(pagetable_t, uint32);
+uint32          vmfault(pagetable_t, uint32, int);
 
 // plic.c
 void            plicinit(void);

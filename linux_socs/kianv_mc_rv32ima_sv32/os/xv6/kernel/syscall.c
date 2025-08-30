@@ -92,7 +92,7 @@ extern uint32 sys_chdir(void);
 extern uint32 sys_dup(void);
 extern uint32 sys_getpid(void);
 extern uint32 sys_sbrk(void);
-extern uint32 sys_sleep(void);
+extern uint32 sys_pause(void);
 extern uint32 sys_uptime(void);
 extern uint32 sys_open(void);
 extern uint32 sys_write(void);
@@ -101,7 +101,6 @@ extern uint32 sys_unlink(void);
 extern uint32 sys_link(void);
 extern uint32 sys_mkdir(void);
 extern uint32 sys_close(void);
-extern uint32 sys_freemem(void);
 
 // An array mapping syscall numbers from syscall.h
 // to the function that handles the system call.
@@ -118,7 +117,7 @@ static uint32 (*syscalls[])(void) = {
 [SYS_dup]     sys_dup,
 [SYS_getpid]  sys_getpid,
 [SYS_sbrk]    sys_sbrk,
-[SYS_sleep]   sys_sleep,
+[SYS_pause]   sys_pause,
 [SYS_uptime]  sys_uptime,
 [SYS_open]    sys_open,
 [SYS_write]   sys_write,
@@ -127,7 +126,6 @@ static uint32 (*syscalls[])(void) = {
 [SYS_link]    sys_link,
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
-[SYS_freemem]  sys_freemem,
 };
 
 void

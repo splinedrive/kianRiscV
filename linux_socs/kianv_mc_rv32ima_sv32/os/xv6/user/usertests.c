@@ -23,8 +23,8 @@ char buf[BUFSZ];
 
 //
 // Section with tests that run fairly quickly.  Use -q if you want to
-// run just those.  With -q usertests also runs the ones that take a
-// fair of time.
+// run just those.  Without -q usertests also runs the ones that take a
+// fair amount of time.
 //
 
 // what if you pass ridiculous pointers to system calls
@@ -32,11 +32,17 @@ char buf[BUFSZ];
 void
 copyin(char *s)
 {
-  uint32 addrs[] = { 0x80000000, 0xffffffff };
+  uint32 addrs[] = {
+    KERNBASE,               // kernel base / MAXVA on rv32
+    MAXVA - 2*PGSIZE,       // near top of user space
+    MAXVA - 1*PGSIZE,
+    MAXVA,                  // == KERNBASE on rv32
+    0xFFFFFFFFU             // clearly invalid
+  };
 
   for(int ai = 0; ai < sizeof(addrs)/sizeof(addrs[0]); ai++){
     uint32 addr = addrs[ai];
-    
+
     int fd = open("copyin1", O_CREATE|O_WRONLY);
     if(fd < 0){
       printf("open(copyin1) failed\n");
@@ -49,13 +55,13 @@ copyin(char *s)
     }
     close(fd);
     unlink("copyin1");
-    
+
     n = write(1, (char*)addr, 8192);
     if(n > 0){
       printf("write(1, %p, 8192) returned %d, not -1 or 0\n", (void*)addr, n);
       exit(1);
     }
-    
+
     int fds[2];
     if(pipe(fds) < 0){
       printf("pipe() failed\n");
@@ -76,7 +82,14 @@ copyin(char *s)
 void
 copyout(char *s)
 {
-  uint32 addrs[] = { 0x80000000, 0xffffffff };
+  uint32 addrs[] = {
+    0U,
+    KERNBASE,
+    MAXVA - 2*PGSIZE,
+    MAXVA - 1*PGSIZE,
+    MAXVA,
+    0xFFFFFFFFU
+  };
 
   for(int ai = 0; ai < sizeof(addrs)/sizeof(addrs[0]); ai++){
     uint32 addr = addrs[ai];
@@ -117,7 +130,13 @@ copyout(char *s)
 void
 copyinstr1(char *s)
 {
-  uint32 addrs[] = { 0x80000000, 0xffffffff };
+  uint32 addrs[] = {
+    KERNBASE,
+    MAXVA - 2*PGSIZE,
+    MAXVA - 1*PGSIZE,
+    MAXVA,
+    0xFFFFFFFFU
+  };
 
   for(int ai = 0; ai < sizeof(addrs)/sizeof(addrs[0]); ai++){
     uint32 addr = addrs[ai];
@@ -141,7 +160,7 @@ copyinstr2(char *s)
   for(int i = 0; i < MAXPATH; i++)
     b[i] = 'x';
   b[MAXPATH] = '\0';
-  
+
   int ret = unlink(b);
   if(ret != -1){
     printf("unlink(%s) returned %d, not -1\n", b, ret);
@@ -244,15 +263,15 @@ void
 rwsbrk(char *s)
 {
   int fd, n;
-  
+
   uint32 a = (uint32) sbrk(8192);
 
-  if(a == 0xffffffff) {
+  if(a == (uint32) SBRK_ERROR) {
     printf("sbrk(rwsbrk) failed\n");
     exit(1);
   }
-  
-  if ((uint32) sbrk(-8192) == 0xffffffff) {
+
+  if (sbrk(-8192) == SBRK_ERROR) {
     printf("sbrk(rwsbrk) shrink failed\n");
     exit(1);
   }
@@ -262,9 +281,9 @@ rwsbrk(char *s)
     printf("open(rwsbrk) failed\n");
     exit(1);
   }
-  n = write(fd, (void*)(a+4096), 1024);
+  n = write(fd, (void*)(a+PGSIZE), 1024);
   if(n >= 0){
-    printf("write(fd, %p, 1024) returned %d, not -1\n", (void*)a+4096, n);
+    printf("write(fd, %p, 1024) returned %d, not -1\n", (void*)(a+PGSIZE), n);
     exit(1);
   }
   close(fd);
@@ -272,16 +291,16 @@ rwsbrk(char *s)
 
   fd = open("README", O_RDONLY);
   if(fd < 0){
-    printf("open(rwsbrk) failed\n");
+    printf("open(README) failed\n");
     exit(1);
   }
-  n = read(fd, (void*)(a+4096), 10);
+  n = read(fd, (void*)(a+PGSIZE), 10);
   if(n >= 0){
-    printf("read(fd, %p, 10) returned %d, not -1\n", (void*)a+4096, n);
+    printf("read(fd, %p, 10) returned %d, not -1\n", (void*)(a+PGSIZE), n);
     exit(1);
   }
   close(fd);
-  
+
   exit(0);
 }
 
@@ -290,7 +309,7 @@ void
 truncate1(char *s)
 {
   char buf[32];
-  
+
   unlink("truncfile");
   int fd1 = open("truncfile", O_CREATE|O_WRONLY|O_TRUNC);
   write(fd1, "abcd", 4);
@@ -319,7 +338,7 @@ truncate1(char *s)
     printf("%s: read %d bytes, wanted 0\n", s, n);
     exit(1);
   }
-  
+
   write(fd1, "abcdef", 6);
 
   n = read(fd3, buf, sizeof(buf));
@@ -372,7 +391,7 @@ truncate3(char *s)
   int pid, xstatus;
 
   close(open("truncfile", O_CREATE|O_TRUNC|O_WRONLY));
-  
+
   pid = fork();
   if(pid < 0){
     printf("%s: fork failed\n", s);
@@ -418,7 +437,7 @@ truncate3(char *s)
   unlink("truncfile");
   exit(xstatus);
 }
-  
+
 
 // does chdir() call iput(p->cwd) in a transaction?
 void
@@ -505,7 +524,7 @@ openiputtest(char *s)
     }
     exit(0);
   }
-  sleep(1);
+  pause(1);
   if(unlink("oidir") != 0){
     printf("%s: unlink failed\n", s);
     exit(1);
@@ -540,7 +559,7 @@ writetest(char *s)
   int fd;
   int i;
   enum { N=100, SZ=10 };
-  
+
   fd = open("small", O_CREATE|O_RDWR);
   if(fd < 0){
     printf("%s: error: creat small failed!\n", s);
@@ -738,7 +757,7 @@ pipe1(char *s)
   int fds[2], pid, xstatus;
   int seq, i, n, cc, total;
   enum { N=5, SZ=1033 };
-  
+
   if(pipe(fds) != 0){
     printf("%s: pipe() failed\n", s);
     exit(1);
@@ -791,7 +810,7 @@ void
 killstatus(char *s)
 {
   int xst;
-  
+
   for(int i = 0; i < 100; i++){
     int pid1 = fork();
     if(pid1 < 0){
@@ -804,7 +823,7 @@ killstatus(char *s)
       }
       exit(0);
     }
-    sleep(1);
+    pause(1);
     kill(pid1);
     wait(&xst);
     if(xst != -1) {
@@ -962,7 +981,7 @@ void
 forkfork(char *s)
 {
   enum { N=2 };
-  
+
   for(int i = 0; i < N; i++){
     int pid = fork();
     if(pid < 0){
@@ -1018,10 +1037,10 @@ forkforkfork(char *s)
     exit(0);
   }
 
-  sleep(20); // two seconds
+  pause(20); // two seconds
   close(open("stopforking", O_CREATE|O_RDWR));
   wait(0);
-  sleep(10); // one second
+  pause(10); // one second
 }
 
 // regression test. does reparent() violate the parent-then-child
@@ -1119,7 +1138,7 @@ sharedfd(char *s)
     if(xstatus != 0)
       exit(xstatus);
   }
-  
+
   close(fd);
   fd = open("sharedfd", 0);
   if(fd < 0){
@@ -1154,7 +1173,7 @@ fourfiles(char *s)
   char *names[] = { "f0", "f1", "f2", "f3" };
   char *fname;
   enum { N=12, NCHILD=4, SZ=500 };
-  
+
   for(pi = 0; pi < NCHILD; pi++){
     fname = names[pi];
     unlink(fname);
@@ -2008,15 +2027,15 @@ sbrkbasic(char *s)
   }
   if(pid == 0){
     a = sbrk(TOOMUCH);
-    if(a == (char*)0x0ffffffff){
+    if(a == (char*)SBRK_ERROR){
       // it's OK if this fails.
       exit(0);
     }
-    
-    for(b = a; b < a+TOOMUCH; b += 4096){
+
+    for(b = a; b < a+TOOMUCH; b += PGSIZE){
       *b = 99;
     }
-    
+
     // we should not get here! either sbrk(TOOMUCH)
     // should have failed, or (with lazy allocation)
     // a pagefault should have killed this process.
@@ -2075,18 +2094,13 @@ sbrkmuch(char *s)
     exit(1);
   }
 
-  // touch each page to make sure it exists.
-  char *eee = sbrk(0);
-  for(char *pp = a; pp < eee; pp += 4096)
-    *pp = 1;
-
   lastaddr = (char*) (BIG-1);
   *lastaddr = 99;
 
   // can one de-allocate?
   a = sbrk(0);
   c = sbrk(-PGSIZE);
-  if(c == (char*)0xffffffff){
+  if(c == (char*)SBRK_ERROR){
     printf("%s: sbrk could not deallocate\n", s);
     exit(1);
   }
@@ -2177,7 +2191,9 @@ sbrkfail(char *s)
   char *c, *a;
   int pids[10];
   int pid;
- 
+  int failed;
+
+  failed = 0;
   if(pipe(fds) != 0){
     printf("%s: pipe() failed\n", s);
     exit(1);
@@ -2185,13 +2201,21 @@ sbrkfail(char *s)
   for(i = 0; i < sizeof(pids)/sizeof(pids[0]); i++){
     if((pids[i] = fork()) == 0){
       // allocate a lot of memory
-      sbrk(BIG - (uint32)sbrk(0));
-      write(fds[1], "x", 1);
+      if (sbrk(BIG - (uint32)sbrk(0)) ==  (char*)SBRK_ERROR)
+        write(fds[1], "0", 1);
+      else
+        write(fds[1], "1", 1);
       // sit around until killed
-      for(;;) sleep(1000);
+      for(;;) pause(1000);
     }
-    if(pids[i] != -1)
+    if(pids[i] != -1) {
       read(fds[0], &scratch, 1);
+      if(scratch == '0')
+        failed = 1;
+    }
+  }
+  if(!failed) {
+    printf("%s: no allocation failed; allocate more?\n", s);
   }
 
   // if those failed allocations freed up the pages they did allocate,
@@ -2203,38 +2227,32 @@ sbrkfail(char *s)
     kill(pids[i]);
     wait(0);
   }
-  if(c == (char*)0xffffffff){
+  if(c == (char*)SBRK_ERROR){
     printf("%s: failed sbrk leaked memory\n", s);
     exit(1);
   }
 
-  // test running fork with the above allocated page 
+  // test running fork with the above allocated page
   pid = fork();
   if(pid < 0){
     printf("%s: fork failed\n", s);
     exit(1);
   }
   if(pid == 0){
-    // allocate a lot of memory.
-    // this should produce a page fault,
-    // and thus not complete.
-    a = sbrk(0);
-    sbrk(10*BIG);
-    int n = 0;
-    for (i = 0; i < 10*BIG; i += PGSIZE) {
-      n += *(a+i);
+    // allocate a lot of memory. this should produce an error
+    a = sbrk(10*BIG);
+    if(a == (char*)SBRK_ERROR){
+      exit(0);
     }
-    // print n so the compiler doesn't optimize away
-    // the for loop.
-    printf("%s: allocate a lot of memory succeeded %d\n", s, n);
+    printf("%s: allocate a lot of memory succeeded %d\n", s, 10*BIG);
     exit(1);
   }
   wait(&xstatus);
-  if(xstatus != -1 && xstatus != 2)
+  if(xstatus != 0)
     exit(1);
 }
 
-  
+
 // test reads/writes from/to allocated memory
 void
 sbrkarg(char *s)
@@ -2260,7 +2278,7 @@ sbrkarg(char *s)
   if(pipe((int *) a) != 0){
     printf("%s: pipe() failed\n", s);
     exit(1);
-  } 
+  }
 }
 
 void
@@ -2270,7 +2288,7 @@ validatetest(char *s)
   uint32 p;
 
   hi = 1100*1024;
-  for(p = 0; p <= (uint)hi; p += PGSIZE){
+  for(p = 0; p <= (uint32)hi; p += PGSIZE){
     // try to crash the kernel by passing in a bad string pointer
     if(link("nosuchfile", (char*)p) != -1){
       printf("%s: link should not succeed\n", s);
@@ -2284,9 +2302,7 @@ char uninit[10000];
 void
 bsstest(char *s)
 {
-  int i;
-
-  for(i = 0; i < sizeof(uninit); i++){
+  for(int i = 0; i < sizeof(uninit); i++){
     if(uninit[i] != '\0'){
       printf("%s: bss test failed\n", s);
       exit(1);
@@ -2323,7 +2339,7 @@ bigargtest(char *s)
     printf("%s: bigargtest: fork failed\n", s);
     exit(1);
   }
-  
+
   wait(&xstatus);
   if(xstatus != 0)
     exit(xstatus);
@@ -2407,7 +2423,7 @@ stacktest(char *s)
 {
   int pid;
   int xstatus;
-  
+
   pid = fork();
   if(pid == 0) {
     char *sp = (char *) r_sp();
@@ -2433,8 +2449,15 @@ nowrite(char *s)
 {
   int pid;
   int xstatus;
-  uint32 addrs[] = { 0x80000000, 0xffffffff };
-  
+  uint32 addrs[] = {
+    0U,
+    KERNBASE,
+    MAXVA - 2*PGSIZE,
+    MAXVA - 1*PGSIZE,
+    KERNBASE + PGSIZE,
+    0xFFFFFFFFU
+  };
+
   for(int ai = 0; ai < sizeof(addrs)/sizeof(addrs[0]); ai++){
     pid = fork();
     if(pid == 0) {
@@ -2458,7 +2481,7 @@ nowrite(char *s)
 // regression test. copyin(), copyout(), and copyinstr() used to cast
 // the virtual page address to uint, which (with certain wild system
 // call arguments) resulted in a kernel page faults.
-void *big = (void*) 0xeaeb0b5b00002f5e;
+void *big = (void*) 0xF00F00F0U;
 void
 pgbug(char *s)
 {
@@ -2514,7 +2537,7 @@ sbrkbugs(char *s)
   }
   if(pid == 0){
     // set the break in the middle of a page.
-    sbrk((10*4096 + 2048) - (uint32)sbrk(0));
+    sbrk((10*PGSIZE + 2048) - (uint32)sbrk(0));
 
     // reduce the break a bit, but not enough to
     // cause a page to be freed. this used to cause
@@ -2535,9 +2558,9 @@ void
 sbrklast(char *s)
 {
   uint32 top = (uint32) sbrk(0);
-  if((top % 4096) != 0)
-    sbrk(4096 - (top % 4096));
-  sbrk(4096);
+  if((top % PGSIZE) != 0)
+    sbrk(PGSIZE - (top % PGSIZE));
+  sbrk(PGSIZE);
   sbrk(10);
   sbrk(-20);
   top = (uint32) sbrk(0);
@@ -2560,7 +2583,7 @@ sbrklast(char *s)
 void
 sbrk8000(char *s)
 {
-  sbrk(0x80000004);
+  sbrk((int)0x80000004U);
   volatile char *top = sbrk(0);
   *(top-1) = *(top-1) + 1;
 }
@@ -2574,11 +2597,124 @@ badarg(char *s)
 {
   for(int i = 0; i < 50000; i++){
     char *argv[2];
-    argv[0] = (char*)0xffffffff;
+    argv[0] = (char*)0xFFFFFFFFU;
     argv[1] = 0;
     exec("echo", argv);
   }
-  
+
+  exit(0);
+}
+
+#define REGION_SZ (6 * 1024 * 1024)
+
+// Touch a page every 64 pages, which with lazy allocation
+// causes one page to be allocated.
+void
+lazy_alloc(char *s)
+{
+  char *i, *prev_end, *new_end;
+
+  prev_end = sbrklazy(REGION_SZ);
+  if (prev_end == (char *) SBRK_ERROR) {
+    printf("sbrklazy() failed\n");
+    exit(1);
+  }
+  new_end = prev_end + REGION_SZ;
+
+  for (i = prev_end + PGSIZE; i < new_end; i += 64 * PGSIZE)
+    *(char **)i = i;
+
+  for (i = prev_end + PGSIZE; i < new_end; i += 64 * PGSIZE) {
+    if (*(char **)i != i) {
+      printf("failed to read value from memory\n");
+      exit(1);
+    }
+  }
+
+  exit(0);
+}
+
+// Touch a page every 64 pages in region, which with lazy allocation
+// causes one page to be allocated. Check that freeing the region
+// frees the allocated pages.
+void
+lazy_unmap(char *s)
+{
+  int pid;
+  char *i, *prev_end, *new_end;
+
+  prev_end = sbrklazy(REGION_SZ);
+  if (prev_end == (char*)SBRK_ERROR) {
+    printf("sbrklazy() failed\n");
+    exit(1);
+  }
+  new_end = prev_end + REGION_SZ;
+
+  for (i = prev_end + PGSIZE; i < new_end; i += PGSIZE * PGSIZE)
+    *(char **)i = i;
+
+  for (i = prev_end + PGSIZE; i < new_end; i += PGSIZE * PGSIZE) {
+    pid = fork();
+    if (pid < 0) {
+      printf("error forking\n");
+      exit(1);
+    } else if (pid == 0) {
+      sbrklazy(-(int)REGION_SZ);
+      *(char **)i = i;
+      exit(0);
+    } else {
+      int status;
+      wait(&status);
+      if (status == 0) {
+        printf("memory not unmapped\n");
+        exit(1);
+      }
+    }
+  }
+
+  exit(0);
+}
+
+void
+lazy_copy(char *s)
+{
+  // copyinstr on lazy page
+  {
+    char *p = sbrk(0);
+    sbrklazy(4*PGSIZE);
+    open(p + 8192, 0);
+  }
+
+  {
+    void *xx = sbrk(0);
+    void *ret = sbrk(-((int)(uint32)xx + 1));
+    if(ret != xx){
+      printf("sbrk(sbrk(0)+1) returned %p, not old sz\n", ret);
+      exit(1);
+    }
+  }
+
+
+  // read() and write() to these addresses should fail.
+  uint32 bad[] = {
+    MAXVA - 4*PGSIZE,
+    MAXVA - 3*PGSIZE,
+    MAXVA - 2*PGSIZE,
+    MAXVA - 1*PGSIZE,
+    KERNBASE,
+    0xFFFFFFFFU,
+  };
+  for(int i = 0; i < sizeof(bad)/sizeof(bad[0]); i++){
+    int fd = open("README", 0);
+    if(fd < 0) { printf("cannot open README\n"); exit(1); }
+    if(read(fd, (char*)bad[i], 512) >= 0) { printf("read succeeded\n");  exit(1); }
+    close(fd);
+    fd = open("junk", O_CREATE|O_RDWR|O_TRUNC);
+    if(fd < 0) { printf("cannot open junk\n"); exit(1); }
+    if(write(fd, (char*)bad[i], 512) >= 0) { printf("write succeeded\n"); exit(1); }
+    close(fd);
+  }
+
   exit(0);
 }
 
@@ -2646,7 +2782,9 @@ struct test {
   {sbrklast, "sbrklast"},
   {sbrk8000, "sbrk8000"},
   {badarg, "badarg" },
-
+  {lazy_alloc, "lazy_alloc"},
+  {lazy_unmap, "lazy_unmap"},
+  {lazy_copy, "lazy_copy"},
   { 0, 0},
 };
 
@@ -2702,7 +2840,7 @@ manywrites(char *s)
 {
   int nchildren = 4;
   int howmany = 30; // increase to look for deadlock
-  
+
   for(int ci = 0; ci < nchildren; ci++){
     int pid = fork();
     if(pid < 0){
@@ -2716,7 +2854,7 @@ manywrites(char *s)
       name[1] = 'a' + ci;
       name[2] = '\0';
       unlink(name);
-      
+
       for(int iters = 0; iters < howmany; iters++){
         for(int i = 0; i < ci+1; i++){
           int fd = open(name, O_CREATE | O_RDWR);
@@ -2758,7 +2896,7 @@ void
 badwrite(char *s)
 {
   int assumed_free = 600;
-  
+
   unlink("junk");
   for(int i = 0; i < assumed_free; i++){
     int fd = open("junk", O_CREATE|O_WRONLY);
@@ -2766,7 +2904,7 @@ badwrite(char *s)
       printf("open junk failed\n");
       exit(1);
     }
-    write(fd, (char*)0xffffffff, 1);
+    write(fd, (char*)0xFFFFFFFFU, 1);
     close(fd);
     unlink("junk");
   }
@@ -2800,17 +2938,17 @@ execout(char *s)
     } else if(pid == 0){
       // allocate all of memory.
       while(1){
-        uint32 a = (uint32) sbrk(4096);
-        if(a == 0xffffffff)
+        char *a = sbrk(PGSIZE);
+        if(a == SBRK_ERROR)
           break;
-        *(char*)(a + 4096 - 1) = 1;
+        *(a + PGSIZE - 1) = 1;
       }
 
       // free a few pages, in order to let exec() make some
       // progress.
       for(int i = 0; i < avail; i++)
-        sbrk(-4096);
-      
+        sbrk(-PGSIZE);
+
       close(1);
       char *args[] = { "echo", "x", 0 };
       exec("echo", args);
@@ -2831,7 +2969,7 @@ diskfull(char *s)
   int done = 0;
 
   unlink("diskfulldir");
-  
+
   for(fi = 0; done == 0 && '0' + fi < 0177; fi++){
     char name[32];
     name[0] = 'b';
@@ -2942,7 +3080,7 @@ struct test slowtests[] = {
   {execout, "execout"},
   {diskfull, "diskfull"},
   {outofinodes, "outofinodes"},
-    
+
   { 0, 0},
 };
 
@@ -2967,7 +3105,7 @@ run(void f(char *), char *s) {
     exit(0);
   } else {
     wait(&xstatus);
-    if(xstatus != 0) 
+    if(xstatus != 0)
       printf("FAILED\n");
     else
       printf("OK\n");
@@ -2977,83 +3115,36 @@ run(void f(char *), char *s) {
 
 int
 runtests(struct test *tests, char *justone, int continuous) {
+  int ntests = 0;
   for (struct test *t = tests; t->s != 0; t++) {
     if((justone == 0) || strcmp(t->s, justone) == 0) {
+      ntests++;
       if(!run(t->f, t->s)){
         if(continuous != 2){
           printf("SOME TESTS FAILED\n");
-          return 1;
+          return -1;
         }
       }
     }
   }
-  return 0;
+  return ntests;
 }
 
 
-//
 // use sbrk() to count how many free physical memory pages there are.
-// touches the pages to force allocation.
-// because out of memory with lazy allocation results in the process
-// taking a fault and being killed, fork and report back.
-//
 int
 countfree()
 {
-  int fds[2];
-
-  if(pipe(fds) < 0){
-    printf("pipe() failed in countfree()\n");
-    exit(1);
-  }
-  
-  int pid = fork();
-
-  if(pid < 0){
-    printf("fork failed in countfree()\n");
-    exit(1);
-  }
-
-  if(pid == 0){
-    close(fds[0]);
-    
-    while(1){
-      uint32 a = (uint32) sbrk(4096);
-      if(a == 0xffffffff){
-        break;
-      }
-
-      // modify the memory to make sure it's really allocated.
-      *(char *)(a + 4096 - 1) = 1;
-
-      // report back one more page.
-      if(write(fds[1], "x", 1) != 1){
-        printf("write() failed in countfree()\n");
-        exit(1);
-      }
-    }
-
-    exit(0);
-  }
-
-  close(fds[1]);
-
   int n = 0;
+  uint32 sz0 = (uint32)sbrk(0);
   while(1){
-    char c;
-    int cc = read(fds[0], &c, 1);
-    if(cc < 0){
-      printf("read() failed in countfree()\n");
-      exit(1);
-    }
-    if(cc == 0)
+    char *a = sbrk(PGSIZE);
+    if(a == SBRK_ERROR){
       break;
+    }
     n += 1;
   }
-
-  close(fds[0]);
-  wait((int*)0);
-  
+  sbrk(-((int)((uint32)sbrk(0) - sz0)));
   return n;
 }
 
@@ -3063,18 +3154,26 @@ drivetests(int quick, int continuous, char *justone) {
     printf("usertests starting\n");
     int free0 = countfree();
     int free1 = 0;
-    if (runtests(quicktests, justone, continuous)) {
+    int ntests = 0;
+    int n;
+    n = runtests(quicktests, justone, continuous);
+    if (n < 0) {
       if(continuous != 2) {
         return 1;
       }
+    } else {
+      ntests += n;
     }
     if(!quick) {
       if (justone == 0)
         printf("usertests slow tests starting\n");
-      if (runtests(slowtests, justone, continuous)) {
+      n = runtests(slowtests, justone, continuous);
+      if (n < 0) {
         if(continuous != 2) {
           return 1;
         }
+      } else {
+        ntests += n;
       }
     }
     if((free1 = countfree()) < free0) {
@@ -3082,6 +3181,10 @@ drivetests(int quick, int continuous, char *justone) {
       if(continuous != 2) {
         return 1;
       }
+    }
+    if (justone != 0 && ntests == 0) {
+      printf("NO TESTS EXECUTED\n");
+      return 1;
     }
   } while(continuous);
   return 0;
@@ -3112,3 +3215,4 @@ main(int argc, char *argv[])
   printf("ALL TESTS PASSED\n");
   exit(0);
 }
+

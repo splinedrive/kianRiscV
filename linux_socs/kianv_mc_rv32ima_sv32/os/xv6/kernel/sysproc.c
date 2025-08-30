@@ -5,13 +5,14 @@
 #include "memlayout.h"
 #include "spinlock.h"
 #include "proc.h"
+#include "vm.h"
 
 uint32
 sys_exit(void)
 {
   int n;
   argint(0, &n);
-  exit(n);
+  kexit(n);
   return 0;  // not reached
 }
 
@@ -24,7 +25,7 @@ sys_getpid(void)
 uint32
 sys_fork(void)
 {
-  return fork();
+  return kfork();
 }
 
 uint32
@@ -32,24 +33,37 @@ sys_wait(void)
 {
   uint32 p;
   argaddr(0, &p);
-  return wait(p);
+  return kwait(p);
 }
 
 uint32
 sys_sbrk(void)
 {
   uint32 addr;
+  int t;
   int n;
 
   argint(0, &n);
+  argint(1, &t);
   addr = myproc()->sz;
-  if(growproc(n) < 0)
-    return -1;
+
+  if(t == SBRK_EAGER || n < 0) {
+    if(growproc(n) < 0) {
+      return -1;
+    }
+  } else {
+    // Lazily allocate memory for this process: increase its memory
+    // size but don't allocate memory. If the processes uses the
+    // memory, vmfault() will allocate it.
+    if(addr + n < addr)
+      return -1;
+    myproc()->sz += n;
+  }
   return addr;
 }
 
 uint32
-sys_sleep(void)
+sys_pause(void)
 {
   int n;
   uint ticks0;
@@ -76,7 +90,7 @@ sys_kill(void)
   int pid;
 
   argint(0, &pid);
-  return kill(pid);
+  return kkill(pid);
 }
 
 // return how many clock tick interrupts have occurred
@@ -90,11 +104,4 @@ sys_uptime(void)
   xticks = ticks;
   release(&tickslock);
   return xticks;
-}
-
-// return number of free memory pages
-uint32
-sys_freemem(void)
-{
-  return ksys_freemem();
 }

@@ -9,7 +9,7 @@
 struct spinlock tickslock;
 uint ticks;
 
-extern char trampoline[], uservec[], userret[];
+extern char trampoline[], uservec[];
 
 // in kernelvec.S, calls kerneltrap().
 void kernelvec();
@@ -31,9 +31,10 @@ trapinithart(void)
 
 //
 // handle an interrupt, exception, or system call from user space.
-// called from trampoline.S
+// called from, and returns to, trampoline.S
+// return value is user satp for trampoline.S to switch to.
 //
-void
+uint32
 usertrap(void)
 {
   int which_dev = 0;
@@ -46,15 +47,15 @@ usertrap(void)
   w_stvec((uint32)kernelvec);
 
   struct proc *p = myproc();
-
+  
   // save user program counter.
   p->trapframe->epc = r_sepc();
-
+  
   if(r_scause() == 8){
     // system call
 
     if(killed(p))
-      exit(-1);
+      kexit(-1);
 
     // sepc points to the ecall instruction,
     // but we want to return to the next instruction.
@@ -67,6 +68,9 @@ usertrap(void)
     syscall();
   } else if((which_dev = devintr()) != 0){
     // ok
+  } else if((r_scause() == 15 || r_scause() == 13) &&
+            vmfault(p->pagetable, r_stval(), (r_scause() == 13)? 1 : 0) != 0) {
+    // page fault on lazily-allocated page
   } else {
     printf("usertrap(): unexpected scause 0x%x pid=%d\n", r_scause(), p->pid);
     printf("            sepc=0x%x stval=0x%x\n", r_sepc(), r_stval());
@@ -74,26 +78,32 @@ usertrap(void)
   }
 
   if(killed(p))
-    exit(-1);
+    kexit(-1);
 
   // give up the CPU if this is a timer interrupt.
   if(which_dev == 2)
     yield();
 
-  usertrapret();
+  prepare_return();
+
+  // the user page table to switch to, for trampoline.S
+  uint32 satp = MAKE_SATP(p->pagetable);
+
+  // return to trampoline.S; satp value in a0.
+  return satp;
 }
 
 //
-// return to user space
+// set up trapframe and control registers for a return to user space
 //
 void
-usertrapret(void)
+prepare_return(void)
 {
   struct proc *p = myproc();
 
   // we're about to switch the destination of traps from
-  // kerneltrap() to usertrap(), so turn off interrupts until
-  // we're back in user space, where usertrap() is correct.
+  // kerneltrap() to usertrap(). because a trap from kernel
+  // code to usertrap would be a disaster, turn off interrupts.
   intr_off();
 
   // send syscalls, interrupts, and exceptions to uservec in trampoline.S
@@ -109,36 +119,27 @@ usertrapret(void)
 
   // set up the registers that trampoline.S's sret will use
   // to get to user space.
-
+  
   // set S Previous Privilege mode to User.
-  uint32 x = r_sstatus();
+  unsigned long x = r_sstatus();
   x &= ~SSTATUS_SPP; // clear SPP to 0 for user mode
   x |= SSTATUS_SPIE; // enable interrupts in user mode
   w_sstatus(x);
 
   // set S Exception Program Counter to the saved user pc.
   w_sepc(p->trapframe->epc);
-
-  // tell trampoline.S the user page table to switch to.
-  uint32 satp = MAKE_SATP(p->pagetable);
-
-  // jump to userret in trampoline.S at the top of memory, which
-  // switches to the user page table, restores user registers,
-  // and switches to user mode with sret.
-  uint32 trampoline_userret = TRAMPOLINE + (userret - trampoline);
-  ((void (*)(uint32))trampoline_userret)(satp);
 }
 
 // interrupts and exceptions from kernel code go here via kernelvec,
 // on whatever the current kernel stack is.
-void
+void 
 kerneltrap()
 {
   int which_dev = 0;
   uint32 sepc = r_sepc();
   uint32 sstatus = r_sstatus();
   uint32 scause = r_scause();
-
+  
   if((sstatus & SSTATUS_SPP) == 0)
     panic("kerneltrap: not from supervisor mode");
   if(intr_get() != 0)
@@ -186,9 +187,7 @@ int
 devintr()
 {
   uint32 scause = r_scause();
-  if((scause & 0x80000000L) &&
-     (scause & 0xff) == 9){
-    // c
+  if((scause == 0x80000009u)) {
     // this is a supLervisor external interrupt, via PLIC.
 
     // irq indicates which device interrupted.
@@ -207,7 +206,7 @@ devintr()
       plic_complete(irq);
 
     return 1;
-  } else if(scause == 0x80000005L) {
+  } else if(scause == 0x80000005u) {
     // timer interrupt.
     clockintr();
     return 2;

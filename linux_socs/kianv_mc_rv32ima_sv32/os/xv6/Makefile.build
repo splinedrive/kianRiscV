@@ -1,76 +1,133 @@
-# Toolchain and Paths
-TOOLCHAIN_DIR := ./riscv32ima-sv32-toolchain
-TOOLPREFIX    := $(TOOLCHAIN_DIR)/bin/riscv32-unknown-elf-
-CC            := $(TOOLPREFIX)gcc
-OBJCOPY       := $(TOOLPREFIX)objcopy
+# Makefile.build — robust rv32 toolchain bootstrap + xv6 build
 
-# Files
-KERNEL_BIN    := kernel/kernel
-XV6_BIN       := xv6.bin
-RLE_ENCODER   := rle_encoder
-RLE_KERNEL    := xv6.rle
-FS_IMG        := fs.img
+SHELL := /bin/bash
 
-# Device (to be passed during make burn)
-DEVICE ?=
+# ---------- helpers ----------
+trim = $(strip $(1))
+join = $(strip $(1)$(2))
 
-# Build Targets
-.PHONY: all build_toolchain kernel compress burn clean help
+# ---------- toolchain layout ----------
+RAW_TOOLCHAIN_DIR := ./riscv32ima-sv32-toolchain
+TOOLCHAIN_DIR := $(call trim,$(abspath $(RAW_TOOLCHAIN_DIR)))
+TOOLPREFIX_EXPECTED := $(call join,$(TOOLCHAIN_DIR)/bin/,riscv32-unknown-elf-)
 
-# Default Target
-all: build_toolchain kernel compress
+# START with env CROSS_COMPILE if provided
+CROSS_COMPILE := $(call trim,$(CROSS_COMPILE))
 
-# Build Toolchain
+# If not set, try local prefix, then PATH options, else fallback to expected
+ifeq ($(CROSS_COMPILE),)
+  ifneq ($(wildcard $(TOOLPREFIX_EXPECTED)gcc),)
+    CROSS_COMPILE := $(TOOLPREFIX_EXPECTED)
+  else ifneq ($(shell command -v riscv32-unknown-elf-gcc >/dev/null 2>&1 && echo yes),)
+    CROSS_COMPILE := riscv32-unknown-elf-
+  else ifneq ($(shell command -v riscv64-unknown-elf-gcc >/dev/null 2>&1 && echo yes),)
+    CROSS_COMPILE := riscv64-unknown-elf-
+  else ifneq ($(shell command -v riscv32-buildroot-linux-gnu-gcc >/dev/null 2>&1 && echo yes),)
+    CROSS_COMPILE := riscv32-buildroot-linux-gnu-
+  else ifneq ($(shell command -v riscv32-unknown-linux-gnu-gcc >/dev/null 2>&1 && echo yes),)
+    CROSS_COMPILE := riscv32-unknown-linux-gnu-
+  else
+    CROSS_COMPILE := $(TOOLPREFIX_EXPECTED)
+  endif
+endif
+
+# Export knobs some xv6 makefiles look for
+export RISCV := $(TOOLCHAIN_DIR)
+export CROSS_COMPILE := $(CROSS_COMPILE)
+
+# Cross tools (sanitized)
+CC       := $(call trim,$(CROSS_COMPILE))gcc
+AS       := $(call trim,$(CROSS_COMPILE))gcc
+LD       := $(call trim,$(CROSS_COMPILE))ld
+AR       := $(call trim,$(CROSS_COMPILE))ar
+OBJCOPY  := $(call trim,$(CROSS_COMPILE))objcopy
+OBJDUMP  := $(call trim,$(CROSS_COMPILE))objdump
+STRIP    := $(call trim,$(CROSS_COMPILE))strip
+
+# Host compiler for utilities
+HOSTCC ?= gcc
+
+# ---------- files ----------
+KERNEL_BIN  := kernel/kernel
+XV6_BIN     := xv6.bin
+RLE_ENCODER := rle_encoder
+RLE_KERNEL  := xv6.rle
+FS_IMG      := fs.img
+DEVICE      ?=
+
+# Pass all knobs kernel Makefile might honor
+KERNEL_MAKEFLAGS := \
+  ARCH=riscv \
+  RISCV="$(RISCV)" \
+  CROSS_COMPILE="$(CROSS_COMPILE)" \
+  TOOLPREFIX="$(CROSS_COMPILE)" \
+  CC="$(CC)" AS="$(AS)" LD="$(LD)" AR="$(AR)" \
+  OBJCOPY="$(OBJCOPY)" OBJDUMP="$(OBJDUMP)" STRIP="$(STRIP)"
+
+.PHONY: all build_toolchain check_toolchain kernel compress burn clean help show-toolchain show-kernel-cmd
+
+# ---------- default ----------
+all: build_toolchain check_toolchain kernel compress
+
+# ---------- toolchain bootstrap (clean env) ----------
 build_toolchain:
-	make -f Makefile.toolchain
+	@echo "[toolchain] ensuring rv32 cross toolchain is available at '$(TOOLCHAIN_DIR)'..."
+	@if [ ! -x "$(TOOLCHAIN_DIR)/bin/riscv32-unknown-elf-gcc" ]; then \
+	  echo "[toolchain] not found → invoking Makefile.toolchain"; \
+	  env -u CC -u CXX -u AR -u AS -u LD -u OBJCOPY -u OBJDUMP -u STRIP -u RANLIB -u CROSS_COMPILE -u RISCV \
+	    $(MAKE) -f Makefile.toolchain PREFIX="$(TOOLCHAIN_DIR)" all; \
+	else \
+	  echo "[toolchain] found: $(TOOLCHAIN_DIR)/bin/riscv32-unknown-elf-gcc"; \
+	fi
 
-# Clean and Build the Kernel and Filesystem
+# Verify by absolute path (if prefix is a path) OR by PATH
+check_toolchain:
+	@if [[ "$(CROSS_COMPILE)" == /* ]]; then \
+	  test -x "$(CC)" || { echo "ERROR: cross compiler not found at $(CC)"; exit 1; }; \
+	else \
+	  command -v "$(CC)" >/dev/null 2>&1 || { echo "ERROR: cross compiler '$(CC)' not in PATH"; exit 1; }; \
+	fi
+	@$(CC) --version >/dev/null 2>&1 || { echo "ERROR: failed to execute $(CC)"; exit 1; }
+
+show-toolchain:
+	@echo "RISCV         = '$(RISCV)'"
+	@echo "CROSS_COMPILE = '$(CROSS_COMPILE)'"
+	@echo "CC            = '$(CC)'"
+	@echo "OBJCOPY       = '$(OBJCOPY)'"
+
+show-kernel-cmd:
+	@$(MAKE) -n -f Makefile $(KERNEL_MAKEFLAGS) kernel/entry.o | head -1
+
+# ---------- build kernel & fs ----------
 kernel:
-	make clean
-	make
-	make $(FS_IMG)
+	$(MAKE) -f Makefile $(KERNEL_MAKEFLAGS) clean
+	$(MAKE) -f Makefile $(KERNEL_MAKEFLAGS)
+	$(MAKE) -f Makefile $(KERNEL_MAKEFLAGS) $(FS_IMG)
 
-# Compress the Kernel
+# ---------- compress kernel ----------
 compress: $(RLE_KERNEL)
 
 $(RLE_KERNEL): $(KERNEL_BIN)
 	$(OBJCOPY) -O binary $(KERNEL_BIN) $(XV6_BIN)
-	gcc ./rle_encoder.c -o $(RLE_ENCODER)
+	$(HOSTCC) ./rle_encoder.c -o $(RLE_ENCODER)
 	./$(RLE_ENCODER) $(XV6_BIN) $(RLE_KERNEL)
 
-# Burn the Images to a Device
+# ---------- burn ----------
 burn: all
-	@if [ -z "$(DEVICE)" ]; then \
-		echo "Error: DEVICE is not specified. Usage: make burn DEVICE=/dev/sdX"; \
-		exit 1; \
-	fi
-	@if [ ! -b "$(DEVICE)" ]; then \
-		echo "Error: Device $(DEVICE) not found!"; \
-		exit 1; \
-	fi
+	@if [ -z "$(DEVICE)" ]; then echo "Error: DEVICE is not specified. Usage: make burn DEVICE=/dev/sdX"; exit 1; fi
+	@if [ ! -b "$(DEVICE)" ]; then echo "Error: Device $(DEVICE) not found!"; exit 1; fi
 	@echo "Using device: $(DEVICE)"
-	@echo "Zeroing out the device..."
-	sudo dd if=/dev/zero of="$(DEVICE)" bs=512 seek=$((1024*1024/512)) count=$((12*1024*1024/512)) status=progress
-	@echo "Burning filesystem image..."
-	sudo dd if=$(FS_IMG) of="$(DEVICE)" bs=512 seek=$((1024*1024*2/512)) conv=sync status=progress
-	@echo "Burning compressed kernel image..."
-	sudo dd if=$(RLE_KERNEL) of="$(DEVICE)" bs=512 seek=$((1024*1024/512)) conv=sync status=progress
-	@echo "All operations completed successfully on $(DEVICE)."
+	sudo dd if=/dev/zero     of="$(DEVICE)" bs=512 seek=$$((1024*1024/512))     count=$$((12*1024*1024/512)) status=progress
+	sudo dd if=$(FS_IMG)     of="$(DEVICE)" bs=512 seek=$$((1024*1024*2/512))   conv=sync status=progress
+	sudo dd if=$(RLE_KERNEL) of="$(DEVICE)" bs=512 seek=$$((1024*1024/512))     conv=sync status=progress
+	@echo "Done."
 
-# Clean Build Artifacts
+# ---------- clean ----------
 clean:
 	rm -f $(FS_IMG) $(XV6_BIN) $(RLE_KERNEL) $(RLE_ENCODER)
-	make -f Makefile.toolchain clean
+	-$(MAKE) -f Makefile $(KERNEL_MAKEFLAGS) clean || true
+	-$(MAKE) -f Makefile.toolchain clean || true
 
-# Help
 help:
-	@echo "Makefile targets:"
-	@echo "  all          - Build toolchain, kernel, and compress the kernel."
-	@echo "  build_toolchain - Build the RISC-V toolchain."
-	@echo "  kernel       - Clean and build the kernel and filesystem."
-	@echo "  compress     - Compress the kernel using RLE."
-	@echo "  burn         - Write the filesystem and kernel to the specified device."
-	@echo "                 Usage: make burn DEVICE=/dev/sdX"
-	@echo "  clean        - Remove build artifacts."
-	@echo "  help         - Display this help message."
+	@echo "Targets: all | kernel | compress | burn DEVICE=/dev/sdX | clean | show-toolchain | show-kernel-cmd"
 

@@ -6,7 +6,7 @@
         # at the same virtual address (TRAMPOLINE)
         # in user and kernel space so that it continues
         # to work when it switches page tables.
-        # kernel.ld causes this code to start at
+        # kernel.ld causes this code to start at 
         # a page boundary.
         #
 
@@ -15,10 +15,11 @@
 
 .section trampsec
 .globl trampoline
+.globl usertrap
 trampoline:
 .align 4
 .globl uservec
-uservec:
+uservec:    
 	#
         # trap.c sets stvec to point here, so
         # traps from user space start here,
@@ -34,7 +35,7 @@ uservec:
         # but it's mapped to the same virtual address
         # (TRAPFRAME) in every process's user page table.
         li a0, TRAPFRAME
-
+        
         # save the user registers in TRAPFRAME
         sw ra, 20(a0)
         sw sp, 24(a0)
@@ -94,15 +95,13 @@ uservec:
         # flush now-stale user entries from the TLB.
         sfence.vma zero, zero
 
-        # jump to usertrap(), which does not return
-        jr t0
+        # call usertrap()
+        jalr t0
 
 .globl userret
 userret:
-        # userret(pagetable)
-        # called by usertrapret() in trap.c to
-        # switch from kernel to user.
-        # a0: user page table, for satp.
+        # usertrap() returns here, with user satp in a0.
+        # return from kernel to user.
 
         # switch to the user page table.
         sfence.vma zero, zero

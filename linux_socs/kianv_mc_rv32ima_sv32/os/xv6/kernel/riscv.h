@@ -15,7 +15,6 @@ r_mhartid()
 #define MSTATUS_MPP_M (3L << 11)
 #define MSTATUS_MPP_S (1L << 11)
 #define MSTATUS_MPP_U (0L << 11)
-#define MSTATUS_MIE (1L << 3)    // machine-mode interrupt enable.
 
 static inline uint32
 r_mstatus()
@@ -429,10 +428,10 @@ typedef uint32 *pagetable_t; // 1024 PTEs
 
 #define PTE2PA(pte) (((pte) >> 10) << 12)
 
-#define PTE_FLAGS(pte) ((pte) & 0x3FF)
+#define PTE_FLAGS(pte) ((pte) & 0x3FFu)
 
 // extract the three 10-bit page table indices from a virtual address.
-#define PXMASK          0x3FF // 10 bits
+#define PXMASK          0x3FFu // 10 bits
 #define PXSHIFT(level)  (PGSHIFT+(10*(level)))
 #define PX(level, va) ((((uint32) (va)) >> PXSHIFT(level)) & PXMASK)
 
@@ -441,3 +440,12 @@ typedef uint32 *pagetable_t; // 1024 PTEs
 // Sv39, to avoid having to sign-extend virtual addresses
 // that have the high bit set.
 #define MAXVA 0xFFFFFFFF
+
+// Derive entries-per-table from types instead of hard-coding 512/1024.
+#define PTES_PER_PT (PGSIZE / sizeof(pte_t))
+
+// Small helpers for readability.
+#define PTE_IS_VALID(p)  ((p) & PTE_V)
+#define PTE_IS_LEAF(p)   ((p) & (PTE_R | PTE_W | PTE_X))
+
+

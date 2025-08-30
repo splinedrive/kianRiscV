@@ -8,6 +8,5 @@ struct buf {
   struct buf *prev; // LRU cache list
   struct buf *next;
   uchar data[BSIZE];
-  unsigned short CRC16;
 };
 
