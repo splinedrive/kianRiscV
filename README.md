@@ -4,6 +4,7 @@
 SoC**, a robust RISC-V design with full virtual memory support, seamlessly
 running Linux and XV6.
 [KianV SV32 RV32IMA SoC](https://github.com/splinedrive/kianRiscV/tree/master/linux_socs/kianv_mc_rv32ima_sv32)
+<img src="kianv_soc_core_bus.png" alt="KianV SoC Core Bus" />
 
 **Linux ASIC Designs**
 ======================
