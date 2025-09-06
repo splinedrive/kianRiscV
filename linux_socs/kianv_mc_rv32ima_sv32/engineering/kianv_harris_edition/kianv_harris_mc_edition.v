@@ -40,7 +40,8 @@ module kianv_harris_mc_edition #(
     input  wire        IRQ9,
     input  wire        IRQ11,
     output wire [63:0] timer_counter,
-    output wire        is_instruction
+    output wire        is_instruction,
+    output wire        icache_flush
 );
 
   wire [                 31:0] Instr;
@@ -172,6 +173,7 @@ module kianv_harris_mc_edition #(
       .page_fault       (page_fault),
       .selectPC         (selectPC),
       .tlb_flush        (tlb_flush),
+      .icache_flush     (icache_flush),
 
       .mul_valid                  (mul_valid),
       .mul_ready                  (mul_ready),

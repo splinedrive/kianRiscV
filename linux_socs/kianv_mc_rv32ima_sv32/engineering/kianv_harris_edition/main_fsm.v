@@ -73,6 +73,7 @@ module main_fsm (
     output reg wfi_event,
     output reg selectPC,
     output reg tlb_flush,
+    output reg icache_flush,
     input wire [1:0] privilege_mode,
     input wire csr_access_fault,
 
@@ -539,6 +540,7 @@ module main_fsm (
     wfi_event                   = 1'b0;
     selectPC                    = 1'b0;
     tlb_flush                   = 1'b0;
+    icache_flush                = 1'b0;
 
     case (state)
       S0: begin
@@ -561,6 +563,7 @@ module main_fsm (
         ALUSrcB = `SRCB_IMM_EXT;
         ALUOp = `ALU_OP_ADD;
         tlb_flush = is_sfence_vma;
+        icache_flush = is_fence_i;
       end
       S2: begin
         // mem addr

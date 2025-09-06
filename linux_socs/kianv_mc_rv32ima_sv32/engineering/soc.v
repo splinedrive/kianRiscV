@@ -202,6 +202,7 @@ module soc #(
 
   // cpu
   wire is_instruction;
+  wire icache_flush;
   wire [5:0] ctrl_state;
 
   wire cpu_mem_ready  /* verilator public_flat_rw */;
@@ -686,7 +687,7 @@ module soc #(
       .ICACHE_ENTRIES_PER_WAY(`ICACHE_ENTRIES_PER_WAY)
   ) cache_I (
       .clk   (clk),
-      .resetn(resetn),
+      .resetn(resetn && ~icache_flush),
       .is_instruction (is_instruction),
 
       .cpu_addr_i (cpu_mem_addr),
@@ -811,6 +812,7 @@ module soc #(
       .access_fault  (access_fault_ready),
       .timer_counter (timer_counter),
       .is_instruction(is_instruction),
+      .icache_flush  (icache_flush),
       .IRQ3          (IRQ3),
       .IRQ7          (IRQ7),
       .IRQ9          (interrupt_request_ctx1),

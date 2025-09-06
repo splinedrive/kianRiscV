@@ -72,6 +72,7 @@ module control_unit (
     input  wire [31:0] fault_address,
     output wire        selectPC,
     output wire        tlb_flush,
+    output wire        icache_flush,
 
     input wire IRQ_TO_CPU_CTRL1,  // SSIP
     input wire IRQ_TO_CPU_CTRL3,  // MSIP
@@ -161,6 +162,7 @@ module control_unit (
       .page_fault                 (page_fault),
       .selectPC                   (selectPC),
       .tlb_flush                  (tlb_flush),
+      .icache_flush               (icache_flush),
 
       .exception_event (exception_event),
       .cause           (cause),
