@@ -594,14 +594,16 @@ module soc #(
   wire [29:0] cache_word_aligned_addr;
   assign cache_word_aligned_addr = {cache_addr_o[31:2]};
 
+
 `ifdef SOC_HAS_SDRAM_MT48LC16M16A2
   mt48lc16m16a2_ctrl #(
     .SDRAM_CLK_FREQ(`SYSTEM_CLK / 1_000_000),
     .TRP_NS         (`TRP_NS        ),
-    .TRC_NS         (`TRC_NS        ),
     .TRCD_NS        (`TRCD_NS       ),
-    .TCH_NS         (`TCH_NS        ),
-    .CAS            (`CAS           )
+    .TRFC_NS        (`TRFC_NS       ),
+    .TWR_NS         (`TWR_NS        ),
+    .CAS            (`CAS           ),
+    .TREFI_NS       (`TREFI_NS      )
   ) sdram_i (
       .clk   (clk),
       .resetn(resetn),

@@ -36,10 +36,11 @@ DEFINES := -verilog_define SOC_IS_ARTIX7 \
 					 -verilog_define NUM_ENTRIES_ITLB=64 \
 					 -verilog_define NUM_ENTRIES_DTLB=64 \
 					 -verilog_define ICACHE_ENTRIES_PER_WAY=64 \
-					 -verilog_define TRP_NS=15 \
-					 -verilog_define TRC_NS=60 \
+					 -verilog_define TREFI_NS=7800 \
 					 -verilog_define TRCD_NS=15 \
-					 -verilog_define TCH_NS=2 \
+					 -verilog_define TRFC_NS=66 \
+					 -verilog_define TRP_NS=15 \
+					 -verilog_define TWR_NS=15 \
 					 -verilog_define CAS=2
 
 include ../sources.mk

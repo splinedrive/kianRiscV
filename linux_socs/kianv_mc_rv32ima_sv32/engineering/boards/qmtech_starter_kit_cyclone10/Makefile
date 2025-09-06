@@ -16,10 +16,11 @@ VERILOG_DEFINE += -verilog_macro SDRAM_SIZE=$(shell echo $$((1024*1024*32)))
 VERILOG_DEFINE += -verilog_macro NUM_ENTRIES_ITLB=32
 VERILOG_DEFINE += -verilog_macro NUM_ENTRIES_DTLB=32
 VERILOG_DEFINE += -verilog_macro ICACHE_ENTRIES_PER_WAY=32
-VERILOG_DEFINE += -verilog_macro TRP_NS=15
-VERILOG_DEFINE += -verilog_macro TRC_NS=60
+VERILOG_DEFINE += -verilog_macro DTREFI_NS=7800
 VERILOG_DEFINE += -verilog_macro TRCD_NS=15
-VERILOG_DEFINE += -verilog_macro TCH_NS=2
+VERILOG_DEFINE += -verilog_macro TRFC_NS=66
+VERILOG_DEFINE += -verilog_macro TRP_NS=15
+VERILOG_DEFINE += -verilog_macro TWR_NS=15
 VERILOG_DEFINE += -verilog_macro CAS=2
 
 FAMILY = "Cyclone 10 LP"
