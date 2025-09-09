@@ -28,7 +28,7 @@ jobs:
       working-directory: linux_socs/LinuxSoC/os/linux/buildroot-kianv-soc
       run: |
         mkdir -p artifact_files
-        cp buildroot/output/images/rootfs.ext2 fw_payload.rle artifact_files
+        cp buildroot/output/images/rootfs.ext2 fw_payload.rle flash_os.sh artifact_files
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
