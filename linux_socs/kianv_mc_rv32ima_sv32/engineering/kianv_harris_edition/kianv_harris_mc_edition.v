@@ -134,6 +134,12 @@ module kianv_harris_mc_edition #(
 
   wire        stall;
 
+  /* verilator lint_off WIDTHEXPAND */
+  /* verilator lint_off WIDTHTRUNC */
+  wire        mstatus_tvm = `GET_MSTATUS_TVM(mstatus);
+  /* verilator lint_on WIDTHTRUNC */
+  /* verilator lint_on WIDTHEXPAND */
+
   control_unit control_unit_I (
       .clk              (clk),
       .resetn           (resetn),
@@ -159,6 +165,13 @@ module kianv_harris_mc_edition #(
       .PCWrite          (PCWrite),
       .AdrSrc           (AdrSrc),
       .fault_address    (sv32_fault_address),
+      .mstatus_tvm      (mstatus_tvm),
+  /* verilator lint_off WIDTHEXPAND */
+  /* verilator lint_off WIDTHTRUNC */
+      .satp_mode        (`GET_SATP_MODE(satp)),
+  /* verilator lint_on WIDTHTRUNC */
+  /* verilator lint_on WIDTHEXPAND */
+
       .MemWrite         (MemWrite),
       .store_instr      (store_instr),
       .is_instruction   (is_instruction),

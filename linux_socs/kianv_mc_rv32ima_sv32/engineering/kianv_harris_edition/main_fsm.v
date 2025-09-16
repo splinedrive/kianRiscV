@@ -29,6 +29,8 @@ module main_fsm (
     input  wire [                 4:0] Rs2,
     input  wire [                 4:0] Rd,
     input  wire                        Zero,
+    input  wire                        mstatus_tvm,
+    input  wire                        satp_mode,
     output reg                         AdrSrc,
     output reg                         store_instr,
     output reg                         incr_inst_retired,
@@ -193,7 +195,8 @@ module main_fsm (
   wire is_mret = `IS_MRET(op, funct3, funct7, Rs1, Rs2, Rd);
   wire is_sret = `IS_SRET(op, funct3, funct7, Rs1, Rs2, Rd);
   wire is_wfi = `IS_WFI(op, funct3, funct7, Rs1, Rs2, Rd);
-
+  wire is_sfence_vma_legal = `IS_MACHINE(privilege_mode) || (`IS_SUPERVISOR(privilege_mode) && !mstatus_tvm);
+  wire sfence_vma_effective = is_sfence_vma & is_sfence_vma_legal & satp_mode;
   // ===========================================================================
 
   // amo
@@ -286,7 +289,7 @@ module main_fsm (
           is_auipc: state_nxt = S13;
           is_csr: state_nxt = S16;
           is_amo: state_nxt = S18;
-          is_sfence_vma: state_nxt = S0;
+          is_sfence_vma: state_nxt = is_sfence_vma_legal ? S0 : S40;
           is_fence: state_nxt = S0;
           is_fence_i: state_nxt = S0;
           is_wfi: state_nxt = S0;
@@ -562,7 +565,7 @@ module main_fsm (
         ALUSrcA = `SRCA_OLD_PC;
         ALUSrcB = `SRCB_IMM_EXT;
         ALUOp = `ALU_OP_ADD;
-        tlb_flush = is_sfence_vma;
+        tlb_flush = sfence_vma_effective;
         icache_flush = is_fence_i;
       end
       S2: begin
