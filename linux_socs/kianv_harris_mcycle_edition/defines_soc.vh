@@ -31,7 +31,7 @@
 `define FAKE_MULTIPLIER
 `define LED_ULX3S
 
-`define QUAD_SPI_FLASH_MODE 1'b1
+`define QUAD_SPI_FLASH_MODE 1'b0
 
 `define UART_TX
 `define UART_RX
