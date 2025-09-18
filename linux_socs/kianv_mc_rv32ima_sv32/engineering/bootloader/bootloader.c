@@ -26,29 +26,28 @@
 #define SPI_ADDR_BASE 0x20000000
 #define KERNEL_IMAGE (SPI_ADDR_BASE + 1024 * 1024 * 1)
 #define SDRAM_START 0x80000000
-#define SDRAM_END (SDRAM_START + (*SDRAM_SIZE))  // Dereference SDRAM_SIZE to get size in bytes
+#define SDRAM_END (SDRAM_START + (*SDRAM_SIZE)) // Dereference SDRAM_SIZE to get size in bytes
 #define IMAGE_MB_SIZE 20
 #define SD_BLOCK_OFFSET (1024 * 1024 / 512)
 #define CHUNK_SIZE 512
 
 /* Frequency and Register Settings */
-const volatile uint32_t *BASE_FREQ_ADDR = (volatile uint32_t *)0x10000014;
-const volatile uint32_t * const SDRAM_SIZE = (volatile uint32_t *)0x10000018; // Pointer to SDRAM size register
+const volatile uint32_t* BASE_FREQ_ADDR = (volatile uint32_t*) 0x10000014;
+const volatile uint32_t* const SDRAM_SIZE =
+    (volatile uint32_t*) 0x10000018; // Pointer to SDRAM size register
 const uint32_t DIVISOR_1 = 5000000;
-const uint32_t DIVISOR_2 = 2000000;
-volatile uint32_t *HW_REGISTER_ADDR = (volatile uint32_t *)0x10000010;
+const uint32_t DIVISOR_2 = 115200; // Baudrate
+volatile uint32_t* HW_REGISTER_ADDR = (volatile uint32_t*) 0x10000010;
 
 /* Type definition for function pointer */
-typedef void (*func_ptr)(int, char *);
+typedef void (*func_ptr)(int, char*);
 
 /* Clear SDRAM memory */
 void clear_sdram() {
-  uint32_t *sdram_ptr = (uint32_t *)SDRAM_START;
-  uint32_t *sdram_end = (uint32_t *)(SDRAM_START + *SDRAM_SIZE);
+  uint32_t* sdram_ptr = (uint32_t*) SDRAM_START;
+  uint32_t* sdram_end = (uint32_t*) (SDRAM_START + *SDRAM_SIZE);
 
-  while (sdram_ptr < sdram_end) {
-    *sdram_ptr++ = 0;
-  }
+  while (sdram_ptr < sdram_end) { *sdram_ptr++ = 0; }
 }
 
 /* Main Bootloader Function */
@@ -72,8 +71,7 @@ void main() {
   /* Wait for SD Card */
   while (1) {
     printf("\0337"); // Save cursor position
-    printf(COLOR_YELLOW ">> Insert SD CARD %c" COLOR_RESET,
-           spinner[spinner_index]);
+    printf(COLOR_YELLOW ">> Insert SD CARD %c" COLOR_RESET, spinner[spinner_index]);
 
     if (sd_init() == 0) {
       printf("\033[K\r[OK] SD Card initialized.\n");
@@ -90,7 +88,7 @@ void main() {
   uint8_t buffer[CHUNK_SIZE];
   int block_index = 0;
   int sdram_offset = 0;
-  unsigned char *sdram_ptr = (unsigned char *)SDRAM_START;
+  unsigned char* sdram_ptr = (unsigned char*) SDRAM_START;
 
   for (int loaded_bytes = 0; loaded_bytes < IMAGE_MB_SIZE * 1024 * 1024;
        loaded_bytes += CHUNK_SIZE) {
@@ -100,22 +98,18 @@ void main() {
         unsigned char count = buffer[j + 1];
 
         if (count == 0) {
-          printf(COLOR_GREEN "[OK] Loaded RLE image: %d bytes" COLOR_RESET,
-                 loaded_bytes);
+          printf(COLOR_GREEN "[OK] Loaded RLE image: %d bytes" COLOR_RESET, loaded_bytes);
           printf("\n");
           goto end_of_image;
         }
 
-        for (unsigned char k = 0; k < count; ++k) {
-          *(sdram_ptr + sdram_offset++) = value;
-        }
+        for (unsigned char k = 0; k < count; ++k) { *(sdram_ptr + sdram_offset++) = value; }
       }
 
       /* Show progress at every 1 MiB loaded */
       if (loaded_bytes % (1024 * 1024) == 0) {
         printf("\033[s"); // Save cursor position
-        printf(COLOR_GREEN "Loaded %d MiB" COLOR_RESET,
-               loaded_bytes / (1024 * 1024));
+        printf(COLOR_GREEN "Loaded %d MiB" COLOR_RESET, loaded_bytes / (1024 * 1024));
         printf("\033[u"); // Restore cursor position
       }
 
@@ -126,10 +120,9 @@ void main() {
   }
 
 end_of_image:
-  printf(COLOR_GREEN "[OK] Decompressed RLE image size: %d bytes\n" COLOR_RESET,
-         sdram_offset);
+  printf(COLOR_GREEN "[OK] Decompressed RLE image size: %d bytes\n" COLOR_RESET, sdram_offset);
 
   /* Execute Loaded Image */
   printf(COLOR_BOLD "\n[Executing loaded image... ]\n\n" COLOR_RESET);
-  ((func_ptr)SDRAM_START)(0, 0);
+  ((func_ptr) SDRAM_START)(0, 0);
 }

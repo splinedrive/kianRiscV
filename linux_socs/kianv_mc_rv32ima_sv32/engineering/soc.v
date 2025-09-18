@@ -1,7 +1,7 @@
 /*
  *  kianv.v - RISC-V rv32ima
  *
- *  copyright (c) 2023 hirosh dabui <hirosh@dabui.de>
+ *  copyright (c) 2023/2025 hirosh dabui <hirosh@dabui.de>
  *
  *  permission to use, copy, modify, and/or distribute this software for any
  *  purpose with or without fee is hereby granted, provided that the above
@@ -16,6 +16,7 @@
  *  or in connection with the use or performance of this software.
  *
  */
+
 `default_nettype none `timescale 1 ns / 100 ps
 `include "defines_soc.vh"
 module soc #(
@@ -518,21 +519,61 @@ module soc #(
 `endif
 
   /////////////////////////////////////////////////////////////////////////////
+ 
+  // UART TX/RX
 
   wire uart_lsr_valid_rd[NUM_UARTS-1:0];
-  wire uart_tx_valid_wr[NUM_UARTS-1:0];
-  wire uart_tx_rdy[NUM_UARTS-1:0];
-  wire uart_tx_busy[NUM_UARTS-1:0];
-  reg uart_lsr_rdy[NUM_UARTS-1:0];
+  wire uart_tx_valid_wr [NUM_UARTS-1:0];
+  wire uart_tx_rdy      [NUM_UARTS-1:0];    // FIFO not full (can accept byte)
+  wire uart_tx_busy     [NUM_UARTS-1:0];    // shifter active OR FIFO non-empty
+  reg  uart_lsr_rdy     [NUM_UARTS-1:0];
+
+  // ns16550-like THRE bit per UART
+  reg  lsr_thre         [NUM_UARTS-1:0];
+
+  // filter to avoid duplicate accepts
+  reg  tx_seen          [NUM_UARTS-1:0];
 
   genvar i;
   generate
     for (i = 0; i < NUM_UARTS; i = i + 1) begin : UART_GEN
+      // TX register address hit
+      wire tx_hit = cpu_mem_valid && wr &&
+                    (cpu_mem_addr == UART_TX_ADDRS[32*(NUM_UARTS-i) -1 -: 32]);
 
-      assign uart_tx_valid[i] = ~uart_tx_ready[i] && cpu_mem_valid && cpu_mem_addr == UART_TX_ADDRS[32*(NUM_UARTS-i) -1 -: 32];
-      assign uart_tx_valid_wr[i] = wr && uart_tx_valid[i];
+      // Accept once per transaction, only if FIFO has space
+      wire tx_accept = tx_hit && !tx_seen[i] && uart_tx_rdy[i];
 
-      always @(posedge clk) uart_tx_ready[i] <= !resetn ? 1'b0 : uart_tx_valid_wr[i];
+      // one-cycle strobe into UART
+      assign uart_tx_valid_wr[i] = tx_accept;
+
+      // bus ack pulse only when accepted
+      always @(posedge clk) begin
+        if (!resetn)
+          uart_tx_ready[i] <= 1'b0;
+        else
+          uart_tx_ready[i] <= tx_accept;
+      end
+
+      // remember we’ve seen this bus request until it drops
+      always @(posedge clk) begin
+        if (!resetn)
+          tx_seen[i] <= 1'b0;
+        else if (!tx_hit)
+          tx_seen[i] <= 1'b0;
+        else if (tx_accept)
+          tx_seen[i] <= 1'b1;
+      end
+
+      // THRE bit (LSR[5]): clear on write, set again when FIFO not full
+      always @(posedge clk) begin
+        if (!resetn)
+          lsr_thre[i] <= 1'b1;
+        else if (tx_accept)
+          lsr_thre[i] <= 1'b0;
+        else if (uart_tx_rdy[i])
+          lsr_thre[i] <= 1'b1;
+      end
 
       tx_uart tx_uart_i (
           .clk    (clk),
@@ -545,25 +586,37 @@ module soc #(
           .busy   (uart_tx_busy[i])
       );
 
-      assign uart_lsr_valid_rd[i] = ~uart_lsr_rdy[i] && rd && cpu_mem_valid && cpu_mem_addr == UART_LSR_ADDRS[32*(NUM_UARTS-i) -1 -: 32];
+      // LSR read strobe
+      assign uart_lsr_valid_rd[i] =
+        (~uart_lsr_rdy[i]) && rd && cpu_mem_valid &&
+        (cpu_mem_addr == UART_LSR_ADDRS[32*(NUM_UARTS-i) -1 -: 32]);
+
       always @(posedge clk) begin
-        uart_lsr_rdy[i] <= !resetn ? 1'b0 : uart_lsr_valid_rd[i];
+        if (!resetn)
+          uart_lsr_rdy[i] <= 1'b0;
+        else
+          uart_lsr_rdy[i] <= uart_lsr_valid_rd[i];
       end
     end
   endgenerate
-  /////////////////////////////////////////////////////////////////////////////
+
+  // UART RX
 
   wire uart_rx_valid_rd[NUM_UARTS -1:0];
   wire rx_uart_rdy[NUM_UARTS -1:0];
 
   generate
     for (i = 0; i < NUM_UARTS; i = i + 1) begin : UART_RX_INSTANCE
-
-      assign uart_rx_valid[i] = ~uart_rx_ready[i] && cpu_mem_valid && cpu_mem_addr == UART_RX_ADDRS[32*(NUM_UARTS-i) -1 -: 32];
+      assign uart_rx_valid[i] = ~uart_rx_ready[i] &&
+                                cpu_mem_valid &&
+                                cpu_mem_addr == UART_RX_ADDRS[32*(NUM_UARTS-i) -1 -: 32];
       assign uart_rx_valid_rd[i] = rd && uart_rx_valid[i];
 
       always @(posedge clk) begin
-        uart_rx_ready[i] <= !resetn ? 1'b0 : uart_rx_valid_rd[i];
+        if (!resetn)
+          uart_rx_ready[i] <= 1'b0;
+        else
+          uart_rx_ready[i] <= uart_rx_valid_rd[i];
       end
 
       assign rx_uart_rdy[i] = uart_rx_ready[i];
@@ -574,12 +627,12 @@ module soc #(
           .rx_in  (uart_rx[i]),
           .div    (div_reg[15:0]),
           .error  (),
-          .data_rd(rx_uart_rdy[i]),  // pop
+          .data_rd(rx_uart_rdy[i]),
           .data   (rx_uart_data[i])
       );
-
     end
   endgenerate
+
 
   /////////////////////////////////////////////////////////////////////////////
 
@@ -594,16 +647,14 @@ module soc #(
   wire [29:0] cache_word_aligned_addr;
   assign cache_word_aligned_addr = {cache_addr_o[31:2]};
 
-
 `ifdef SOC_HAS_SDRAM_MT48LC16M16A2
   mt48lc16m16a2_ctrl #(
     .SDRAM_CLK_FREQ(`SYSTEM_CLK / 1_000_000),
+    .TREFI_NS       (`TREFI_NS      ),
     .TRP_NS         (`TRP_NS        ),
     .TRCD_NS        (`TRCD_NS       ),
-    .TRFC_NS        (`TRFC_NS       ),
     .TWR_NS         (`TWR_NS        ),
-    .CAS            (`CAS           ),
-    .TREFI_NS       (`TREFI_NS      )
+    .CAS            (`CAS           )
   ) sdram_i (
       .clk   (clk),
       .resetn(resetn),
@@ -845,20 +896,25 @@ module soc #(
   generate
     for (i = 0; i < NUM_UARTS; i = i + 1) begin : GENERIC_UART_CTRL
       always @(*) begin
-        byteswaiting[i] = 0;
-        io_rdata_uart[32*i+:32] = 0;
-        io_ready_uart[i] = 0;
+        byteswaiting[i]         = 8'h00;
+        io_rdata_uart[32*i+:32] = 32'h0000_0000;
+        io_ready_uart[i]        = 1'b0;
+
         if (uart_lsr_rdy[i]) begin
           byteswaiting[i] = {
-            1'b0, ~uart_tx_busy[i], ~uart_tx_busy[i], 1'b0, 3'b0, ~(&rx_uart_data[i])
+            1'b0,
+            (~uart_tx_busy[i]),
+            lsr_thre[i],
+            1'b0, 3'b000,
+            ~(&rx_uart_data[i])
           };
-          io_rdata_uart[32*i+:32] = {16'b0, byteswaiting[i], 8'b0};
+          io_rdata_uart[32*i+:32] = {16'h0000, byteswaiting[i], 8'h00};
           io_ready_uart[i] = 1'b1;
         end else if (uart_rx_ready[i]) begin
           io_rdata_uart[32*i+:32] = rx_uart_data[i];
           io_ready_uart[i] = 1'b1;
         end else if (uart_tx_ready[i]) begin
-          io_rdata_uart[32*i+:32] = 0;
+          io_rdata_uart[32*i+:32] = 32'h0000_0000;
           io_ready_uart[i] = 1'b1;
         end
       end

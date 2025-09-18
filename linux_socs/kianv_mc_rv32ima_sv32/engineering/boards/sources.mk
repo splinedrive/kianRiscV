@@ -9,6 +9,7 @@ SRCS := ./pll.v \
         ../../spi.v \
         ../../gpio.v \
         ../../cache.v \
+        ../../dcache.v \
         ../../icache.v \
         ../../plic.v \
         ../../pwm.v \

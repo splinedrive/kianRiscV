@@ -45,7 +45,7 @@ see what binaries are available.
 
 For the 2x UARTs connections, use
 ```
-tio -m INLCRNL -o 1 /dev/ttyUSBx -b 2000000
+tio -m INLCRNL -o 1 /dev/ttyUSBx -b 115200
 ```
 If a network is available, you can start the
 telnet daemon, etc., as shown in /etc/init.d/rcS.
