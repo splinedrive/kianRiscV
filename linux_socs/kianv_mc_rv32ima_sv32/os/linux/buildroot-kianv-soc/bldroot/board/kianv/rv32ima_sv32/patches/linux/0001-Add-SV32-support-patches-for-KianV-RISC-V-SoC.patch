@@ -1,41 +1,36 @@
 From 761a22a3ab6bd66b631ee346afbc1a6290279168 Sat Sep 15 00:00:00 2001
 From: Hirosh Dabui <hirosh@dabui.de>
-Date: Sat, 09 Aug 2025 23:22:02 +0200
+Date: Sat, 16 Aug 2025 22:22:02 +0200
 Subject: [PATCH] Add SV32 support patches for KianV RISC-V SoC
-
 
 ---
  drivers/gpio/Kconfig                        |   8 +
  drivers/gpio/Makefile                       |   2 +
- drivers/gpio/gpio-kianv.c                   | 135 +++++++++++++++
- drivers/net/ethernet/microchip/enc28j60.c   | 149 ++++++++++++++++
- drivers/net/ethernet/microchip/encx24j600.c | 100 ++++++++++-
- drivers/net/ethernet/wiznet/w5100.c         |  70 +++++++-
- drivers/spi/Kconfig                         |  18 ++
- drivers/spi/Makefile                        |   3 +
- drivers/spi/spi-kianV-simple.c              | 149 ++++++++++++++++
- drivers/spi/spi-kianV-simple2.c             | 149 ++++++++++++++++
- drivers/spi/spi-kianV-simple3.c             | 180 ++++++++++++++++++++
- drivers/staging/fbtft/fb_ssd1331.c          |  38 ++++-
+ drivers/gpio/gpio-kianv.c                   | 135 ++++++++++++
+ drivers/net/ethernet/microchip/enc28j60.c   | 149 +++++++++++++
+ drivers/net/ethernet/microchip/encx24j600.c | 100 ++++++++-
+ drivers/net/ethernet/wiznet/w5100.c         |  70 +++++-
+ drivers/spi/Kconfig                         |   6 +
+ drivers/spi/Makefile                        |   1 +
+ drivers/spi/spi-kianV-simple.c              | 225 ++++++++++++++++++++
+ drivers/staging/fbtft/fb_ssd1331.c          |  38 +++-
  drivers/staging/fbtft/fbtft-bus.c           |   9 +-
- drivers/staging/fbtft/fbtft-core.c          |  34 +++-
+ drivers/staging/fbtft/fbtft-core.c          |  34 ++-
  include/linux/spi/spi.h                     |   1 +
  sound/Kconfig                               |   2 +
  sound/Makefile                              |   3 +-
  sound/kianv/Kconfig                         |   4 +
  sound/kianv/Makefile                        |   1 +
- sound/kianv/kianv-snd.c                     | 111 ++++++++++++
- 20 files changed, 1152 insertions(+), 14 deletions(-)
+ sound/kianv/kianv-snd.c                     | 111 ++++++++++
+ 18 files changed, 885 insertions(+), 14 deletions(-)
  create mode 100644 drivers/gpio/gpio-kianv.c
  create mode 100644 drivers/spi/spi-kianV-simple.c
- create mode 100644 drivers/spi/spi-kianV-simple2.c
- create mode 100644 drivers/spi/spi-kianV-simple3.c
  create mode 100644 sound/kianv/Kconfig
  create mode 100644 sound/kianv/Makefile
  create mode 100644 sound/kianv/kianv-snd.c
 
 diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index e43abb322fa6..c281924838bc 100644
+index d8ac40d0eb6f..cfc1d0579764 100644
 --- a/drivers/gpio/Kconfig
 +++ b/drivers/gpio/Kconfig
 @@ -838,6 +838,14 @@ config GPIO_XILINX
@@ -678,27 +673,15 @@ index b77f096eaf99..bce1decf9b06 100644
  	destroy_workqueue(priv->xfer_wq);
  err_wq:
 diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
-index 891729c9c564..8281fdbbb89c 100644
+index 891729c9c564..3019347ec656 100644
 --- a/drivers/spi/Kconfig
 +++ b/drivers/spi/Kconfig
-@@ -714,6 +714,24 @@ config SPI_MICROCHIP_CORE_QSPI
+@@ -714,6 +714,12 @@ config SPI_MICROCHIP_CORE_QSPI
  	  PolarFire SoC.
  	  If built as a module, it will be called spi-microchip-core-qspi.
  
-+config SPI_KIANV_SPI_SIMPLE0
++config SPI_KIANV_SPI_SIMPLE
 +	tristate "KianV RISC-V FPGA SPI0 controller"
-+	depends on SPI_MASTER
-+	help
-+	  This enables the QSPI driver for KianV SPI Simple controller
-+
-+config SPI_KIANV_SPI_SIMPLE1
-+	tristate "KianV RISC-V FPGA SPI1 controller"
-+	depends on SPI_MASTER
-+	help
-+	  This enables the QSPI driver for KianV SPI Simple controller
-+
-+config SPI_KIANV_SPI_SIMPLE2
-+	tristate "KianV RISC-V FPGA SPI2 controller"
 +	depends on SPI_MASTER
 +	help
 +	  This enables the QSPI driver for KianV SPI Simple controller
@@ -707,28 +690,26 @@ index 891729c9c564..8281fdbbb89c 100644
  	tristate "MediaTek SPI controller"
  	depends on ARCH_MEDIATEK || COMPILE_TEST
 diff --git a/drivers/spi/Makefile b/drivers/spi/Makefile
-index 062c85989c8c..d648eb38840e 100644
+index 062c85989c8c..f28c348173ce 100644
 --- a/drivers/spi/Makefile
 +++ b/drivers/spi/Makefile
-@@ -16,6 +16,9 @@ obj-$(CONFIG_SPI_LOOPBACK_TEST)		+= spi-loopback-test.o
+@@ -16,6 +16,7 @@ obj-$(CONFIG_SPI_LOOPBACK_TEST)		+= spi-loopback-test.o
  
  # SPI master controller drivers (bus)
  obj-$(CONFIG_SPI_AIROHA_SNFI)		+= spi-airoha-snfi.o
-+obj-$(CONFIG_SPI_KIANV_SPI_SIMPLE0)     += spi-kianV-simple.o
-+obj-$(CONFIG_SPI_KIANV_SPI_SIMPLE1)     += spi-kianV-simple2.o
-+obj-$(CONFIG_SPI_KIANV_SPI_SIMPLE2)     += spi-kianV-simple3.o
++obj-$(CONFIG_SPI_KIANV_SPI_SIMPLE)     += spi-kianV-simple.o
  obj-$(CONFIG_SPI_ALTERA)		+= spi-altera-platform.o
  obj-$(CONFIG_SPI_ALTERA_CORE)		+= spi-altera-core.o
  obj-$(CONFIG_SPI_ALTERA_DFL)		+= spi-altera-dfl.o
 diff --git a/drivers/spi/spi-kianV-simple.c b/drivers/spi/spi-kianV-simple.c
 new file mode 100644
-index 000000000000..6d22be1c0796
+index 000000000000..ddd36064b95b
 --- /dev/null
 +++ b/drivers/spi/spi-kianV-simple.c
-@@ -0,0 +1,149 @@
+@@ -0,0 +1,225 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
-+ * kianV-Simple SPI controller driver
++ * kianV-Simple SPI controller driver - Unified version for all instances
 + *
 + * Copyright (C) 2019 Antmicro Ltd. <www.antmicro.com>
 + * Copyright (C) 2021 Sylvain Munaut <tnt@246tNt.com>
@@ -738,320 +719,11 @@ index 000000000000..6d22be1c0796
 +#include <linux/device.h>
 +#include <linux/module.h>
 +#include <linux/of.h>
++#include <linux/of_device.h>
 +#include <linux/platform_device.h>
 +#include <linux/spi/spi.h>
 +
 +#define DRIVER_NAME "kianVspi-simple"
-+
-+struct kianVspi_regs {
-+	uint32_t ctrl;
-+	uint32_t data;
-+} __attribute__((packed,aligned(4)));
-+
-+struct kianVspi_hw {
-+	struct spi_controller *master;
-+	volatile struct kianVspi_regs __iomem *regs;
-+};
-+
-+static void kianVspi_set_cs(struct spi_device *spi, bool cs_n)
-+{
-+	struct kianVspi_hw *hw = spi_controller_get_devdata(spi->controller);
-+
-+	/* Set chip select */
-+	hw->regs->ctrl = (cs_n ? 0 : BIT(spi->chip_select[0]));
-+}
-+
-+static int kianVspi_transfer_one(struct spi_controller *ctrl, struct spi_device *spi,
-+                                 struct spi_transfer *t)
-+{
-+    struct kianVspi_hw *hw = spi_controller_get_devdata(ctrl);
-+    const u8 *tx = t->tx_buf;
-+    u8 *rx = t->rx_buf;
-+    int i;
-+    unsigned long timeout;
-+
-+    if (!hw || !t) {
-+        return -EINVAL;
-+    }
-+
-+    for (i = 0; i < t->len; i++) {
-+        while ((hw->regs->ctrl & 0x80000000) != 0) {
-+            cpu_relax();
-+        }
-+
-+        hw->regs->data = tx ? *tx++ : 0x00;
-+
-+        timeout = jiffies + msecs_to_jiffies(100);
-+        while ((hw->regs->ctrl & 0x80000000) != 0) {
-+            cpu_relax();
-+        }
-+
-+        if (rx) {
-+            *rx++ = hw->regs->data;
-+        }
-+    }
-+
-+    return 0;
-+}
-+
-+static int kianVspi_setup(struct spi_device *spi)
-+{
-+    return 0;
-+}
-+
-+static int kianVspi_probe(struct platform_device *pdev)
-+{
-+	struct device_node *node = pdev->dev.of_node;
-+	struct kianVspi_hw *hw;
-+	struct spi_controller *master;
-+	//struct resource *res;
-+	int ret;
-+	u32 val;
-+
-+	master = spi_alloc_host(&pdev->dev, sizeof(*hw));
-+	if (!master)
-+		return -ENOMEM;
-+
-+	master->dev.of_node = pdev->dev.of_node;
-+	master->bus_num = pdev->id;
-+	master->mode_bits = SPI_MODE_0;
-+	master->bits_per_word_mask = SPI_BPW_MASK(8);
-+	master->set_cs = kianVspi_set_cs;
-+	master->transfer_one = kianVspi_transfer_one;
-+	master->setup = kianVspi_setup;
-+	master->flags = 0;
-+
-+	/* get sck frequency */
-+	ret = of_property_read_u32(node, "kianVfpga,sck-frequency", &val);
-+	if (ret)
-+		goto err;
-+
-+	master->min_speed_hz = val;
-+	master->max_speed_hz = val;
-+
-+	/* get num cs */
-+	ret = of_property_read_u32(node, "kianVfpga,num-cs", &val);
-+	if (ret)
-+		goto err;
-+	master->num_chipselect = val;
-+
-+	hw = spi_controller_get_devdata(master);
-+	hw->master = master;
-+
-+	/* get base address */
-+	hw->regs = devm_platform_get_and_ioremap_resource(pdev, 0, NULL);
-+	if (IS_ERR((void*)hw->regs)) {
-+		ret = PTR_ERR((void*)hw->regs);
-+		goto err;
-+	}
-+
-+	/* register controller */
-+	ret = spi_register_controller(spi_controller_get(master));
-+	if (ret)
-+		goto err;
-+
-+	return 0;
-+
-+err:
-+	spi_controller_put(master);
-+	return ret;
-+}
-+
-+static const struct of_device_id kianVspi_match[] = {
-+	{ .compatible = "kianVfpga,kianVspi-simple" },
-+	{}
-+};
-+MODULE_DEVICE_TABLE(of, kianVspi_match);
-+
-+static struct platform_driver kianVspi_driver = {
-+	.probe = kianVspi_probe,
-+	.driver = {
-+		.name = DRIVER_NAME,
-+		.of_match_table = of_match_ptr(kianVspi_match)
-+	}
-+};
-+module_platform_driver(kianVspi_driver)
-+
-+MODULE_AUTHOR("Hirosh Dabui <hirosh@dabui.de");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:" DRIVER_NAME);
-diff --git a/drivers/spi/spi-kianV-simple2.c b/drivers/spi/spi-kianV-simple2.c
-new file mode 100644
-index 000000000000..1de3da4e72ff
---- /dev/null
-+++ b/drivers/spi/spi-kianV-simple2.c
-@@ -0,0 +1,149 @@
-+// SPDX-License-Identifier: GPL-2.0
-+/*
-+ * kianV-Simple SPI controller driver
-+ *
-+ * Copyright (C) 2019 Antmicro Ltd. <www.antmicro.com>
-+ * Copyright (C) 2021 Sylvain Munaut <tnt@246tNt.com>
-+ * Copyright (C) 2023 Hirosh Dabui <hirosh@dabui.de>
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+#include <linux/spi/spi.h>
-+
-+#define DRIVER_NAME "kianVspi-simple2"
-+
-+struct kianVspi_regs {
-+	uint32_t ctrl;
-+	uint32_t data;
-+} __attribute__((packed,aligned(4)));
-+
-+struct kianVspi_hw {
-+	struct spi_controller *master;
-+	volatile struct kianVspi_regs __iomem *regs;
-+};
-+
-+static void kianVspi_set_cs(struct spi_device *spi, bool cs_n)
-+{
-+	struct kianVspi_hw *hw = spi_controller_get_devdata(spi->controller);
-+
-+	/* Set chip select */
-+	hw->regs->ctrl = (cs_n ? 0 : BIT(spi->chip_select[0]));
-+}
-+
-+static int kianVspi_transfer_one(struct spi_controller *ctrl, struct spi_device *spi,
-+                                 struct spi_transfer *t)
-+{
-+    struct kianVspi_hw *hw = spi_controller_get_devdata(ctrl);
-+    const u8 *tx = t->tx_buf;
-+    u8 *rx = t->rx_buf;
-+    int i;
-+    unsigned long timeout;
-+
-+    if (!hw || !t) {
-+        return -EINVAL;
-+    }
-+
-+    for (i = 0; i < t->len; i++) {
-+        while ((hw->regs->ctrl & 0x80000000) != 0) {
-+            cpu_relax();
-+        }
-+
-+        hw->regs->data = tx ? *tx++ : 0x00;
-+
-+        timeout = jiffies + msecs_to_jiffies(100);
-+        while ((hw->regs->ctrl & 0x80000000) != 0) {
-+            cpu_relax();
-+        }
-+
-+        if (rx) {
-+            *rx++ = hw->regs->data;
-+        }
-+    }
-+
-+    return 0;
-+}
-+
-+static int kianVspi_setup(struct spi_device *spi)
-+{
-+    return 0;
-+}
-+
-+static int kianVspi_probe(struct platform_device *pdev)
-+{
-+	struct device_node *node = pdev->dev.of_node;
-+	struct kianVspi_hw *hw;
-+	struct spi_controller *master;
-+	//struct resource *res;
-+	int ret;
-+	u32 val;
-+
-+	master = spi_alloc_host(&pdev->dev, sizeof(*hw));
-+	if (!master)
-+		return -ENOMEM;
-+
-+	master->dev.of_node = pdev->dev.of_node;
-+	master->bus_num = pdev->id;
-+	master->mode_bits = SPI_MODE_0;
-+	master->bits_per_word_mask = SPI_BPW_MASK(8);
-+	master->set_cs = kianVspi_set_cs;
-+	master->transfer_one = kianVspi_transfer_one;
-+	master->setup = kianVspi_setup;
-+	master->flags = 0;
-+
-+	/* get sck frequency */
-+	ret = of_property_read_u32(node, "kianVfpga,sck-frequency", &val);
-+	if (ret)
-+		goto err;
-+
-+	master->min_speed_hz = val;
-+	master->max_speed_hz = val;
-+
-+	/* get num cs */
-+	ret = of_property_read_u32(node, "kianVfpga,num-cs", &val);
-+	if (ret)
-+		goto err;
-+	master->num_chipselect = val;
-+
-+	hw = spi_controller_get_devdata(master);
-+	hw->master = master;
-+
-+	/* get base address */
-+	hw->regs = devm_platform_get_and_ioremap_resource(pdev, 0, NULL);
-+	if (IS_ERR((void*)hw->regs)) {
-+		ret = PTR_ERR((void*)hw->regs);
-+		goto err;
-+	}
-+
-+	/* register controller */
-+	ret = spi_register_controller(spi_controller_get(master));
-+	if (ret)
-+		goto err;
-+
-+	return 0;
-+
-+err:
-+	spi_controller_put(master);
-+	return ret;
-+}
-+
-+static const struct of_device_id kianVspi_match[] = {
-+	{ .compatible = "kianVfpga,kianVspi-simple2" },
-+	{}
-+};
-+MODULE_DEVICE_TABLE(of, kianVspi_match);
-+
-+static struct platform_driver kianVspi_driver = {
-+	.probe = kianVspi_probe,
-+	.driver = {
-+		.name = DRIVER_NAME,
-+		.of_match_table = of_match_ptr(kianVspi_match)
-+	}
-+};
-+module_platform_driver(kianVspi_driver)
-+
-+MODULE_AUTHOR("Hirosh Dabui <hirosh@dabui.de");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:" DRIVER_NAME);
-diff --git a/drivers/spi/spi-kianV-simple3.c b/drivers/spi/spi-kianV-simple3.c
-new file mode 100644
-index 000000000000..4c0fc6a476b6
---- /dev/null
-+++ b/drivers/spi/spi-kianV-simple3.c
-@@ -0,0 +1,180 @@
-+// SPDX-License-Identifier: GPL-2.0
-+/*
-+ * kianV-Simple SPI controller driver
-+ *
-+ * Copyright (C) 2019 Antmicro Ltd. <www.antmicro.com>
-+ * Copyright (C) 2021 Sylvain Munaut <tnt@246tNt.com>
-+ * Copyright (C) 2023 Hirosh Dabui <hirosh@dabui.de>
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+#include <linux/spi/spi.h>
-+
-+#define DRIVER_NAME "kianVspi-simple3"
 +
 +struct kianVspi_regs {
 +	uint32_t ctrl;
@@ -1061,14 +733,78 @@ index 000000000000..4c0fc6a476b6
 +struct kianVspi_hw {
 +	struct spi_controller *master;
 +	volatile struct kianVspi_regs __iomem *regs;
++	bool supports_16bit;
 +};
 +
 +static void kianVspi_set_cs(struct spi_device *spi, bool cs_n)
 +{
 +	struct kianVspi_hw *hw = spi_controller_get_devdata(spi->controller);
 +
-+	/* Set chip select */
 +	hw->regs->ctrl = (cs_n ? 0 : BIT(spi->chip_select[0]));
++}
++
++
++static int kianVspi_transfer_8bit(struct kianVspi_hw *hw, const u8 *tx, u8 *rx,
++				  int len)
++{
++	volatile u32 *ctrl_reg = &hw->regs->ctrl;
++	volatile u32 *data_reg = &hw->regs->data;
++	const u8 *tx_ptr = tx;
++	u8 *rx_ptr = rx;
++	int remaining = len;
++
++
++	while (remaining--) {
++		while (*ctrl_reg & 0x80000000)
++			;
++
++		*data_reg = tx_ptr ? *tx_ptr++ : 0;
++
++		while (*ctrl_reg & 0x80000000)
++			;
++
++		if (rx_ptr) {
++			*rx_ptr++ = *data_reg;
++		}
++	}
++
++	return 0;
++}
++
++
++static int kianVspi_transfer_16bit(struct kianVspi_hw *hw, const u8 *tx, u8 *rx,
++				   int len)
++{
++	volatile u32 *ctrl_reg = &hw->regs->ctrl;
++	volatile u32 *data_reg = &hw->regs->data;
++	const u16 *tx16 = (const u16 *)tx;
++	u8 *rx_ptr = rx;
++	int words = len >> 1;
++
++
++	while (words--) {
++		u16 data = tx16 ? *tx16++ : 0;
++		u8 low_byte = data & 0xFF;
++		u8 high_byte = (data >> 8) & 0xFF;
++
++		while (*ctrl_reg & 0x80000000)
++			;
++		*data_reg = low_byte;
++		while (*ctrl_reg & 0x80000000)
++			;
++		if (rx_ptr)
++			*rx_ptr++ = *data_reg;
++
++		while (*ctrl_reg & 0x80000000)
++			;
++		*data_reg = high_byte;
++		while (*ctrl_reg & 0x80000000)
++			;
++		if (rx_ptr)
++			*rx_ptr++ = *data_reg;
++	}
++
++	return 0;
 +}
 +
 +static int kianVspi_transfer_one(struct spi_controller *ctrl,
@@ -1077,63 +813,26 @@ index 000000000000..4c0fc6a476b6
 +	struct kianVspi_hw *hw = spi_controller_get_devdata(ctrl);
 +	const u8 *tx = t->tx_buf;
 +	u8 *rx = t->rx_buf;
-+	int i;
++	int len = t->len;
 +
 +	if (!hw || !t) {
 +		return -EINVAL;
 +	}
 +
-+	if (spi->kianv_spi_data_width == 8) {
-+		for (i = 0; i < t->len; i++) {
-+			while ((hw->regs->ctrl & 0x80000000) != 0) {
-+				cpu_relax();
-+			}
-+
-+			hw->regs->data = tx ? *tx++ : 0x00;
-+
-+			while ((hw->regs->ctrl & 0x80000000) != 0) {
-+				cpu_relax();
-+			}
-+
-+			if (rx) {
-+				*rx++ = hw->regs->data;
-+			}
-+		}
-+	} else /* 16 */ {
-+		for (i = 0; i < t->len; i += 2) {
-+			uint16_t data_to_send = 0;
-+
-+			data_to_send = *(uint16_t *)tx;
-+			data_to_send = htons(data_to_send);
-+
-+			tx += 2;
-+
-+			uint8_t high_byte = (data_to_send >> 8) & 0xFF;
-+			uint8_t low_byte = data_to_send & 0xFF;
-+
-+			while ((hw->regs->ctrl & 0x80000000) != 0) {
-+				cpu_relax();
-+			}
-+			hw->regs->data = low_byte;
-+
-+			while ((hw->regs->ctrl & 0x80000000) != 0) {
-+				cpu_relax();
-+			}
-+			if (rx) {
-+				*rx++ = hw->regs->data;
-+			}
-+
-+			hw->regs->data = high_byte;
-+
-+			while ((hw->regs->ctrl & 0x80000000) != 0) {
-+				cpu_relax();
-+			}
-+			if (rx) {
-+				*rx++ = hw->regs->data;
-+			}
-+		}
++	if (len == 0) {
++		return 0;
 +	}
-+	spi->kianv_spi_data_width = 8;
++
++
++	if (hw->supports_16bit && spi->kianv_spi_data_width == 16) {
++		kianVspi_transfer_16bit(hw, tx, rx, len);
++
++		spi->kianv_spi_data_width = 8;
++	} else {
++
++		kianVspi_transfer_8bit(hw, tx, rx, len);
++	}
++
 +	return 0;
 +}
 +
@@ -1147,7 +846,6 @@ index 000000000000..4c0fc6a476b6
 +	struct device_node *node = pdev->dev.of_node;
 +	struct kianVspi_hw *hw;
 +	struct spi_controller *master;
-+	//struct resource *res;
 +	int ret;
 +	u32 val;
 +
@@ -1164,31 +862,44 @@ index 000000000000..4c0fc6a476b6
 +	master->setup = kianVspi_setup;
 +	master->flags = 0;
 +
-+	/* get sck frequency */
-+	ret = of_property_read_u32(node, "kianVfpga,sck-frequency", &val);
-+	if (ret)
-+		goto err;
-+
-+	master->min_speed_hz = val;
-+	master->max_speed_hz = val;
-+
-+	/* get num cs */
-+	ret = of_property_read_u32(node, "kianVfpga,num-cs", &val);
-+	if (ret)
-+		goto err;
-+	master->num_chipselect = val;
-+
 +	hw = spi_controller_get_devdata(master);
 +	hw->master = master;
 +
-+	/* get base address */
++
++	hw->supports_16bit =
++		of_property_read_bool(node, "kianVfpga,supports-16bit");
++
++
++	ret = of_property_read_u32(node, "kianVfpga,sck-frequency", &val);
++	if (ret) {
++
++		val = 1000000;
++		dev_warn(&pdev->dev, "Using default SPI frequency: %u Hz\n",
++			 val);
++	}
++	master->min_speed_hz = val;
++	master->max_speed_hz = val;
++
++
++	ret = of_property_read_u32(node, "kianVfpga,num-cs", &val);
++	if (ret) {
++		val = 1;
++		dev_warn(&pdev->dev, "Using default CS count: %u\n", val);
++	}
++	master->num_chipselect = val;
++
++
 +	hw->regs = devm_platform_get_and_ioremap_resource(pdev, 0, NULL);
 +	if (IS_ERR((void *)hw->regs)) {
 +		ret = PTR_ERR((void *)hw->regs);
 +		goto err;
 +	}
 +
-+	/* register controller */
++	dev_info(&pdev->dev, "KianV SPI controller at %pR (16-bit: %s)\n",
++		 platform_get_resource(pdev, IORESOURCE_MEM, 0),
++		 hw->supports_16bit ? "yes" : "no");
++
++
 +	ret = spi_register_controller(spi_controller_get(master));
 +	if (ret)
 +		goto err;
@@ -1200,7 +911,10 @@ index 000000000000..4c0fc6a476b6
 +	return ret;
 +}
 +
++
 +static const struct of_device_id kianVspi_match[] = {
++	{ .compatible = "kianVfpga,kianVspi-simple" },
++	{ .compatible = "kianVfpga,kianVspi-simple2" },
 +	{ .compatible = "kianVfpga,kianVspi-simple3" },
 +	{}
 +};
@@ -1211,9 +925,11 @@ index 000000000000..4c0fc6a476b6
 +	.driver = { .name = DRIVER_NAME,
 +		    .of_match_table = of_match_ptr(kianVspi_match) }
 +};
++
 +module_platform_driver(kianVspi_driver)
 +
-+MODULE_AUTHOR("Hirosh Dabui <hirosh@dabui.de");
++	MODULE_AUTHOR("Hirosh Dabui <hirosh@dabui.de>");
++MODULE_DESCRIPTION("KianV Simple SPI Controller Driver - Unified");
 +MODULE_LICENSE("GPL");
 +MODULE_ALIAS("platform:" DRIVER_NAME);
 diff --git a/drivers/staging/fbtft/fb_ssd1331.c b/drivers/staging/fbtft/fb_ssd1331.c

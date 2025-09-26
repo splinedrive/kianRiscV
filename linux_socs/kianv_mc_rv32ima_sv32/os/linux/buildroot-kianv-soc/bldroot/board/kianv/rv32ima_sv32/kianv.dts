@@ -165,13 +165,14 @@
 			#size-cells = <0x01>;
 			reg = <0x00>;
 			spi-max-frequency = <0xb71b00>;
-			status = "okay";
+			status = "disabled";
 		};
 	};
 
 	spi@10500200 {
 		compatible = "kianVfpga,kianVspi-simple3";
 		reg = <0x10500200 0x100>;
+    kianVfpga,supports-16bit;
 		status = "okay";
 		kianVfpga,num-cs = <0x01>;
 		kianVfpga,sck-frequency = <0x00>;
