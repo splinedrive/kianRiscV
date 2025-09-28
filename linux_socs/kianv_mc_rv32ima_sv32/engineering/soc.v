@@ -737,7 +737,8 @@ module soc #(
 `endif
 
   cache #(
-      .ICACHE_ENTRIES_PER_WAY(`ICACHE_ENTRIES_PER_WAY)
+      .ICACHE_ENTRIES_PER_WAY(`ICACHE_ENTRIES_PER_WAY),
+      .DCACHE_ENTRIES_PER_WAY(`DCACHE_ENTRIES_PER_WAY)
   ) cache_I (
       .clk   (clk),
       .resetn(resetn && ~icache_flush),

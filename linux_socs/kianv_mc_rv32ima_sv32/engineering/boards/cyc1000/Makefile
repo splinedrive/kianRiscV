@@ -42,6 +42,7 @@ VERILOG_DEFINE += -verilog_macro SDRAM_SIZE=$(shell echo $$((1024*1024*8)))
 VERILOG_DEFINE += -verilog_macro NUM_ENTRIES_ITLB=64
 VERILOG_DEFINE += -verilog_macro NUM_ENTRIES_DTLB=64
 VERILOG_DEFINE += -verilog_macro ICACHE_ENTRIES_PER_WAY=64
+VERILOG_DEFINE += -verilog_macro DCACHE_ENTRIES_PER_WAY=64
 VERILOG_DEFINE += -verilog_macro TRP_NS=20
 VERILOG_DEFINE += -verilog_macro TRC_NS=20
 VERILOG_DEFINE += -verilog_macro TRCD_NS=20

@@ -41,4 +41,5 @@ SRCS := ./pll.v \
         ../../kianv_harris_edition/sv32_table_walk.v \
         ../../kianv_harris_edition/sv32_translate_instruction_to_physical.v \
         ../../kianv_harris_edition/sv32_translate_data_to_physical.v \
+        ../../kianv_harris_edition/associative_cache.v \
         ../../kianv_harris_edition/tag_ram.v

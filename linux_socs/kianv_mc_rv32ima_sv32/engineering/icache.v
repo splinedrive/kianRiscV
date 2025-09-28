@@ -20,7 +20,8 @@
 
 module icache #(
     parameter ICACHE_ENTRIES_PER_WAY = 64,
-    parameter WAYS = 2
+    parameter WAYS = 2,
+    parameter REPLACEMENT_POLICY = "LRU"
 ) (
     input wire clk,
     input wire resetn,
@@ -28,127 +29,132 @@ module icache #(
     input wire cpu_valid_i,
     output reg [31:0] cpu_dout_o,
     output reg cpu_ready_o,
-
-
     output reg [31:0] ram_addr_o,
     input wire [31:0] ram_rdata_i,
     output reg ram_valid_o,
     input wire ram_ready_i
 );
-  reg [31:0] block_address;
+
+
+  localparam TOTAL_ENTRIES = ICACHE_ENTRIES_PER_WAY * WAYS;
   localparam BLOCK_SIZE = 4;
   localparam BLOCK_OFFSET = $clog2(BLOCK_SIZE);
   localparam ICACHE_ENTRIES_PER_WAY_WIDTH = $clog2(ICACHE_ENTRIES_PER_WAY);
   localparam TAG_WIDTH = (32 - ICACHE_ENTRIES_PER_WAY_WIDTH - BLOCK_OFFSET);
 
-  reg  [ICACHE_ENTRIES_PER_WAY_WIDTH -1:0] idx;
-  reg                                      we;
-  reg                                      valid     [1:0];
-  wire                                     hit       [1:0];
-  reg  [                             31:0] payload_i;
-  wire [                             31:0] payload_o [1:0];
 
-  reg  [                   TAG_WIDTH -1:0] tag;
-  reg  [      ICACHE_ENTRIES_PER_WAY -1:0] lru;
-  reg  [      ICACHE_ENTRIES_PER_WAY -1:0] lru_nxt;
+  reg [31:0] block_address;
+  reg [ICACHE_ENTRIES_PER_WAY_WIDTH-1:0] idx;
+  reg [TAG_WIDTH-1:0] tag;
 
-  genvar i;
-  generate
-    for (i = 0; i < WAYS; i = i + 1) begin : CACHE_TAG_RAM_WAYS
-      tag_ram #(
-          .TAG_RAM_ADDR_WIDTH(ICACHE_ENTRIES_PER_WAY_WIDTH),
-          .TAG_WIDTH(TAG_WIDTH),
-          .PAYLOAD_WIDTH(32)
-      ) cache_I0 (
-          .clk      (clk),
-          .resetn   (resetn),
-          .idx      (idx),
-          .tag      (tag),
-          .we       (we),
-          .valid_i  (valid[i]),
-          .hit_o    (hit[i]),
-          .payload_i(payload_i),
-          .payload_o(payload_o[i])
-      );
-    end
-  endgenerate
+
+  reg cache_we;
+  reg cache_valid_i;
+  wire cache_hit_o;
+  reg [31:0] cache_payload_i;
+  wire [31:0] cache_payload_o;
+
 
   localparam S0 = 0, S1 = 1, S2 = 2, S_LAST = 3;
-  reg [$clog2(S_LAST) -1:0] state, next_state;
-  reg hit_occured;
-  reg hit_occured_nxt;
+  reg [$clog2(S_LAST)-1:0] state, next_state;
+  reg hit_occurred;
+  reg hit_occurred_nxt;
+
+
+  wire [TAG_WIDTH + ICACHE_ENTRIES_PER_WAY_WIDTH - 1:0] full_tag;
+  assign full_tag = {tag, idx};
+
+
+  associative_cache #(
+      .TAG_WIDTH(TAG_WIDTH + ICACHE_ENTRIES_PER_WAY_WIDTH),
+      .PAYLOAD_WIDTH(32),
+      .TOTAL_ENTRIES(TOTAL_ENTRIES),
+      .WAYS(WAYS),
+      .REPLACEMENT_POLICY(REPLACEMENT_POLICY)
+  ) cache_inst (
+      .clk(clk),
+      .resetn(resetn),
+      .tag(full_tag),
+      .we(cache_we),
+      .valid_i(cache_valid_i),
+      .hit_o(cache_hit_o),
+      .payload_i(cache_payload_i),
+      .payload_o(cache_payload_o)
+  );
+
+
   always @(posedge clk) begin
     if (!resetn) begin
       state <= S0;
-      hit_occured <= 0;
-      lru <= 0;
+      hit_occurred <= 1'b0;
     end else begin
       state <= next_state;
-      hit_occured <= hit_occured_nxt;
-      lru <= lru_nxt;
+      hit_occurred <= hit_occurred_nxt;
     end
   end
 
   wire fetch_valid;
   assign fetch_valid = cpu_valid_i && !cpu_ready_o;
+
+
   always @(*) begin
     next_state = state;
-
     case (state)
-      S0: next_state = !fetch_valid ? S0 : (hit[0] || hit[1] ? S2 : S1);
+      S0: next_state = !fetch_valid ? S0 : (cache_hit_o ? S2 : S1);
       S1: next_state = ram_ready_i ? S0 : S1;
       S2: next_state = S0;
       default: next_state = S0;
     endcase
   end
 
+
   always @(*) begin
-    /* verilator lint_off WIDTHTRUNC */
+
     block_address = cpu_addr_i >> BLOCK_OFFSET;
     tag = block_address >> (ICACHE_ENTRIES_PER_WAY_WIDTH);
     idx = (block_address) & ((1 << ICACHE_ENTRIES_PER_WAY_WIDTH) - 1);
-    /* verilator lint_on WIDTHTRUNC */
+
+
 
     cpu_dout_o = ram_rdata_i;
     cpu_ready_o = 1'b0;
-
-    payload_i = ram_rdata_i;
-
     ram_addr_o = cpu_addr_i;
     ram_valid_o = 1'b0;
 
-    valid[0] = 1'b0;
-    valid[1] = 1'b0;
-    we = 1'b0;
-    lru_nxt = lru;
-    hit_occured_nxt = hit_occured;
+
+    cache_we = 1'b0;
+    cache_valid_i = 1'b0;
+    cache_payload_i = ram_rdata_i;
+    hit_occurred_nxt = hit_occurred;
 
     case (state)
       S0: begin
-        valid[0] = fetch_valid;
-        valid[1] = fetch_valid;
-        hit_occured_nxt = hit[1];
+
+        cache_valid_i = fetch_valid;
+        hit_occurred_nxt = cache_hit_o && fetch_valid;
       end
+
       S1: begin
-        if (ram_ready_i) begin : miss_case
-          we = 1'b1;
-          valid[lru[idx]] = 1'b1;
-          lru_nxt[idx] = !lru[idx];
+
+        if (ram_ready_i) begin
+          cache_we = 1'b1;
+          cache_valid_i = 1'b1;
           cpu_ready_o = 1'b1;
         end else begin
           ram_valid_o = 1'b1;
         end
       end
-      S2: begin : hit_case
-        valid[hit_occured] = 1'b1;
-        lru_nxt[idx] = !hit_occured;
+
+      S2: begin
+
         cpu_ready_o = 1'b1;
-        cpu_dout_o = payload_o[hit_occured];
+        cpu_dout_o  = cache_payload_o;
       end
     endcase
   end
 
   initial begin
-    //    $monitor("%b | %b", clk, resetn);
+
   end
+
 endmodule

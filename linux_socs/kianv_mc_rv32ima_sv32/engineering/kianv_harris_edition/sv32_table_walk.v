@@ -17,11 +17,13 @@
  *
  */
 `default_nettype none
-
 `include "riscv_defines.vh"
+
 module sv32_table_walk #(
     parameter NUM_ENTRIES_ITLB = 64,
-    parameter NUM_ENTRIES_DTLB = 64
+    parameter NUM_ENTRIES_DTLB = 64,
+    parameter ITLB_WAYS        = 4,   // 1=direct mapped, 4=4-way associative
+    parameter DTLB_WAYS        = 4    // 1=direct mapped, 4=4-way associative
 ) (
     input  wire        clk,
     input  wire        resetn,
@@ -30,74 +32,69 @@ module sv32_table_walk #(
     output reg  [31:0] pte,
     input  wire        is_instruction,  /* differ tlb */
     input  wire        tlb_flush,
-
-    input  wire valid,
-    output reg  ready,
-
+    input  wire        valid,
+    output reg         ready,
     output reg         walk_mem_valid,
     input  wire        walk_mem_ready,
     output reg  [31:0] walk_mem_addr,
     input  wire [31:0] walk_mem_rdata
 );
-  localparam ITLB_ENTRY_COUNT_WIDTH = $clog2(NUM_ENTRIES_ITLB);
-  localparam DTLB_ENTRY_COUNT_WIDTH = $clog2(NUM_ENTRIES_DTLB);
+
+  // State machine parameters
   localparam S0 = 0, S1 = 1, S2 = 2, S_LAST = 3;
 
   wire is_itlb = !is_instruction;
   reg [$clog2(S_LAST) -1:0] state, next_state;
+  reg  [31:0] base;
+  reg  [31:0] base_nxt;
+  reg  [ 3:0] vpn_shift;
+  reg  [ 9:0] idx;
+  reg  [31:0] ppn;
+  reg  [ 9:0] pte_flags;
+  reg  [20:0] vpn;
+  reg  [31:0] pte_nxt;
+  reg         ready_nxt;
+  reg  [ 1:0] level;
+  reg  [ 1:0] level_nxt;
+  reg  [19:0] tag;
 
+  // TLB interface signals
+  wire        tlb_hit   [1:0];
+  reg         tlb_we    [1:0];
+  reg         tlb_valid [1:0];
+  reg  [31:0] tlb_pte_i;
+  wire [31:0] tlb_pte_o [1:0];
 
-  reg  [                       31:0] base;
-  reg  [                       31:0] base_nxt;
-  reg  [                        3:0] vpn_shift;
-  reg  [                        9:0] idx;
-  reg  [                       31:0] ppn;
-  reg  [                        9:0] pte_flags;
-  reg  [                       20:0] vpn;
-
-  reg  [                       31:0] pte_nxt;
-
-  reg                                ready_nxt;
-
-  reg  [                        1:0] level;
-  reg  [                        1:0] level_nxt;
-  reg  [                       19:0] tag;
-
-
-  reg  [ITLB_ENTRY_COUNT_WIDTH -1:0] itlb_idx;
-  reg  [DTLB_ENTRY_COUNT_WIDTH -1:0] dtlb_idx;
-  reg                                tlb_we;
-  reg                                tlb_valid [1:0];
-  wire                               tlb_hit   [1:0];
-  reg  [                       31:0] tlb_pte_i;
-  wire [                       31:0] tlb_pte_o [1:0];
-
-  tag_ram #(
-      .TAG_RAM_ADDR_WIDTH(ITLB_ENTRY_COUNT_WIDTH),
+  // ITLB - configurable associativity
+  associative_cache #(
       .TAG_WIDTH(20),
-      .PAYLOAD_WIDTH(32)
+      .PAYLOAD_WIDTH(32),
+      .TOTAL_ENTRIES(NUM_ENTRIES_ITLB),
+      .WAYS(ITLB_WAYS),
+      .REPLACEMENT_POLICY("LRU")
   ) itlb_I (
       .clk      (clk),
       .resetn   (resetn && !tlb_flush),
-      .idx      (itlb_idx),
       .tag      (tag),
-      .we       (tlb_we),
+      .we       (tlb_we[0]),
       .valid_i  (tlb_valid[0]),
       .hit_o    (tlb_hit[0]),
       .payload_i(tlb_pte_i),
       .payload_o(tlb_pte_o[0])
   );
 
-  tag_ram #(
-      .TAG_RAM_ADDR_WIDTH(DTLB_ENTRY_COUNT_WIDTH),
+  // DTLB - configurable associativity
+  associative_cache #(
       .TAG_WIDTH(20),
-      .PAYLOAD_WIDTH(32)
+      .PAYLOAD_WIDTH(32),
+      .TOTAL_ENTRIES(NUM_ENTRIES_DTLB),
+      .WAYS(DTLB_WAYS),
+      .REPLACEMENT_POLICY("LRU")
   ) dtlb_I (
       .clk      (clk),
       .resetn   (resetn && !tlb_flush),
-      .idx      (dtlb_idx),
       .tag      (tag),
-      .we       (tlb_we),
+      .we       (tlb_we[1]),
       .valid_i  (tlb_valid[1]),
       .hit_o    (tlb_hit[1]),
       .payload_i(tlb_pte_i),
@@ -117,7 +114,6 @@ module sv32_table_walk #(
       ready <= ready_nxt;
       level <= level_nxt;
       base  <= base_nxt;
-
     end
   end
 
@@ -127,9 +123,9 @@ module sv32_table_walk #(
   assign mmu_translate_enable = `GET_SATP_MODE(satp);
   /* verilator lint_on WIDTHEXPAND */
   /* verilator lint_on WIDTHTRUNC */
+
   always @(*) begin
     next_state = state;
-
     case (state)
       S0: next_state = mmu_translate_enable && valid && !ready ? S1 : S0;
       S1: next_state = tlb_hit[is_itlb] ? S0 : (!(&level) ? S2 : S0);
@@ -146,28 +142,26 @@ module sv32_table_walk #(
     vpn = 0;
     pte_flags = 0;
     ready_nxt = ready;
-
     walk_mem_valid = 1'b0;
     walk_mem_addr = 0;
     level_nxt = level;
     ppn = 0;
-    tlb_we = 0;
+
     for (j = 0; j < 2; j = j + 1) begin
-      tlb_valid[j] = 0;
+      tlb_we[j] = 1'b0;
+      tlb_valid[j] = 1'b0;
     end
     tlb_pte_i = 0;
+
     /* verilator lint_off WIDTHEXPAND */
     /* verilator lint_off WIDTHTRUNC */
     tag = address >> (`SV32_PAGE_OFFSET_BITS);
-    itlb_idx = tag & (NUM_ENTRIES_ITLB - 1);
-    dtlb_idx = tag & (NUM_ENTRIES_DTLB - 1);
 
     vpn_shift = level ? `SV32_VPN0_BITS : 0;
     idx = (tag >> vpn_shift) & ((1 << `SV32_VPN0_BITS) - 1);
     walk_mem_addr = base + (idx << `SV32_PTE_SHIFT);  // word aligned
     /* verilator lint_on WIDTHEXPAND */
     /* verilator lint_on WIDTHTRUNC */
-
 
     /* verilator lint_off WIDTHEXPAND */
     /* verilator lint_off WIDTHTRUNC */
@@ -207,13 +201,7 @@ module sv32_table_walk #(
             ready_nxt = 1'b1;
           end else begin
             /* Pointer to next level of page table */
-            if ((!
-                `GET_PTE_R(pte_nxt)
-                && !
-                `GET_PTE_W(pte_nxt)
-                && !
-                `GET_PTE_X(pte_nxt)
-                )) begin
+            if ((!`GET_PTE_R(pte_nxt) && !`GET_PTE_W(pte_nxt) && !`GET_PTE_X(pte_nxt))) begin
               ready_nxt = 1'b0;
               level_nxt = level - 1;
               base_nxt  = ppn << `SV32_PAGE_OFFSET_BITS;
@@ -226,7 +214,7 @@ module sv32_table_walk #(
               level_nxt = 1;
               ready_nxt = 1'b1;
               tlb_valid[is_itlb] = 1'b1;
-              tlb_we = 1'b1;
+              tlb_we[is_itlb] = 1'b1;
               tlb_pte_i = pte_nxt;
             end
           end
@@ -240,7 +228,6 @@ module sv32_table_walk #(
     endcase
     /* verilator lint_on WIDTHEXPAND */
     /* verilator lint_on WIDTHTRUNC */
-
   end
 
 endmodule

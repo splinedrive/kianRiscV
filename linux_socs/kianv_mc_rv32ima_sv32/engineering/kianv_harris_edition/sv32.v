@@ -243,7 +243,9 @@ module sv32 #(
 
   sv32_table_walk #(
       .NUM_ENTRIES_ITLB(`NUM_ENTRIES_ITLB),
-      .NUM_ENTRIES_DTLB(`NUM_ENTRIES_DTLB)
+      .NUM_ENTRIES_DTLB(`NUM_ENTRIES_DTLB),
+      .ITLB_WAYS(4),
+      .DTLB_WAYS(4)
   ) sv32_table_walk_I (
       .clk    (clk),
       .resetn (resetn),
