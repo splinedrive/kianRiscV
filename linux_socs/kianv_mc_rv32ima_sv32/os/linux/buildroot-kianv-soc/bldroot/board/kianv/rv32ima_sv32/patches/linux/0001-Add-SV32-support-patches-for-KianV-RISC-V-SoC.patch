@@ -3,6 +3,7 @@ From: Hirosh Dabui <hirosh@dabui.de>
 Date: Sat, 16 Aug 2025 22:22:02 +0200
 Subject: [PATCH] Add SV32 support patches for KianV RISC-V SoC
 
+add 30 Hz timer
 ---
  drivers/gpio/Kconfig                        |   8 +
  drivers/gpio/Makefile                       |   2 +
@@ -17,12 +18,13 @@ Subject: [PATCH] Add SV32 support patches for KianV RISC-V SoC
  drivers/staging/fbtft/fbtft-bus.c           |   9 +-
  drivers/staging/fbtft/fbtft-core.c          |  34 ++-
  include/linux/spi/spi.h                     |   1 +
+ kernel/Kconfig.hz                           |   6 +
  sound/Kconfig                               |   2 +
  sound/Makefile                              |   3 +-
  sound/kianv/Kconfig                         |   4 +
  sound/kianv/Makefile                        |   1 +
  sound/kianv/kianv-snd.c                     | 111 ++++++++++
- 18 files changed, 885 insertions(+), 14 deletions(-)
+ 19 files changed, 891 insertions(+), 14 deletions(-)
  create mode 100644 drivers/gpio/gpio-kianv.c
  create mode 100644 drivers/spi/spi-kianV-simple.c
  create mode 100644 sound/kianv/Kconfig
@@ -1106,6 +1108,34 @@ index e9ea43234d9a..f5ff1a4b9e11 100644
  #define SPI_NO_TX		BIT(31)		/* No transmit wire */
  #define SPI_NO_RX		BIT(30)		/* No receive wire */
  	/*
+diff --git a/kernel/Kconfig.hz b/kernel/Kconfig.hz
+index ce1435cb08b1..1ee5778eafa6 100644
+--- a/kernel/Kconfig.hz
++++ b/kernel/Kconfig.hz
+@@ -16,6 +16,10 @@ choice
+ 	 environment leading to NR_CPUS * HZ number of timer interrupts
+ 	 per second.
+ 
++config HZ_30
++  bool "30 HZ"
++	help
++	  30 Hz is a typical choice for fpga softcores.
+ 
+ 	config HZ_100
+ 		bool "100 HZ"
+@@ -50,6 +54,7 @@ endchoice
+ 
+ config HZ
+ 	int
++	default 30 if HZ_30
+ 	default 100 if HZ_100
+ 	default 250 if HZ_250
+ 	default 300 if HZ_300
+@@ -57,3 +62,4 @@ config HZ
+ 
+ config SCHED_HRTICK
+ 	def_bool HIGH_RES_TIMERS
++
 diff --git a/sound/Kconfig b/sound/Kconfig
 index 8b40205394fe..c465376143ce 100644
 --- a/sound/Kconfig
