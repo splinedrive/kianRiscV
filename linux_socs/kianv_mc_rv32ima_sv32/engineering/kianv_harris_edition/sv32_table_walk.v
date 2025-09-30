@@ -1,7 +1,7 @@
 /*
  *  kianv harris multicycle RISC-V rv32ima
  *
- *  copyright (c) 2023/2024 hirosh dabui <hirosh@dabui.de>
+ *  copyright (c) 2023/2024/25 hirosh dabui <hirosh@dabui.de>
  *
  *  permission to use, copy, modify, and/or distribute this software for any
  *  purpose with or without fee is hereby granted, provided that the above
@@ -56,9 +56,18 @@ module sv32_table_walk #(
   reg         ready_nxt;
   reg  [ 1:0] level;
   reg  [ 1:0] level_nxt;
-  reg  [19:0] tag;
 
-  // TLB interface signals
+  reg  [28:0] tag;
+  wire [ 8:0] current_asid;
+  wire [19:0] current_vpn;
+
+  /* verilator lint_off WIDTHEXPAND */
+  /* verilator lint_off WIDTHTRUNC */
+  assign current_asid = `GET_SATP_ASID(satp);
+  assign current_vpn  = address >> `SV32_PAGE_OFFSET_BITS;
+  /* verilator lint_on WIDTHEXPAND */
+  /* verilator lint_on WIDTHTRUNC */
+
   wire        tlb_hit   [1:0];
   reg         tlb_we    [1:0];
   reg         tlb_valid [1:0];
@@ -67,10 +76,10 @@ module sv32_table_walk #(
 
   // ITLB - configurable associativity
   associative_cache #(
-      .TAG_WIDTH(20),
-      .PAYLOAD_WIDTH(32),
-      .TOTAL_ENTRIES(NUM_ENTRIES_ITLB),
-      .WAYS(ITLB_WAYS),
+      .TAG_WIDTH         (29),
+      .PAYLOAD_WIDTH     (32),
+      .TOTAL_ENTRIES     (NUM_ENTRIES_ITLB),
+      .WAYS              (ITLB_WAYS),
       .REPLACEMENT_POLICY("LRU")
   ) itlb_I (
       .clk      (clk),
@@ -85,10 +94,9 @@ module sv32_table_walk #(
 
   // DTLB - configurable associativity
   associative_cache #(
-      .TAG_WIDTH(20),
-      .PAYLOAD_WIDTH(32),
-      .TOTAL_ENTRIES(NUM_ENTRIES_DTLB),
-      .WAYS(DTLB_WAYS),
+      .PAYLOAD_WIDTH     (32),
+      .TOTAL_ENTRIES     (NUM_ENTRIES_DTLB),
+      .WAYS              (DTLB_WAYS),
       .REPLACEMENT_POLICY("LRU")
   ) dtlb_I (
       .clk      (clk),
@@ -155,11 +163,12 @@ module sv32_table_walk #(
 
     /* verilator lint_off WIDTHEXPAND */
     /* verilator lint_off WIDTHTRUNC */
-    tag = address >> (`SV32_PAGE_OFFSET_BITS);
+    // Construct tag with VPN and ASID
+    tag = {current_vpn, current_asid};
 
     vpn_shift = level ? `SV32_VPN0_BITS : 0;
-    idx = (tag >> vpn_shift) & ((1 << `SV32_VPN0_BITS) - 1);
-    walk_mem_addr = base + (idx << `SV32_PTE_SHIFT);  // word aligned
+    idx = (current_vpn >> vpn_shift) & ((1 << `SV32_VPN0_BITS) - 1);
+    walk_mem_addr = base + (idx << `SV32_PTE_SHIFT);
     /* verilator lint_on WIDTHEXPAND */
     /* verilator lint_on WIDTHTRUNC */
 
@@ -170,7 +179,8 @@ module sv32_table_walk #(
         base_nxt = `GET_SATP_PPN(satp) << `SV32_PAGE_OFFSET_BITS;
         // bare mode
         if (!`GET_SATP_MODE(satp) && valid && !ready) begin
-          pte_nxt = `PTE_V_MASK | `PTE_R_MASK | `PTE_W_MASK | `PTE_X_MASK | ((address >> `SV32_PAGE_OFFSET_BITS) << `SV32_PAGE_OFFSET_BITS);
+          pte_nxt = `PTE_V_MASK | `PTE_R_MASK | `PTE_W_MASK | `PTE_X_MASK |
+                    ((address >> `SV32_PAGE_OFFSET_BITS) << `SV32_PAGE_OFFSET_BITS);
           ready_nxt = 1'b1;
         end else begin
           ready_nxt = 1'b0;
@@ -210,9 +220,11 @@ module sv32_table_walk #(
               pte_flags = pte_nxt & `PTE_FLAGS;
               // idx for pte
               vpn = address >> `SV32_PAGE_OFFSET_BITS;
-              pte_nxt = ((level ? (ppn | vpn & ((1 << `SV32_VPN0_SHIFT) - 1)) : ppn) << `SV32_PTE_ALIGNED_PPN_SHIFT) | pte_flags;
+              pte_nxt = ((level ? (ppn | vpn & ((1 << `SV32_VPN0_SHIFT) - 1)) : ppn) <<
+                        `SV32_PTE_ALIGNED_PPN_SHIFT) | pte_flags;
               level_nxt = 1;
               ready_nxt = 1'b1;
+
               tlb_valid[is_itlb] = 1'b1;
               tlb_we[is_itlb] = 1'b1;
               tlb_pte_i = pte_nxt;

@@ -577,7 +577,7 @@ module csr_exception_handler #(
         `CSR_SCAUSE:     scause_nxt = wdata_nxt;
         `CSR_STVAL:      stval_nxt = wdata_nxt;
         `CSR_SATP: begin
-          tlb_flush = `GET_SATP_MODE(wdata_nxt);
+          tlb_flush = `GET_SATP_MODE(satp) ^ `GET_SATP_MODE(wdata_nxt);
           satp_nxt  = wdata_nxt;
         end
         `CSR_STIMECMP:   stimecmp_nxt = wdata_nxt;
