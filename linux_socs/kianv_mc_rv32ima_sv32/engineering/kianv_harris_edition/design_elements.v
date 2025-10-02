@@ -1,7 +1,7 @@
 /*
  *  kianv harris multicycle RISC-V rv32im
  *
- *  copyright (c) 2022/23 hirosh dabui <hirosh@dabui.de>
+ *  copyright (c) 2022/23/25 hirosh dabui <hirosh@dabui.de>
  *
  *  permission to use, copy, modify, and/or distribute this software for any
  *  purpose with or without fee is hereby granted, provided that the above
@@ -139,16 +139,21 @@ module dff_kianV #(
 endmodule
 
 module counter #(
-    parameter WIDTH = 32
+    parameter WIDTH = 64
 ) (
-    input wire resetn,
-    input wire clk,
-    input wire inc,
-    output reg [WIDTH -1:0] q
+    input  wire             resetn,
+    input  wire             clk,
+    input  wire             incr,
+    output reg [WIDTH-1:0]  count
 );
-  always @(posedge clk)
-    if (!resetn) q <= 0;
-    else if (inc) q <= q + 1;
+
+  always @(posedge clk) begin
+    if (!resetn) begin
+      count <= {WIDTH{1'b0}};
+    end else if (incr) begin
+      count <= count + 1'b1;
+    end
+  end
 
 endmodule
 /* verilator lint_on MULTITOP */
