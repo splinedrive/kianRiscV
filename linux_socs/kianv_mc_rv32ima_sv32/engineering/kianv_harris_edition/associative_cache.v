@@ -16,13 +16,12 @@
  *  or in connection with the use or performance of this software.
  *
  */
-
 module associative_cache #(
     parameter TAG_WIDTH = 20,
     parameter PAYLOAD_WIDTH = 32,
     parameter TOTAL_ENTRIES = 64,
     parameter WAYS = 4,
-    parameter REPLACEMENT_POLICY = "LRU"
+    parameter REPLACEMENT_POLICY = "LRU"  // "LRU", "LPRU", "RANDOM", "ROUND_ROBIN"
 ) (
     input  wire                     clk,
     input  wire                     resetn,
@@ -34,7 +33,6 @@ module associative_cache #(
     output reg  [PAYLOAD_WIDTH-1:0] payload_o
 );
 
-
   localparam SETS = TOTAL_ENTRIES / WAYS;
   localparam SET_WIDTH = $clog2(SETS);
   localparam WAY_WIDTH = $clog2(WAYS);
@@ -42,7 +40,7 @@ module associative_cache #(
 
   wire [SET_WIDTH-1:0] set_idx = tag[SET_WIDTH-1:0];
   wire [TAG_WIDTH-SET_WIDTH-1:0] tag_portion = tag[TAG_WIDTH-1:SET_WIDTH];
-
+  // Signals for each way
   wire [WAYS-1:0] way_hit;
   wire [WAYS-1:0] way_we;
   wire [PAYLOAD_WIDTH-1:0] way_payload_o[WAYS-1:0];
@@ -60,14 +58,11 @@ module associative_cache #(
     end
   end
 
-
   always @(*) begin
     payload_o = way_payload_o[hit_way];
   end
 
-
   wire [WAY_WIDTH-1:0] replace_way;
-
 
   generate
     if (REPLACEMENT_POLICY == "LRU") begin : lru_policy
@@ -82,6 +77,19 @@ module associative_cache #(
           .access(hit_o || (we && valid_i)),
           .access_way(hit_o ? hit_way : replace_way),
           .lru_way(replace_way)
+      );
+    end else if (REPLACEMENT_POLICY == "LPRU") begin : lpru_policy
+      lpru_replacement #(
+          .SETS(SETS),
+          .SET_WIDTH(SET_WIDTH),
+          .WAYS(WAYS)
+      ) lpru_inst (
+          .clk(clk),
+          .resetn(resetn),
+          .set_idx(set_idx),
+          .access(hit_o || (we && valid_i)),
+          .access_way(hit_o ? hit_way : replace_way),
+          .lpru_way(replace_way)
       );
     end else if (REPLACEMENT_POLICY == "RANDOM") begin : random_policy
       random_replacement #(
@@ -106,14 +114,12 @@ module associative_cache #(
     end
   endgenerate
 
-
   genvar j;
   generate
     for (j = 0; j < WAYS; j = j + 1) begin : way_we_gen
       assign way_we[j] = we && valid_i && (hit_o ? (hit_way == j) : (replace_way == j));
     end
   endgenerate
-
 
   generate
     for (j = 0; j < WAYS; j = j + 1) begin : way_inst
@@ -134,7 +140,6 @@ module associative_cache #(
       );
     end
   endgenerate
-
 endmodule
 
 module lru_replacement #(
@@ -149,13 +154,10 @@ module lru_replacement #(
     input  wire [$clog2(WAYS)-1:0] access_way,
     output reg  [$clog2(WAYS)-1:0] lru_way
 );
-
   localparam WAY_WIDTH = $clog2(WAYS);
-
   generate
     if (WAYS == 2) begin : two_way
       reg lru_bit[SETS-1:0];
-
       integer i;
       always @(posedge clk) begin
         if (!resetn) begin
@@ -166,14 +168,11 @@ module lru_replacement #(
           lru_bit[set_idx] <= access_way[0];
         end
       end
-
       always @(*) begin
         lru_way = ~lru_bit[set_idx];
       end
-
     end else if (WAYS == 4) begin : four_way
       reg [2:0] lru_state[SETS-1:0];
-
       integer i;
       always @(posedge clk) begin
         if (!resetn) begin
@@ -189,7 +188,6 @@ module lru_replacement #(
           endcase
         end
       end
-
       always @(*) begin
         case (lru_state[set_idx])
           3'b000: lru_way = 2'b00;
@@ -202,10 +200,8 @@ module lru_replacement #(
           3'b111: lru_way = 2'b11;
         endcase
       end
-
     end else begin : general_way
       reg [WAY_WIDTH:0] age_counter[WAYS-1:0][SETS-1:0];
-
       integer i, j;
       always @(posedge clk) begin
         if (!resetn) begin
@@ -224,7 +220,6 @@ module lru_replacement #(
           end
         end
       end
-
       always @(*) begin
         lru_way = 0;
         begin : lru_search
@@ -238,6 +233,51 @@ module lru_replacement #(
       end
     end
   endgenerate
+endmodule
+
+module lpru_replacement #(
+    parameter SETS = 16,
+    parameter SET_WIDTH = 4,
+    parameter WAYS = 4
+) (
+    input  wire                    clk,
+    input  wire                    resetn,
+    input  wire [   SET_WIDTH-1:0] set_idx,
+    input  wire                    access,
+    input  wire [$clog2(WAYS)-1:0] access_way,
+    output reg  [$clog2(WAYS)-1:0] lpru_way
+);
+  localparam WAY_WIDTH = $clog2(WAYS);
+
+  reg [WAYS-1:0] usage_bits[SETS-1:0];
+
+  integer i, j;
+
+  always @(posedge clk) begin
+    if (!resetn) begin
+      for (i = 0; i < SETS; i = i + 1) begin
+        usage_bits[i] <= {WAYS{1'b0}};
+      end
+    end else if (access) begin
+      usage_bits[set_idx][access_way] <= 1'b1;
+
+      if (&usage_bits[set_idx]) begin
+        usage_bits[set_idx] <= (1 << access_way);
+      end
+    end
+  end
+
+  reg found;
+  always @(*) begin
+    lpru_way = 0;
+    found = 0;
+    for (j = 0; j < WAYS; j = j + 1) begin
+      if (!usage_bits[set_idx][j] && !found) begin
+        lpru_way = j[WAY_WIDTH-1:0];
+        found = 1;
+      end
+    end
+  end
 
 endmodule
 
@@ -248,7 +288,6 @@ module random_replacement #(
     input  wire                    resetn,
     output reg  [$clog2(WAYS)-1:0] random_way
 );
-
   localparam WAY_WIDTH = $clog2(WAYS);
 
   reg [7:0] lfsr;
@@ -262,7 +301,7 @@ module random_replacement #(
   end
 
   always @(*) begin
-    random_way = lfsr[WAY_WIDTH-1:0] % WAYS;
+    random_way = lfsr[WAY_WIDTH-1:0];
   end
 
 endmodule
@@ -278,11 +317,9 @@ module round_robin_replacement #(
     input  wire                    access,
     output reg  [$clog2(WAYS)-1:0] next_way
 );
-
   localparam WAY_WIDTH = $clog2(WAYS);
-
+  localparam MAX_WAY = WAYS - 1;
   reg [WAY_WIDTH-1:0] rr_counter[SETS-1:0];
-
   integer i;
   always @(posedge clk) begin
     if (!resetn) begin
@@ -290,12 +327,14 @@ module round_robin_replacement #(
         rr_counter[i] <= 0;
       end
     end else if (access) begin
-      rr_counter[set_idx] <= (rr_counter[set_idx] + 1) % WAYS;
+      if (rr_counter[set_idx] == MAX_WAY[WAY_WIDTH-1:0]) begin
+        rr_counter[set_idx] <= 0;
+      end else begin
+        rr_counter[set_idx] <= rr_counter[set_idx] + 1'b1;
+      end
     end
   end
-
   always @(*) begin
     next_way = rr_counter[set_idx];
   end
-
 endmodule
