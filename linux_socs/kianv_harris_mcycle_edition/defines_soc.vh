@@ -22,7 +22,7 @@
 `define USE_PLL // 60MHz PLL
 `define CPU_FREQ_REG_ADDR 32'h 30_000_010
 
-`define BAUDRATE 2_000_000
+`define BAUDRATE 115200
 
 `define UART_TX_ADDR 32'h 10_000_000
 `define UART_RX_ADDR 32'h 10_000_000
