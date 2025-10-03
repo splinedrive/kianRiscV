@@ -36,6 +36,9 @@ SRCS := ./pll.v \
         ../../kianv_harris_edition/divider_decoder.v \
         ../../kianv_harris_edition/multiplier_decoder.v \
         ../../kianv_harris_edition/csr_exception_handler.v \
+        ../../kianv_harris_edition/csr_unit.v \
+        ../../kianv_harris_edition/interrupt_controller.v \
+        ../../kianv_harris_edition/csr_decoder.v \
         ../../kianv_harris_edition/csr_decoder.v \
         ../../kianv_harris_edition/sv32.v \
         ../../kianv_harris_edition/sv32_table_walk.v \
