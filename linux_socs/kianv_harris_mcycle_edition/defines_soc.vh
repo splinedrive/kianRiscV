@@ -1,7 +1,7 @@
 /*
  *  kianv harris multicycle RISC-V rv32im
  *
- *  copyright (c) 2023 hirosh dabui <hirosh@dabui.de>
+ *  copyright (c) 2023/25 hirosh dabui <hirosh@dabui.de>
  *
  *  permission to use, copy, modify, and/or distribute this software for any
  *  purpose with or without fee is hereby granted, provided that the above
@@ -20,7 +20,7 @@
 `define KIANV_SOC
 
 `define CPU_FREQ_REG_ADDR 32'h 30_000_010
-`define BAUDRATE          3_000_000
+`define BAUDRATE          115200
 
 `define UART_TX_ADDR      32'h 10_000_000
 `define UART_RX_ADDR      32'h 10_000_000
@@ -40,7 +40,7 @@
 `define SDRAM_SIZE                (1024*1024*32)
 `define SDRAM_MEM_ADDR_END        ((`SDRAM_MEM_ADDR_START) + (`SDRAM_SIZE))
 
-`define SYSTEM_CLK        70_000_000
+`define SYSTEM_CLK        60_000_000
 `define SYSTEM_CLK_MHZ    (`SYSTEM_CLK / 1_000_000)
 
 `define SPI_NOR_MEM_ADDR_START    32'h 20_000_000
