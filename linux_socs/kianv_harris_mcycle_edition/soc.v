@@ -1,7 +1,7 @@
 /*
  *  kianv.v - RISC-V rv32ima
  *
- *  copyright (c) 2023 hirosh dabui <hirosh@dabui.de>
+ *  copyright (c) 2023/2025 hirosh dabui <hirosh@dabui.de>
  *
  *  permission to use, copy, modify, and/or distribute this software for any
  *  purpose with or without fee is hereby granted, provided that the above
@@ -33,29 +33,25 @@ module soc (
 
     output wire O_sdram_clk,
     output wire O_sdram_cke,
-    output wire O_sdram_cs_n,            // chip select
-    output wire O_sdram_cas_n,           // columns address select
-    output wire O_sdram_ras_n,           // row address select
-    output wire O_sdram_wen_n,           // write enable
-    inout wire [31:0] IO_sdram_dq,       // 32 bit bidirectional data bus
-    output wire [10:0] O_sdram_addr,     // 11 bit multiplexed address bus
-    output wire [1:0] O_sdram_ba,        // two banks
-    output wire [3:0] O_sdram_dqm       // 32/4
-
+    output wire O_sdram_cs_n,
+    output wire O_sdram_cas_n,
+    output wire O_sdram_ras_n,
+    output wire O_sdram_wen_n,
+    inout wire [31:0] IO_sdram_dq,
+    output wire [10:0] O_sdram_addr,
+    output wire [1:0] O_sdram_ba,
+    output wire [3:0] O_sdram_dqm
 );
 
   wire [31:0] PC;
 
-  assign led       = ~PC[18+:5];
-  //assign led       = cpu_mem_wdata[0+:5];
-
+  assign led = ~PC[18+:5];
 
   wire clk;
   wire locked;
   Gowin_rPLL pll_I0 (
-      .clkout(clk),  //output clkout
-//      .lock(locked),  //output lock
-      .clkin(clk_osc)  //input clkin
+      .clkout(clk),
+      .clkin(clk_osc)
   );
 
   localparam BYTE_ADDRESS_LEN = 32;
@@ -65,64 +61,55 @@ module soc (
 
   localparam BRAM_ADDR_WIDTH = $clog2(`BRAM_WORDS);
 
-  // reset
+
   reg [11:0] rst_cnt = 0;
   wire resetn = &rst_cnt;
 
   always @(posedge clk) begin
- //   if (!locked) rst_cnt <= 0;
-  //  else if (!resetn) rst_cnt <= rst_cnt + 1;
       if (!resetn) rst_cnt <= rst_cnt + 1;
   end
 
 
-  // cpu
-  wire                      [31:0]                                           pc;
-  wire                      [ 5:0]                                           ctrl_state;
+  wire [31:0] pc;
+  wire [5:0]  ctrl_state;
 
-  wire                                                                       cpu_mem_ready;
-  wire                                                                       cpu_mem_valid;
+  wire        cpu_mem_ready;
+  wire        cpu_mem_valid;
+  wire [3:0]  cpu_mem_wstrb;
+  wire [31:0] cpu_mem_addr;
+  wire [31:0] cpu_mem_wdata;
+  wire [31:0] cpu_mem_rdata;
 
-  wire                      [ 3:0]                                           cpu_mem_wstrb;
-  wire                      [31:0]                                           cpu_mem_addr;
-  wire                      [31:0]                                           cpu_mem_wdata;
-  wire                      [31:0]                                           cpu_mem_rdata;
-
-  wire                      [31:0]                                           bram_rdata;
-  reg                                                                        bram_ready;
-  wire                                                                       bram_valid;
-
-  // uart
-  wire                                                                       uart_tx_valid;
-  reg                                                                        uart_tx_ready;
-  // uart
-  wire                                                                       uart_rx_valid;
-  reg                                                                        uart_rx_ready;
-
-  // spi flash memory
-  wire                      [31:0]                                           spi_nor_mem_data;
-  wire                                                                       spi_nor_mem_ready;
-  wire                                                                       spi_nor_mem_valid;
+  wire [31:0] bram_rdata;
+  reg         bram_ready;
+  wire        bram_valid;
 
 
-  // cpu_freq
-  wire                                                                       system_cpu_freq_valid;
-  reg                                                                        system_cpu_freq_ready;
+  reg         uart_tx_ready;
+  reg         uart_rx_ready;
 
-  // RISC-V is byte-addressable, alignment memory devices word organized
-  // memory interface
+
+  wire [31:0] spi_nor_mem_data;
+  wire        spi_nor_mem_ready;
+  wire        spi_nor_mem_valid;
+
+
+  wire        system_cpu_freq_valid;
+  reg         system_cpu_freq_ready;
+
+
   wire wr = |cpu_mem_wstrb;
   wire rd = ~wr;
 
-  // cpu_freq
+
   assign system_cpu_freq_valid   = !system_cpu_freq_ready && cpu_mem_valid && (cpu_mem_addr == `CPU_FREQ_REG_ADDR) && !wr;
   always @(posedge clk) system_cpu_freq_ready <= !resetn ? 1'b0 : system_cpu_freq_valid;
 
-  // SPI nor flash
+
   assign spi_nor_mem_valid = !spi_nor_mem_ready && cpu_mem_valid &&
            (cpu_mem_addr >= `SPI_NOR_MEM_ADDR_START && cpu_mem_addr < `SPI_NOR_MEM_ADDR_END) && !wr;
 
-  wire spi_state;
+  wire [29:0] word_aligned_addr = {cpu_mem_addr[31:2]};
 
   qqspi #(
       .QUAD_MODE(`QUAD_SPI_FLASH_MODE),
@@ -148,23 +135,45 @@ module soc (
       .resetn(resetn)
   );
 
-  /////////////////////////////////////////////////////////////////////////////
 
-  wire uart_tx_valid_wr;
 
-  // I have changed to blocked tx
-  assign uart_tx_valid = ~uart_tx_ready && cpu_mem_valid && cpu_mem_addr == `UART_TX_ADDR;
-  //assign uart_tx_valid = ~uart_tx_rdy && cpu_mem_valid && cpu_mem_addr == `UART_TX_ADDR; // blocking
-  assign uart_tx_valid_wr = wr && uart_tx_valid;
-  always @(posedge clk) uart_tx_ready <= !resetn ? 1'b0 : uart_tx_valid_wr;
-
-  reg  uart_tx_busy;
+  reg tx_seen;
+  reg lsr_thre;
   wire uart_tx_rdy;
 
-  tx_uart #(
-      .SYSTEM_CLK(`SYSTEM_CLK),
-      .BAUDRATE  (`BAUDRATE)
-  ) tx_uart_i (
+
+  wire tx_hit    = cpu_mem_valid && wr && (cpu_mem_addr == `UART_TX_ADDR);
+  wire tx_accept = tx_hit && !tx_seen && uart_tx_rdy;
+
+  wire uart_tx_valid_wr = tx_accept;
+
+  always @(posedge clk) begin
+    if (!resetn)
+      uart_tx_ready <= 1'b0;
+    else
+      uart_tx_ready <= tx_accept;
+  end
+
+  always @(posedge clk) begin
+    if (!resetn)
+      tx_seen <= 1'b0;
+    else if (!tx_hit)
+      tx_seen <= 1'b0;
+    else if (tx_accept)
+      tx_seen <= 1'b1;
+  end
+
+  always @(posedge clk) begin
+    if (!resetn)
+      lsr_thre <= 1'b1;
+    else if (tx_accept)
+      lsr_thre <= 1'b0;
+    else if (uart_tx_rdy)
+      lsr_thre <= 1'b1;
+  end
+
+  tx_uart
+  tx_uart_i (
       .clk    (clk),
       .resetn (resetn),
       .valid  (uart_tx_valid_wr),
@@ -174,28 +183,17 @@ module soc (
       .ready  (uart_tx_rdy)
   );
 
-  always @(posedge clk) begin
-    if (!resetn) begin
-      uart_tx_busy <= 0;
-    end else begin
-      case (1'b1)
-        (!uart_tx_busy && uart_tx_valid_wr): uart_tx_busy <= 1'b1;
-        (uart_tx_busy && uart_tx_rdy): uart_tx_busy <= 1'b0;
-      endcase
-    end
-  end
 
-  /////////////////////////////////////////////////////////////////////////////
   wire uart_lsr_valid_rd = ~uart_lsr_rdy && rd && cpu_mem_valid && cpu_mem_addr == `UART_LSR_ADDR;
   reg uart_lsr_rdy;
   always @(posedge clk) uart_lsr_rdy <= !resetn ? 1'b0 : uart_lsr_valid_rd;
 
-  /////////////////////////////////////////////////////////////////////////////
+
 
   wire uart_rx_valid_rd;
   wire [31:0] rx_uart_data;
 
-  assign uart_rx_valid = ~uart_rx_ready && cpu_mem_valid && cpu_mem_addr == `UART_RX_ADDR;
+  wire uart_rx_valid = ~uart_rx_ready && cpu_mem_valid && cpu_mem_addr == `UART_RX_ADDR;
   assign uart_rx_valid_rd = rd && uart_rx_valid;
 
   always @(posedge clk) begin
@@ -203,26 +201,22 @@ module soc (
   end
 
   wire rx_uart_rdy = uart_rx_ready;
-  rx_uart #(
-      .SYSTEM_CLK(`SYSTEM_CLK),
-      .BAUDRATE  (`BAUDRATE)
-  ) rx_uart_i (
+  rx_uart
+   rx_uart_i (
       .clk    (clk),
       .resetn (resetn),
       .rx_in  (uart_rx),
       .error  (),
-      .data_rd(rx_uart_rdy),  // pop
+      .div    (`SYSTEM_CLK / `BAUDRATE),
+      .data_rd(rx_uart_rdy),
       .data   (rx_uart_data)
   );
 
-  /////////////////////////////////////////////////////////////////////////////
+
 
   wire [31:0] mem_sdram_rdata;
-
   wire mem_sdram_valid;
   wire mem_sdram_ready;
-
-  wire [29:0] word_aligned_addr = {cpu_mem_addr[31:2]};
 
   wire is_sdram = (cpu_mem_addr >= `SDRAM_MEM_ADDR_START && cpu_mem_addr < `SDRAM_MEM_ADDR_END);
   assign mem_sdram_valid = !mem_sdram_ready && cpu_mem_valid && is_sdram;
@@ -251,9 +245,8 @@ module soc (
       .sdram_dq  (IO_sdram_dq)
   );
 
-  /////////////////////////////////////////////////////////////////////////////
 
-  // BRAM
+
   assign bram_valid = !bram_ready && cpu_mem_valid && (cpu_mem_addr < (`BRAM_WORDS << 2));
   always @(posedge clk) bram_ready <= !resetn ? 0 : bram_valid;
 
@@ -269,7 +262,7 @@ module soc (
       .wmask(cpu_mem_wstrb & {4{bram_valid}})
   );
 
-  /////////////////////////////////////////////////////////////////////////////
+
   wire IRQ3;
   wire IRQ7;
   wire clint_valid;
@@ -293,7 +286,7 @@ module soc (
       .ready   (clint_ready)
   );
 
-  /////////////////////////////////////////////////////////////////////////////
+
   kianv_harris_mc_edition #(
       .RESET_ADDR(`RESET_ADDR)
   ) kianv_I (
@@ -311,7 +304,7 @@ module soc (
       .PC          (PC)
   );
 
-  /////////////////////////////////////////////////////////////////////////////
+
   wire is_io = (cpu_mem_addr >= 32'h10_000_000 && cpu_mem_addr <= 32'h12_000_000);
   wire unmatched_io = !(cpu_mem_addr == `UART_LSR_ADDR || cpu_mem_addr == `UART_TX_ADDR || cpu_mem_addr == `UART_RX_ADDR || clint_valid);
   wire is_bram = (cpu_mem_addr[31]);
@@ -328,7 +321,13 @@ module soc (
     byteswaiting = 0;
     if (is_io) begin
       if (uart_lsr_rdy) begin
-        byteswaiting = {1'b0, !uart_tx_busy, !uart_tx_busy, 1'b0, 3'b0, !(&rx_uart_data)};
+        byteswaiting = {
+          1'b0,
+          uart_tx_rdy,
+          lsr_thre,
+          1'b0, 3'b0,
+          ~(&rx_uart_data)
+        };
         io_rdata = {16'b0, byteswaiting, 8'b0};
         io_ready = 1'b1;
       end else if (uart_rx_ready) begin
@@ -337,7 +336,6 @@ module soc (
       end else if (uart_tx_ready) begin
         io_rdata = 0;
         io_ready = 1'b1;
-        //io_ready = uart_tx_rdy; // blocking
       end else if (clint_ready) begin
         io_rdata = clint_rdata;
         io_ready = 1'b1;
@@ -348,20 +346,20 @@ module soc (
     end
   end
 
-  /////////////////////////////////////////////////////////////////////////////
+
   assign cpu_mem_ready = bram_ready
            || spi_nor_mem_ready
            || system_cpu_freq_ready
            || mem_sdram_ready
-           || io_ready
-           ;
+           || io_ready;
 
   assign cpu_mem_rdata   =
-           bram_ready               ? bram_rdata                   :
-           spi_nor_mem_ready        ? spi_nor_mem_data             :
-           system_cpu_freq_ready    ? `SYSTEM_CLK                  :
-           mem_sdram_ready          ? mem_sdram_rdata              :
-           io_ready                 ? io_rdata                     :
-           32'h 0000_0000;
+           bram_ready               ? bram_rdata       :
+           spi_nor_mem_ready        ? spi_nor_mem_data :
+           system_cpu_freq_ready    ? `SYSTEM_CLK      :
+           mem_sdram_ready          ? mem_sdram_rdata  :
+           io_ready                 ? io_rdata         :
+           32'h0000_0000;
 
 endmodule
+
