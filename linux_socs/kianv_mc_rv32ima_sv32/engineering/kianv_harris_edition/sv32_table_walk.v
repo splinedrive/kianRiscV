@@ -94,6 +94,7 @@ module sv32_table_walk #(
 
   // DTLB - configurable associativity
   associative_cache #(
+      .TAG_WIDTH         (29),
       .PAYLOAD_WIDTH     (32),
       .TOTAL_ENTRIES     (NUM_ENTRIES_DTLB),
       .WAYS              (DTLB_WAYS),

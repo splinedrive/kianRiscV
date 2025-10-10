@@ -90,7 +90,7 @@ module plic (
     end
   end
 
-  integer i;
+  integer i, j;
   reg [31:0] enable_ctx0_0_31;
   always @(posedge clk) begin
     if (!resetn) begin
@@ -107,11 +107,13 @@ module plic (
     if (!resetn) begin
       enable_ctx1_0_31 <= 0;
     end else if (valid && is_enable_ctx1_0_31) begin
-      for (i = 0; i < 4; i = i + 1) begin
-        if (wmask[i]) enable_ctx1_0_31[i*8+:8] <= wdata[i*8+:8];
+      for (j = 0; j < 4; j = j + 1) begin
+        if (wmask[j]) enable_ctx1_0_31[j*8+:8] <= wdata[j*8+:8];
       end
     end
   end
+
+  wire [31:0] irq_in = {interrupt_request, 1'b0};
 
   reg [31:0] pending_ctx0;
   always @(posedge clk) begin
@@ -121,7 +123,7 @@ module plic (
       if (is_claim_complete_ctx0 && we && valid) begin
         pending_ctx0 <= pending_ctx0 & ~(1 << wdata[7:0]);
       end else begin
-        pending_ctx0 <= pending_ctx0 | ({interrupt_request, 1'b0} & enable_ctx0_0_31);
+        pending_ctx0 <= pending_ctx0 | (irq_in & enable_ctx0_0_31);
       end
     end
   end
@@ -134,7 +136,7 @@ module plic (
       if (is_claim_complete_ctx1 && we && valid) begin
         pending_ctx1 <= pending_ctx1 & ~(1 << wdata[7:0]);
       end else begin
-        pending_ctx1 <= pending_ctx1 | ({interrupt_request, 1'b0} & enable_ctx1_0_31);
+        pending_ctx1 <= pending_ctx1 | (irq_in & enable_ctx1_0_31);
       end
     end
   end
