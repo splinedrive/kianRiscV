@@ -39,7 +39,6 @@ SRCS := ./pll.v \
         ../../kianv_harris_edition/csr_unit.v \
         ../../kianv_harris_edition/interrupt_controller.v \
         ../../kianv_harris_edition/csr_decoder.v \
-        ../../kianv_harris_edition/csr_decoder.v \
         ../../kianv_harris_edition/sv32.v \
         ../../kianv_harris_edition/sv32_table_walk.v \
         ../../kianv_harris_edition/sv32_translate_instruction_to_physical.v \
