@@ -606,6 +606,7 @@ module main_fsm (
         ALUOp        = `ALU_OP_ADD;
         tlb_flush    = sfence_vma_effective;
         icache_flush = is_fence_i;
+        // incr_inst_retired     = state_nxt == FETCH;
       end
 
       MEM_ADDR: begin
