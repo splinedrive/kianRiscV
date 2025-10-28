@@ -433,8 +433,7 @@ module soc #(
   assign spi_mem_valid0 = !spi_mem_ready0 && cpu_mem_valid &&
            (cpu_mem_addr == `KIANV_SPI_CTRL0 || cpu_mem_addr == `KIANV_SPI_DATA0);
   spi #(
-      .QUAD_MODE(1'b0),
-      .CPOL(1'b1)
+      .CPOL(1'b0)
   ) spi0_I (
       .clk   (clk),
       .resetn(resetn),
@@ -450,17 +449,14 @@ module soc #(
 
       .cen         (spi_cen0),
       .sclk        (spi_sclk0),
-      .sio1_so_miso(spi_sio1_so_miso0),
-      .sio0_si_mosi(spi_sio0_si_mosi0),
-      .sio2        (spi_sio2_0),
-      .sio3        (spi_sio3_0)
+      .miso(spi_sio1_so_miso0),
+      .mosi(spi_sio0_si_mosi0)
   );
 
 `ifdef SOC_HAS_NETWORK
   assign spi_mem_valid1 = !spi_mem_ready1 && cpu_mem_valid &&
            (cpu_mem_addr == `KIANV_SPI_CTRL1 || cpu_mem_addr == `KIANV_SPI_DATA1);
   spi #(
-      .QUAD_MODE(1'b0),
       .CPOL(1'b0)
   ) spi1_I (
       .clk   (clk),
@@ -477,10 +473,8 @@ module soc #(
 
       .cen         (spi_cen1),
       .sclk        (spi_sclk1),
-      .sio1_so_miso(spi_sio1_so_miso1),
-      .sio0_si_mosi(spi_sio0_si_mosi1),
-      .sio2        (),
-      .sio3        ()
+      .miso(spi_sio1_so_miso1),
+      .mosi(spi_sio0_si_mosi1)
   );
 `else
   assign spi_mem_valid1 = 1'b0;
@@ -491,7 +485,6 @@ module soc #(
   assign spi_mem_valid2 = !spi_mem_ready2 && cpu_mem_valid &&
            (cpu_mem_addr == `KIANV_SPI_CTRL2 || cpu_mem_addr == `KIANV_SPI_DATA2);
   spi #(
-      .QUAD_MODE(1'b0),
       .CPOL(1'b1)
   ) spi2_I (
       .clk   (clk),
@@ -508,10 +501,8 @@ module soc #(
 
       .cen         (oled_cs),
       .sclk        (oled_sck),
-      .sio1_so_miso(),
-      .sio0_si_mosi(oled_mosi),
-      .sio2        (),
-      .sio3        ()
+      .miso(),
+      .mosi(oled_mosi)
   );
 `else
   assign spi_mem_valid2 = 1'b0;

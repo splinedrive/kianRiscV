@@ -55,9 +55,10 @@ void main() {
   char spinner[] = "|/-\\";
   int spinner_index = 0;
 
+  delay_seconds(1);
+
   /* Configure hardware register */
   *HW_REGISTER_ADDR = (2 << 16) | (*BASE_FREQ_ADDR / DIVISOR_2);
-  delay_seconds(1);
 
   /* Display Bootloader Header */
   printf(COLOR_BLUE);
