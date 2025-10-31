@@ -165,7 +165,7 @@ module sv32_table_walk #(
     /* verilator lint_off WIDTHEXPAND */
     /* verilator lint_off WIDTHTRUNC */
     // Construct tag with VPN and ASID
-    tag = {current_vpn, current_asid};
+    tag = {current_asid, current_vpn};
 
     vpn_shift = level ? `SV32_VPN0_BITS : 0;
     idx = (current_vpn >> vpn_shift) & ((1 << `SV32_VPN0_BITS) - 1);
