@@ -137,6 +137,7 @@ module kianv_harris_mc_edition #(
   /* verilator lint_off WIDTHEXPAND */
   /* verilator lint_off WIDTHTRUNC */
   wire        mstatus_tvm = `GET_MSTATUS_TVM(mstatus);
+  wire        mstatus_tw = `GET_MSTATUS_TW(mstatus);
   /* verilator lint_on WIDTHTRUNC */
   /* verilator lint_on WIDTHEXPAND */
 
@@ -165,7 +166,7 @@ module kianv_harris_mc_edition #(
       .PCWrite          (PCWrite),
       .AdrSrc           (AdrSrc),
       .fault_address    (sv32_fault_address),
-      .mstatus_tvm      (mstatus_tvm),
+      .mstatus_tw_tvm   ({mstatus_tw, mstatus_tvm}),
   /* verilator lint_off WIDTHEXPAND */
   /* verilator lint_off WIDTHTRUNC */
       .satp_mode        (`GET_SATP_MODE(satp)),

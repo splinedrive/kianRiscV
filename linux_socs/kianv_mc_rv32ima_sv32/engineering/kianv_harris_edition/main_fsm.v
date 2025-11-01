@@ -29,7 +29,7 @@ module main_fsm (
     input  wire [                 4:0] Rs2,
     input  wire [                 4:0] Rd,
     input  wire                        Zero,
-    input  wire                        mstatus_tvm,
+    input  wire [                 1:0] mstatus_tw_tvm,
     input  wire                        satp_mode,
     output reg                         AdrSrc,
     output reg                         store_instr,
@@ -87,7 +87,7 @@ module main_fsm (
     input  wire mul_ext_ready,
     output reg  is_instruction,
     input  wire stall,
-    input wire mem_ready
+    input  wire mem_ready
 );
 
   // =========================================================================
@@ -235,8 +235,15 @@ module main_fsm (
   wire is_sret       = `IS_SRET(op, funct3, funct7, Rs1, Rs2, Rd);
   wire is_wfi        = `IS_WFI(op, funct3, funct7, Rs1, Rs2, Rd);
 
-  wire is_sfence_vma_legal = `IS_MACHINE(privilege_mode) ||
-                             (`IS_SUPERVISOR(privilege_mode) && !mstatus_tvm);
+  // Privilege helpers
+  wire priv_m = `IS_MACHINE(privilege_mode);
+  wire priv_s = `IS_SUPERVISOR(privilege_mode);
+  wire priv_u = !priv_m && !priv_s;
+
+  wire wfi_illegal = is_wfi && ( (priv_s || priv_u) && mstatus_tw_tvm[1] );
+  wire wfi_allowed = is_wfi && !wfi_illegal;
+
+  wire is_sfence_vma_legal = priv_m || (priv_s && !mstatus_tw_tvm[0]);
   wire sfence_vma_effective = is_sfence_vma & is_sfence_vma_legal & satp_mode;
 
   // Interrupt pending signal
@@ -275,13 +282,13 @@ module main_fsm (
   // =========================================================================
   always @(*) begin
     case (1'b1)
-      is_rtype                           : ImmSrc = `IMMSRC_RTYPE;
-      is_itype | is_jalr | is_load | is_csr : ImmSrc = `IMMSRC_ITYPE;
-      is_store                           : ImmSrc = `IMMSRC_STYPE;
-      is_branch                          : ImmSrc = `IMMSRC_BTYPE;
-      is_lui | is_auipc                  : ImmSrc = `IMMSRC_UTYPE;
-      is_jal                             : ImmSrc = `IMMSRC_JTYPE;
-      default                            : ImmSrc = 3'bxxx;
+      is_rtype                               : ImmSrc = `IMMSRC_RTYPE;
+      is_itype | is_jalr | is_load | is_csr  : ImmSrc = `IMMSRC_ITYPE;
+      is_store                               : ImmSrc = `IMMSRC_STYPE;
+      is_branch                              : ImmSrc = `IMMSRC_BTYPE;
+      is_lui | is_auipc                      : ImmSrc = `IMMSRC_UTYPE;
+      is_jal                                 : ImmSrc = `IMMSRC_JTYPE;
+      default                                : ImmSrc = 3'bxxx;
     endcase
   end
 
@@ -317,6 +324,7 @@ module main_fsm (
 
     case (state)
       FETCH: begin
+        // Latch current PC as potential bad address for faults
         trap_addr_nxt = cpu_mem_addr;
         is_instruction = 1'b1;
 
@@ -345,7 +353,10 @@ module main_fsm (
           is_sfence_vma            : state_nxt = is_sfence_vma_legal ? FETCH : ILLEGAL_0;
           is_fence                 : state_nxt = FETCH;
           is_fence_i               : state_nxt = FETCH;
-          is_wfi                   : state_nxt = FETCH;
+
+          wfi_illegal              : state_nxt = ILLEGAL_0;
+          wfi_allowed              : state_nxt = FETCH;
+
           is_mret                  : state_nxt = MRET_0;
           is_sret                  : state_nxt = SRET_0;
           is_ecall                 : state_nxt = ECALL_0;
@@ -550,13 +561,37 @@ module main_fsm (
   end
 
   // =========================================================================
+  // Centralized retire decision
+  // =========================================================================
+  wire retire_store_ok     = (state == MEM_WRITE)    && mem_ready && !access_fault && !is_store_unaligned;
+  wire retire_amo_write_ok = (state == AMO_OP_WRITE) && mem_ready && !access_fault && !is_store_unaligned;
+  wire retire_fence_like   = (state == DECODE) && (is_fence || is_fence_i || sfence_vma_effective);
+  wire retire_wfi_like     = (state == DECODE) && wfi_allowed;
+
+  wire retire_pulse_int =
+        (state == ALU_WB)         ||
+        (state == MUL_WB)         ||
+        (state == MEM_WB)         ||
+        (state == SYSTEM_WB)      ||
+        (state == BRANCH)         ||
+        (state == AMO_LR_WB)      ||
+        (state == AMO_SC_SUCCESS) ||
+        (state == AMO_SC_FAIL)    ||
+        retire_store_ok           ||
+        retire_amo_write_ok       ||
+        (state == MRET_1)         ||
+        (state == SRET_1)         ||
+        retire_fence_like         ||
+        retire_wfi_like;
+
+  // =========================================================================
   // Output Logic
   // =========================================================================
   reg [31:0] tmp_cause;
 
   always @(*) begin
     // Default values for all outputs
-    incr_inst_retired           = 1'b0;
+    incr_inst_retired           = 1'b0;   // driven by retire_pulse_int at end
     AdrSrc                      = `ADDR_PC;
     store_instr                 = 1'b0;
     ALUSrcA                     = `SRCA_PC;
@@ -604,8 +639,11 @@ module main_fsm (
         ALUSrcA      = `SRCA_OLD_PC;
         ALUSrcB      = `SRCB_IMM_EXT;
         ALUOp        = `ALU_OP_ADD;
+
         tlb_flush    = sfence_vma_effective;
         icache_flush = is_fence_i;
+
+        wfi_event    = wfi_allowed;
       end
 
       MEM_ADDR: begin
@@ -618,22 +656,19 @@ module main_fsm (
         mem_valid = !is_load_unaligned;
         ResultSrc = `RESULT_ALUOUT;
         AdrSrc    = `ADDR_RESULT;
-
-        end
+      end
 
       MEM_WB: begin
-        mem_valid             = 1'b1;
-        ResultSrc             = `RESULT_DATA;
-        RegWrite              = 1'b1;
-        incr_inst_retired     = 1'b1;
+        mem_valid = 1'b1;
+        ResultSrc = `RESULT_DATA;
+        RegWrite  = 1'b1;
       end
 
       MEM_WRITE: begin
-        mem_valid             = !is_store_unaligned;
-        ResultSrc             = `RESULT_ALUOUT;
-        AdrSrc                = `ADDR_RESULT;
-        MemWrite              = 1'b1;
-        incr_inst_retired     = mem_ready || is_store_unaligned;
+        mem_valid = !is_store_unaligned;
+        ResultSrc = `RESULT_ALUOUT;
+        AdrSrc    = `ADDR_RESULT;
+        MemWrite  = 1'b1;
       end
 
       EXEC_RTYPE: begin
@@ -643,10 +678,9 @@ module main_fsm (
       end
 
       ALU_WB: begin
-        mem_valid             = 1'b1;
-        ResultSrc             = `RESULT_ALUOUT;
-        RegWrite              = 1'b1;
-        incr_inst_retired     = 1'b1;
+        mem_valid = 1'b1;
+        ResultSrc = `RESULT_ALUOUT;
+        RegWrite  = 1'b1;
       end
 
       EXEC_ITYPE: begin
@@ -656,21 +690,20 @@ module main_fsm (
       end
 
       JAL: begin
-        ALUSrcA               = `SRCA_OLD_PC;
-        ALUSrcB               = `SRCB_CONST_4;
-        ALUOp                 = `ALU_OP_ADD;
-        ResultSrc             = `RESULT_ALUOUT;
-        PCUpdate              = 1'b1;
+        ALUSrcA    = `SRCA_OLD_PC;
+        ALUSrcB    = `SRCB_CONST_4;
+        ALUOp      = `ALU_OP_ADD;
+        ResultSrc  = `RESULT_ALUOUT;
+        PCUpdate   = 1'b1;
       end
 
       BRANCH: begin
-        ALUSrcA               = `SRCA_RD1_BUF;
-        ALUSrcB               = `SRCB_RD2_BUF;
-        ALUOp                 = `ALU_OP_BRANCH;
-        ResultSrc             = `RESULT_ALUOUT;
-        Branch                = 1'b1;
-        mem_valid             = Zero;
-        incr_inst_retired     = 1'b1;
+        ALUSrcA   = `SRCA_RD1_BUF;
+        ALUSrcB   = `SRCB_RD2_BUF;
+        ALUOp     = `ALU_OP_BRANCH;
+        ResultSrc = `RESULT_ALUOUT;
+        Branch    = 1'b1;
+        mem_valid = Zero;
       end
 
       JALR: begin
@@ -691,16 +724,15 @@ module main_fsm (
       end
 
       EXEC_MUL: begin
-        ALUSrcA               = `SRCA_RD1_BUF;
-        ALUSrcB               = `SRCB_RD2_BUF;
-        mul_ext_valid         = 1'b1;
+        ALUSrcA       = `SRCA_RD1_BUF;
+        ALUSrcB       = `SRCB_RD2_BUF;
+        mul_ext_valid = 1'b1;
       end
 
       MUL_WB: begin
-        mem_valid             = 1'b1;
-        ResultSrc             = `RESULT_MULOUT;
-        RegWrite              = 1'b1;
-        incr_inst_retired     = 1'b1;
+        mem_valid = 1'b1;
+        ResultSrc = `RESULT_MULOUT;
+        RegWrite  = 1'b1;
       end
 
       EXEC_SYSTEM: begin
@@ -710,17 +742,16 @@ module main_fsm (
       end
 
       SYSTEM_WB: begin
-        mem_valid             = 1'b1;
-        ResultSrc             = `RESULT_CSROUT;
-        RegWrite              = 1'b1;
-        incr_inst_retired     = 1'b1;
+        mem_valid = 1'b1;
+        ResultSrc = `RESULT_CSROUT;
+        RegWrite  = 1'b1;
       end
 
       AMO_ADDR: begin
-        ALUSrcA                 = `SRCA_RD1_BUF;
-        ALUSrcB                 = `SRCB_CONST_0;
-        ALUOp                   = `ALU_OP_ADD;
-        amo_buffered_address    = 1'b1;
+        ALUSrcA               = `SRCA_RD1_BUF;
+        ALUSrcB               = `SRCB_CONST_0;
+        ALUOp                 = `ALU_OP_ADD;
+        amo_buffered_address  = 1'b1;
       end
 
       AMO_LR_READ: begin
@@ -732,10 +763,9 @@ module main_fsm (
       end
 
       AMO_LR_WB: begin
-        mem_valid             = 1'b1;
-        ResultSrc             = `RESULT_DATA;
-        RegWrite              = 1'b1;
-        incr_inst_retired     = 1'b1;
+        mem_valid = 1'b1;
+        ResultSrc = `RESULT_DATA;
+        RegWrite  = 1'b1;
       end
 
       AMO_SC_WRITE: begin
@@ -753,7 +783,6 @@ module main_fsm (
         ResultSrc                   = `RESULT_ALUOUT;
         RegWrite                    = 1'b1;
         mem_valid                   = 1'b1;
-        incr_inst_retired           = 1'b1;
       end
 
       AMO_SC_FAIL: begin
@@ -762,7 +791,6 @@ module main_fsm (
         ResultSrc                   = `RESULT_ALUOUT;
         RegWrite                    = 1'b1;
         mem_valid                   = 1'b1;
-        incr_inst_retired           = 1'b1;
       end
 
       AMO_OP_READ: begin
@@ -796,17 +824,15 @@ module main_fsm (
       end
 
       AMO_OP_WRITE: begin
-        MemWrite              = 1'b1;
-        select_amo_temp       = 1'b1;
-        ResultSrc             = `RESULT_AMO_TEMP_ADDR;
-        AdrSrc                = `ADDR_RESULT;
-        mem_valid             = !is_store_unaligned;
-        incr_inst_retired     = mem_ready || is_store_unaligned;
+        MemWrite          = 1'b1;
+        select_amo_temp   = 1'b1;
+        ResultSrc         = `RESULT_AMO_TEMP_ADDR;
+        AdrSrc            = `ADDR_RESULT;
+        mem_valid         = !is_store_unaligned;
       end
 
       AMO_COMPLETE: begin
-        mem_valid             = 1'b1;
-        incr_inst_retired     = 1'b1;
+        mem_valid = 1'b1;
       end
 
       MRET_0: begin
@@ -814,31 +840,28 @@ module main_fsm (
       end
 
       MRET_1: begin
-        PCUpdate              = 1'b1;
-        incr_inst_retired     = 1'b1;
+        PCUpdate = 1'b1;
       end
 
       CSR_FAULT_0: begin
-        cause                 = `EXC_ILLEGAL_INSTRUCTION;
-        badaddr               = {25'b0, op};
-        exception_event       = 1'b1;
+        cause           = `EXC_ILLEGAL_INSTRUCTION;
+        badaddr         = {25'b0, op};
+        exception_event = 1'b1;
       end
 
       CSR_FAULT_1: begin
-        PCUpdate              = 1'b1;
-        incr_inst_retired     = 1'b1;
+        PCUpdate = 1'b1;
       end
 
       ECALL_0: begin
-        tmp_cause             = `EXC_ECALL_FROM_UMODE;
-        cause                 = {tmp_cause[31:2], privilege_mode};
-        badaddr               = 32'b0;
-        exception_event       = 1'b1;
+        tmp_cause       = `EXC_ECALL_FROM_UMODE;
+        cause           = {tmp_cause[31:2], privilege_mode};
+        badaddr         = 32'b0;
+        exception_event = 1'b1;
       end
 
       ECALL_1: begin
-        PCUpdate              = 1'b1;
-        incr_inst_retired     = 1'b1;
+        PCUpdate = 1'b1;
       end
 
       IRQ_0: begin
@@ -851,8 +874,8 @@ module main_fsm (
           IRQ_TO_CPU_CTRL11 : cause = `INTERRUPT_MACHINE_EXTERNAL;
           default           : cause = 32'b0;
         endcase
-        badaddr               = 32'b0;
-        exception_event       = 1'b1;
+        badaddr         = 32'b0;
+        exception_event = 1'b1;
       end
 
       IRQ_1: begin
@@ -860,69 +883,62 @@ module main_fsm (
       end
 
       WFI: begin
-        wfi_event             = 1'b1;
-        incr_inst_retired     = 1'b1;
       end
 
       EBREAK_0: begin
-        cause                 = `EXC_BREAKPOINT;
-        badaddr               = 32'b0;
-        exception_event       = 1'b1;
+        cause           = `EXC_BREAKPOINT;
+        badaddr         = 32'b0;
+        exception_event = 1'b1;
       end
 
       ILLEGAL_0: begin
-        cause                 = `EXC_ILLEGAL_INSTRUCTION;
-        badaddr               = {25'b0, op};
-        exception_event       = 1'b1;
+        cause           = `EXC_ILLEGAL_INSTRUCTION;
+        badaddr         = {25'b0, op};
+        exception_event = 1'b1;
       end
 
       ILLEGAL_1: begin
-        PCUpdate              = 1'b1;
-        incr_inst_retired     = 1'b1;
+        PCUpdate = 1'b1;
       end
 
       LOAD_MISALIGN_0: begin
-        cause                 = `EXC_LOAD_AMO_ADDR_MISALIGNED;
-        badaddr               = trap_addr;
-        exception_event       = 1'b1;
+        cause           = `EXC_LOAD_AMO_ADDR_MISALIGNED;
+        badaddr         = trap_addr;
+        exception_event = 1'b1;
       end
 
       LOAD_MISALIGN_1: begin
-        PCUpdate              = 1'b1;
-        incr_inst_retired     = 1'b1;
+        PCUpdate = 1'b1;
       end
 
       STORE_MISALIGN_0: begin
-        cause                 = `EXC_STORE_AMO_ADDR_MISALIGNED;
-        badaddr               = trap_addr;
-        exception_event       = 1'b1;
+        cause           = `EXC_STORE_AMO_ADDR_MISALIGNED;
+        badaddr         = trap_addr;
+        exception_event = 1'b1;
       end
 
       STORE_MISALIGN_1: begin
-        PCUpdate              = 1'b1;
-        incr_inst_retired     = 1'b1;
+        PCUpdate = 1'b1;
       end
 
       LOAD_FAULT_0: begin
-        cause                 = `EXC_LOAD_AMO_ACCESS_FAULT;
-        badaddr               = trap_addr;
-        exception_event       = 1'b1;
+        cause           = `EXC_LOAD_AMO_ACCESS_FAULT;
+        badaddr         = trap_addr;
+        exception_event = 1'b1;
       end
 
       LOAD_FAULT_1: begin
-        PCUpdate              = 1'b1;
-        incr_inst_retired     = 1'b1;
+        PCUpdate = 1'b1;
       end
 
       STORE_FAULT_0: begin
-        cause                 = `EXC_STORE_AMO_ACCESS_FAULT;
-        badaddr               = trap_addr;
-        exception_event       = 1'b1;
+        cause           = `EXC_STORE_AMO_ACCESS_FAULT;
+        badaddr         = trap_addr;
+        exception_event = 1'b1;
       end
 
       STORE_FAULT_1: begin
-        PCUpdate              = 1'b1;
-        incr_inst_retired     = 1'b1;
+        PCUpdate = 1'b1;
       end
 
       SRET_0: begin
@@ -930,70 +946,63 @@ module main_fsm (
       end
 
       SRET_1: begin
-        PCUpdate              = 1'b1;
-        incr_inst_retired     = 1'b1;
+        PCUpdate = 1'b1;
       end
 
       IPAGE_FAULT_0: begin
-        cause                 = `EXC_INSTR_PAGE_FAULT;
-        badaddr               = fault_address;
-        exception_event       = 1'b1;
-        selectPC              = 1'b1;
+        cause           = `EXC_INSTR_PAGE_FAULT;
+        badaddr         = fault_address;
+        exception_event = 1'b1;
+        selectPC        = 1'b1;
       end
 
       IPAGE_FAULT_1: begin
-        PCUpdate              = 1'b1;
-        incr_inst_retired     = 1'b1;
-        selectPC              = 1'b1;
+        PCUpdate  = 1'b1;
+        selectPC  = 1'b1;
       end
 
       LPAGE_FAULT_0: begin
-        cause                 = `EXC_LOAD_PAGE_FAULT;
-        badaddr               = fault_address;
-        exception_event       = 1'b1;
+        cause           = `EXC_LOAD_PAGE_FAULT;
+        badaddr         = fault_address;
+        exception_event = 1'b1;
       end
 
       LPAGE_FAULT_1: begin
-        PCUpdate              = 1'b1;
-        incr_inst_retired     = 1'b1;
+        PCUpdate = 1'b1;
       end
 
       SPAGE_FAULT_0: begin
-        cause                 = `EXC_STORE_AMO_PAGE_FAULT;
-        badaddr               = fault_address;
-        exception_event       = 1'b1;
+        cause           = `EXC_STORE_AMO_PAGE_FAULT;
+        badaddr         = fault_address;
+        exception_event = 1'b1;
       end
 
       SPAGE_FAULT_1: begin
-        PCUpdate              = 1'b1;
-        incr_inst_retired     = 1'b1;
+        PCUpdate = 1'b1;
       end
 
       INSTR_MISALIGN_0: begin
-        cause                 = `EXC_INSTR_ADDR_MISALIGNED;
-        badaddr               = trap_addr;
-        exception_event       = 1'b1;
+        cause           = `EXC_INSTR_ADDR_MISALIGNED;
+        badaddr         = trap_addr;
+        exception_event = 1'b1;
       end
 
       INSTR_MISALIGN_1: begin
-        PCUpdate              = 1'b1;
-        incr_inst_retired     = 1'b1;
+        PCUpdate = 1'b1;
       end
 
       INSTR_FAULT_0: begin
-        cause                 = `EXC_INSTR_ACCESS_FAULT;
-        badaddr               = trap_addr;
-        exception_event       = 1'b1;
+        cause           = `EXC_INSTR_ACCESS_FAULT;
+        badaddr         = trap_addr;
+        exception_event = 1'b1;
       end
 
       INSTR_FAULT_1: begin
-        PCUpdate              = 1'b1;
-        incr_inst_retired     = 1'b1;
+        PCUpdate = 1'b1;
       end
 
       EBREAK_1: begin
-        PCUpdate              = 1'b1;
-        incr_inst_retired     = 1'b1;
+        PCUpdate = 1'b1;
       end
 
       default: begin
@@ -1008,6 +1017,9 @@ module main_fsm (
         MemWrite  = 1'b0;
       end
     endcase
+
+    // Drive retire increment once, centrally.
+    incr_inst_retired = retire_pulse_int;
   end
 
 endmodule

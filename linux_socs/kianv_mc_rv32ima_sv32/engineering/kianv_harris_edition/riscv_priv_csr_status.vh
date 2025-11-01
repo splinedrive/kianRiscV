@@ -69,6 +69,7 @@
 `define MSTATUS_MIE_BIT 3
 `define MSTATUS_MPRV_BIT 17
 `define MSTATUS_TVM_BIT 20
+`define MSTATUS_TW_BIT 21
 
 `define XSTATUS_SPIE_BIT 5
 `define XSTATUS_SPIE_MASK (1 << `XSTATUS_SPIE_BIT)
@@ -157,6 +158,7 @@
 `define GET_MSTATUS_MPP(value) (((value) >> `MSTATUS_MPP_BIT) & 2'b11)
 `define GET_MSTATUS_MPRV(value) ((value) >> `MSTATUS_MPRV_BIT) & 1'b1
 `define GET_MSTATUS_MXR(value) (((value) >> `XSTATUS_MXR) & 1'b1)
+`define GET_MSTATUS_TW(value) (((value) >> `MSTATUS_TW_BIT) & 1'b1)
 `define GET_MSTATUS_TVM(value) (((value) >> `MSTATUS_TVM_BIT) & 1'b1)
 `define GET_XSTATUS_SIE(value) (((value) >> `XSTATUS_SIE_BIT) & 1'b1)
 `define GET_XSTATUS_SPIE(value) (((value) >> `XSTATUS_SPIE_BIT) & 1'b1)
