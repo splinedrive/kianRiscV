@@ -33,19 +33,32 @@
 typedef void (*func_ptr)(int, char *);
 #define CHUNK_SIZE  (512 * 1024)
 
-void* memcpy_verbose(void* dest, const void* src, size_t count) {
-    char* d = (char*)dest;
-    const char* s = (const char*)src;
-
-    for (size_t i = 0; i < count; i++) {
-        if (i % CHUNK_SIZE == 0) {
-
-            printf(".");
-        }
-        d[i] = s[i];
+/*
+ * No cache: every fetch/load/store is a QSPI transaction. Word copy unrolled x8 is
+ * ~10x faster than bytewise.
+ * Copies whole words, so may overrun the end by up to 3 bytes.
+ */
+static void copy_words_8(uint32_t *d, const uint32_t *s, size_t words) {
+    const uint32_t *end = s + (words & ~(size_t)7);
+    while (s != end) {
+        uint32_t a = s[0], b = s[1], c = s[2], e = s[3], f = s[4], g = s[5], h = s[6], k = s[7];
+        d[0] = a; d[1] = b; d[2] = c; d[3] = e; d[4] = f; d[5] = g; d[6] = h; d[7] = k;
+        s += 8; d += 8;
     }
+    for (words &= 7; words; words--)
+        *d++ = *s++;
+}
 
-    return dest;
+/* Prints a dot per CHUNK_SIZE. */
+static void copy_image_verbose(void *dest, const void *src, size_t count) {
+    uint32_t *d = (uint32_t *)dest;
+    const uint32_t *s = (const uint32_t *)src;
+    const size_t words = (count + 3) / 4, chunk = CHUNK_SIZE / 4;
+
+    for (size_t i = 0; i < words; i += chunk) {
+        printf(".");
+        copy_words_8(d + i, s + i, words - i < chunk ? words - i : chunk);
+    }
 }
 
 int main() {
@@ -62,7 +75,7 @@ int main() {
 
 
   printf("loading kernel Image from flash ");
-  memcpy_verbose(SDRAM_START, KERNEL_IMAGE, IMAGE_SIZE);
+  copy_image_verbose((void *)SDRAM_START, (const void *)KERNEL_IMAGE, IMAGE_SIZE);
   printf("\nstarting kernel\n");
 
   int hartId = 0;
