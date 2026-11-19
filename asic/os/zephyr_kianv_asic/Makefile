@@ -44,8 +44,8 @@ BOOT_FLASH_OFFSET ?= 0x100000
 MICROPY_FLASH_OFFSET ?= 0x300000
 MICROPY_FLASH_ADDR ?= 0x20300000
 MICROPY_WORKSPACE ?= $(CURDIR)/micropython
-MICROPY_REPO ?= https://github.com/splinedrive/micropython.git
-MICROPY_REV ?= 9bf76fcf9d890309d02b033dfe03865c78380ca6
+MICROPY_REPO ?= https://github.com/micropython/micropython.git
+MICROPY_REV ?= 0fd6c573ea815774668bbb16b8e197c8822368b2
 MICROPY_DIR ?= $(MICROPY_WORKSPACE)/ports/kianv_riscv
 MICROPY_BIN ?= $(MICROPY_DIR)/build/firmware.bin
 MICROPY_COPT ?=
@@ -110,11 +110,13 @@ zephyr: zephyr-python-deps
 
 micropython-fetch:
 	test -d $(MICROPY_WORKSPACE)/.git || git clone $(MICROPY_REPO) $(MICROPY_WORKSPACE)
+	git -C $(MICROPY_WORKSPACE) remote set-url origin $(MICROPY_REPO)
 	git -C $(MICROPY_WORKSPACE) fetch --depth=1 origin $(MICROPY_REV)
-	git -C $(MICROPY_WORKSPACE) checkout --detach $(MICROPY_REV)
+	git -C $(MICROPY_WORKSPACE) checkout --force --detach $(MICROPY_REV)
 	git -C $(MICROPY_WORKSPACE) reset --hard $(MICROPY_REV)
 
 micropython-patch: micropython-fetch
+	git -C $(MICROPY_WORKSPACE) clean -fdx -- ports/kianv_riscv
 	cd $(MICROPY_WORKSPACE) && git apply --recount $(CURDIR)/patches/micropython-kianv-asic.patch
 
 micropython-bin: micropython-patch
