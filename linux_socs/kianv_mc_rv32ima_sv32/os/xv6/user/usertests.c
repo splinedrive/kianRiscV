@@ -2401,7 +2401,7 @@ fsfull()
     nfiles--;
   }
 
-  printf("fsfull test finished\n");
+  printf("fsfull test finished, wrote %d blocks\n", fsblocks);
 }
 
 void argptest(char *s)
