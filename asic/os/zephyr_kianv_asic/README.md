@@ -5,7 +5,8 @@ Out-of-tree Zephyr port for the KianV RV32IMA ASIC SoC.
 ## Hardware Model
 
 - ISA: RV32IMA plus Zicsr/Zifencei
-- CPU/timer clock: 30 MHz
+- CPU clock: 30 MHz
+- Timer (`mtime`) clock: 10 kHz, set by the boot loader (`UART_DIV[31:16] = CPU_FREQ / 10000`)
 - UART baudrate: 115,200 baud
 - RAM/PSRAM: 8 MiB at `0x80000000`
 - SPI NOR flash window: `0x20000000`, reset/XIP bootloader at `0x20100000`
@@ -94,17 +95,17 @@ Zephyr's SoC and device-tree clock values are in
 `dts/riscv/kianv/kianv_rv32ima.dtsi`:
 
 ```dts
-timebase-frequency = <30000000>;
-clock-frequency = <30000000>;
+timebase-frequency = <10000>;     /* cpus: mtime rate */
+clock-frequency = <30000000>;     /* cpu0 and uart0 */
 current-speed = <115200>;
 ```
 
-The matching Zephyr kernel cycle rate is in
+The matching Zephyr kernel cycle rate (the `mtime` rate, not the CPU clock) is in
 `soc/kianv/kianv_rv32ima/Kconfig.defconfig`:
 
 ```kconfig
 config SYS_CLOCK_HW_CYCLES_PER_SEC
-	default 30000000
+	default 10000
 ```
 
 ## Zephyr Shell

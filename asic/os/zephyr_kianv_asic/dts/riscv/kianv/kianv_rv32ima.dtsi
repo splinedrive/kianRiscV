@@ -11,7 +11,8 @@
 	cpus {
 		#address-cells = <1>;
 		#size-cells = <0>;
-		timebase-frequency = <30000000>;
+		/* mtime ticks at CPU_FREQ / UART_DIV[31:16]; the boot loader sets 10 kHz */
+		timebase-frequency = <10000>;
 
 		cpu0: cpu@0 {
 			device_type = "cpu";
@@ -86,7 +87,7 @@
 			reg = <0x1100bff8 0x8 0x11004000 0x8>;
 			reg-names = "mtime", "mtimecmp";
 			interrupts-extended = <&hlic0 7>;
-			clock-frequency = <30000000>;
+			clock-frequency = <10000>;
 			status = "okay";
 		};
 
