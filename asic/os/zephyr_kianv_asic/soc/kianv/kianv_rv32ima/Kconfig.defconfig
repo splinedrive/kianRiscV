@@ -3,8 +3,10 @@
 
 if SOC_KIANV_RV32IMA
 
+# mtime rate (10 kHz, set by the boot loader through UART_DIV[31:16]),
+# not the CPU clock.
 config SYS_CLOCK_HW_CYCLES_PER_SEC
-	default 30000000
+	default 10000
 
 config RISCV_SOC_INTERRUPT_INIT
 	default n
